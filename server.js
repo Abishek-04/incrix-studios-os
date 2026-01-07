@@ -35,16 +35,48 @@ const StudioState = mongoose.model('StudioState', studioStateSchema);
 
 // API Routes
 
-// Get global state
+// Get global state (Secured: Removes passwords)
 app.get('/api/state', async (req, res) => {
     try {
         let state = await StudioState.findOne();
         if (!state) {
-            // Initialize if not exists
             state = new StudioState({});
             await state.save();
         }
-        res.json(state);
+
+        // Convert to object to modify it without saving
+        const stateObj = state.toObject();
+        if (stateObj.users) {
+            stateObj.users = stateObj.users.map(u => {
+                const { password, ...userWithoutPassword } = u;
+                return userWithoutPassword;
+            });
+        }
+
+        res.json(stateObj);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Login Endpoint
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const state = await StudioState.findOne();
+
+        if (!state || !state.users) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const user = state.users.find(u => u.email === email && u.password === password);
+
+        if (user) {
+            const { password, ...userWithoutPassword } = user;
+            res.json({ success: true, user: userWithoutPassword });
+        } else {
+            res.status(401).json({ error: 'Invalid credentials' });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

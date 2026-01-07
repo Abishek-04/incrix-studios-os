@@ -5,12 +5,12 @@ import process from 'process';
 dotenv.config();
 
 const INITIAL_USERS = [
-    { id: 'usr1', name: 'Alex D.', role: 'manager', email: 'alex@incrix.com', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
-    { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
-    { id: 'usr3', name: 'Jegannath', role: 'creator', email: 'jegan@incrix.com', avatarColor: 'bg-emerald-600', niche: 'Coding', active: true, quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } },
-    { id: 'usr4', name: 'Johnson', role: 'creator', email: 'johnson@incrix.com', avatarColor: 'bg-amber-600', niche: 'Vlog', active: true, quota: { longVideo: 1, shortVideo: 5, period: 'weekly' } },
-    { id: 'usr5', name: 'Manisha', role: 'creator', email: 'manisha@incrix.com', avatarColor: 'bg-pink-600', niche: 'Lifestyle', active: true, quota: { longVideo: 0, shortVideo: 7, period: 'weekly' } },
-    { id: 'usr6', name: 'Mike T.', role: 'editor', email: 'mike@incrix.com', avatarColor: 'bg-blue-600', active: true },
+    { id: 'usr1', name: 'Alex D.', role: 'manager', email: 'alex@incrix.com', password: 'password', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
+    { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', password: 'password', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
+    { id: 'usr3', name: 'Jegannath', role: 'creator', email: 'jegan@incrix.com', password: 'password', avatarColor: 'bg-emerald-600', niche: 'Coding', active: true, quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } },
+    { id: 'usr4', name: 'Johnson', role: 'creator', email: 'johnson@incrix.com', password: 'password', avatarColor: 'bg-amber-600', niche: 'Vlog', active: true, quota: { longVideo: 1, shortVideo: 5, period: 'weekly' } },
+    { id: 'usr5', name: 'Manisha', role: 'creator', email: 'manisha@incrix.com', password: 'password', avatarColor: 'bg-pink-600', niche: 'Lifestyle', active: true, quota: { longVideo: 0, shortVideo: 7, period: 'weekly' } },
+    { id: 'usr6', name: 'Mike T.', role: 'editor', email: 'mike@incrix.com', password: 'password', avatarColor: 'bg-blue-600', active: true },
 ];
 
 const INITIAL_CHANNELS = [

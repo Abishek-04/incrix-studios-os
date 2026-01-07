@@ -39,33 +39,34 @@ export enum Priority {
 }
 
 export interface UserQuota {
-    longVideo: number; // Target count
-    shortVideo: number; // Target count
-    period: 'weekly' | 'monthly';
+  longVideo: number; // Target count
+  shortVideo: number; // Target count
+  period: 'weekly' | 'monthly';
 }
 
 export interface User {
-    id: string;
-    name: string;
-    role: Role;
-    email: string;
-    phoneNumber?: string; // For WhatsApp
-    notifyViaWhatsapp?: boolean;
-    notifyViaEmail?: boolean;
-    avatarColor: string;
-    niche?: string;
-    active: boolean;
-    quota?: UserQuota;
+  id: string;
+  name: string;
+  role: Role;
+  email: string;
+  phoneNumber?: string; // For WhatsApp
+  notifyViaWhatsapp?: boolean;
+  notifyViaEmail?: boolean;
+  avatarColor: string;
+  niche?: string;
+  active: boolean;
+  password?: string; // Not sent to frontend usually, but stored in DB
+  quota?: UserQuota;
 }
 
 export interface Channel {
-    id: string;
-    platform: Platform;
-    name: string;
-    link: string; // The source URL
-    avatarUrl?: string; // Optional real image URL
-    email: string;
-    credentials?: string; // API Key or Token
+  id: string;
+  platform: Platform;
+  name: string;
+  link: string; // The source URL
+  avatarUrl?: string; // Optional real image URL
+  email: string;
+  credentials?: string; // API Key or Token
 }
 
 export interface Comment {
@@ -76,12 +77,12 @@ export interface Comment {
 }
 
 export interface PerformanceMetrics {
-    views: number;
-    likes: number;
-    comments: number;
-    retention: string; // e.g., "55%"
-    sources?: string[]; // Grounding URLs from Gemini Search
-    lastUpdated: number;
+  views: number;
+  likes: number;
+  comments: number;
+  retention: string; // e.g., "55%"
+  sources?: string[]; // Grounding URLs from Gemini Search
+  lastUpdated: number;
 }
 
 export interface Project {
