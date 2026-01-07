@@ -25,7 +25,8 @@ const calculateProgress = (user: User, allProjects: Project[]) => {
     } else {
         startDate.setDate(1); // 1st of month
         startDate.setHours(0,0,0,0);
-    }
+    }  
+    
 
     const userProjects = allProjects.filter(p => 
         p.creator === user.name && 
