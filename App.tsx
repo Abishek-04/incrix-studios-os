@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { fetchState, saveState } from './services/api';
-import { Project, Role, Stage, Status, Platform, Vertical, Priority, User, Channel } from './types';
+import React, { useState, useEffect } from 'react';
+import { Calendar, LayoutDashboard, Settings, Film, Users, Video, BarChart2, Radio, Smartphone, Type, MessageSquare, Bell, FileText, CheckSquare, Clock, LogOut, Search } from 'lucide-react';
+import NotificationPanel from './components/NotificationPanel';
 import Dashboard from './components/Dashboard';
-import ProjectModal from './components/ProjectModal';
-import TeamManagement from './components/TeamManagement';
-import ManageChannels from './components/ManageChannels';
 import ProjectList from './components/ProjectList';
 import CalendarView from './components/CalendarView';
-import { LayoutGrid, ListTodo, Users, Plus, Search, PlayCircle, Lock, MonitorPlay, FileVideo, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Library, Tv, Calendar } from 'lucide-react';
+import ManageChannels from './components/ManageChannels';
+import TeamManagement from './components/TeamManagement';
+import ProjectBoard from './components/ProjectBoard';
+import Login from './components/Login';
+import ProjectModal from './components/ProjectModal';
+import { Project, User, Channel, Role, Platform, Vertical, Stage, Status, Priority, Notification } from './types';
+import { fetchState, saveState } from './services/api';
 
-// --- MOCK DATA ---
+// Initial data (keep as fallback)
 const INITIAL_USERS: User[] = [
     { id: 'usr1', name: 'Alex D.', role: 'manager', email: 'alex@incrix.com', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
     { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
@@ -27,82 +30,58 @@ const INITIAL_CHANNELS: Channel[] = [
 
 const INITIAL_PROJECTS: Project[] = [
     {
-        id: 'VID-001',
-        title: 'Q3 Product Update',
-        topic: 'New Features Walkthrough',
+        id: 'PRJ-TEST-1',
+        title: 'Incrix OS Demo Video',
+        topic: 'Showcase features',
         vertical: Vertical.Software,
         platform: Platform.YouTube,
-        channelId: 'ch1',
-        role: 'creator',
+        role: 'manager',
         creator: 'Abishek',
         editor: 'Mike T.',
         stage: Stage.Scripting,
         status: Status.InProgress,
         priority: Priority.High,
         lastUpdated: Date.now(),
-        dueDate: Date.now() + 86400000,
-        durationMinutes: 0,
+        dueDate: Date.now() + 86400000 * 7,
+        durationMinutes: 15,
         script: '',
         tasks: [],
         technicalNotes: '',
         comments: [],
         hasMographNeeds: false,
         archived: false
-    },
-    {
-        id: 'VID-002',
-        title: 'Behind the Scenes',
-        topic: 'Office Culture',
-        vertical: Vertical.Branding,
-        platform: Platform.Instagram,
-        channelId: 'ch2',
-        role: 'editor',
-        creator: 'Manisha',
-        editor: 'Mike T.',
-        stage: Stage.Editing,
-        status: Status.InProgress,
-        priority: Priority.Medium,
-        lastUpdated: Date.now() - (50 * 60 * 60 * 1000), // Stuck
-        dueDate: Date.now() + 172800000,
-        durationMinutes: 0,
-        script: '',
-        tasks: [],
-        technicalNotes: '',
-        comments: [],
-        hasMographNeeds: true,
-        archived: false
     }
 ];
 
-type ViewState = 'dashboard' | 'kanban' | 'team' | 'content' | 'my-library' | 'manage-channels' | 'calendar';
+const INITIAL_NOTIFICATIONS: Notification[] = [
+    { id: 'n1', title: 'Welcome to Incrix OS', message: 'System updated successfully to version 2.0', type: 'success', timestamp: Date.now() - 100000, read: false },
+    { id: 'n2', title: 'Pending Review', message: 'Project "Incrix Tech" needs approval', type: 'warning', timestamp: Date.now() - 3600000, read: false }
+];
 
-const App = () => {
-    // --- STATE ---
+function App() {
+    const [activeView, setActiveView] = useState('dashboard');
+    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
     const [users, setUsers] = useState<User[]>(INITIAL_USERS);
     const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
-    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
 
-    // Context State (Simulating Login)
-    const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[0]); // Default to Manager Alex
-    const [currentRole, setCurrentRole] = useState<Role>('manager'); // Derived from user usually, but kept purely flexible for debug
-    const [activeView, setActiveView] = useState<ViewState>('dashboard');
+    // Notification State
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
+    const [currentRole, setCurrentRole] = useState<Role>('manager'); // Default fallback
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedVertical, setSelectedVertical] = useState<Vertical | 'all'>('all');
+    // Modal State
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-    // --- API INTEGRATION ---
     useEffect(() => {
         const loadState = async () => {
             const backendState = await fetchState();
             if (backendState) {
-                // Unify logic: If DB is empty, seeding might happen on first save or explicit seed check
-                // For now, if DB has data, use it. If not, we keep the INITIAL constants.
                 if (backendState.users && backendState.users.length > 0) setUsers(backendState.users);
                 if (backendState.channels && backendState.channels.length > 0) setChannels(backendState.channels);
                 if (backendState.projects && backendState.projects.length > 0) setProjects(backendState.projects);
 
-                // If empty (fresh DB), we could auto-save our INITIAL_MOCKS to seed it
                 if ((!backendState.projects || backendState.projects.length === 0) && INITIAL_PROJECTS.length > 0) {
                     await saveState({
                         users: INITIAL_USERS,
@@ -112,221 +91,70 @@ const App = () => {
                 }
             }
         };
-        loadState();
-    }, []);
+        if (isAuthenticated) {
+            loadState();
+        }
+    }, [isAuthenticated]);
 
-    // Persistence: Save to Backend instead of LocalStorage
-    // We debounce or save on critical changes. For simplicity in this OS, we iterate simple saves.
     useEffect(() => {
-        // Avoid saving empty states if initial load hasn't happened or failure
-        if (projects.length > 0 || users.length > 0) {
+        if (isAuthenticated && (projects.length > 0 || users.length > 0)) {
             saveState({ projects, users, channels });
         }
-    }, [projects, users, channels]);
+    }, [projects, users, channels, isAuthenticated]);
 
-    // Sync Role when User Changes (Simulate Login)
     useEffect(() => {
         if (currentUser) {
             setCurrentRole(currentUser.role);
-            setActiveView('dashboard'); // Reset view on user switch
+            if (currentUser.role === 'editor') setActiveView('projects');
         }
     }, [currentUser]);
 
-    // --- ACTIONS ---
-    const handleUpdateProject = (updated: Project) => {
-        setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-        if (selectedProject?.id === updated.id) {
-            setSelectedProject(updated);
+    const handleLogin = (user: User) => {
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+    };
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        setCurrentUser(undefined);
+    };
+
+    const handleMarkAllRead = () => {
+        setNotifications(notifications.map(n => ({ ...n, read: true })));
+    };
+
+    const handleCreateProject = (newProject: Project) => {
+        setProjects([newProject, ...projects]);
+    };
+
+    const handleUpdateProject = (updatedProject: Project) => {
+        setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+        // Update selected project as well if it's the one being edited
+        if (selectedProject && selectedProject.id === updatedProject.id) {
+            setSelectedProject(updatedProject);
         }
     };
 
-    const advanceStage = (project: Project) => {
-        const stages = Object.values(Stage);
-        const currentIndex = stages.indexOf(project.stage);
-
-        if (project.stage === Stage.Review && !project.reviewLink) {
-            handleUpdateProject({ ...project, status: Status.Blocked, lastUpdated: Date.now() });
-            alert("Cannot complete review without a final link.");
-            return;
-        }
-
-        if (currentIndex < stages.length - 1) {
-            const nextStage = stages[currentIndex + 1];
-            handleUpdateProject({
-                ...project,
-                stage: nextStage,
-                status: Status.InProgress,
-                lastUpdated: Date.now(),
-                durationMinutes: nextStage === Stage.Done ? 15 : project.durationMinutes
-            });
-        }
+    const handleUpdateUsers = (updatedUsers: User[]) => {
+        setUsers(updatedUsers);
     };
 
-    const regressStage = (project: Project) => {
-        const stages = Object.values(Stage);
-        const currentIndex = stages.indexOf(project.stage);
-
-        if (currentIndex > 0) {
-            const prevStage = stages[currentIndex - 1];
-            handleUpdateProject({
-                ...project,
-                stage: prevStage,
-                status: Status.InProgress,
-                lastUpdated: Date.now()
-            });
-        }
+    const handleUpdateChannels = (updatedChannels: Channel[]) => {
+        setChannels(updatedChannels);
     };
 
-    const createNewProject = () => {
-        // Exclude notification channels from being the "default content channel"
-        const contentChannels = channels.filter(c => c.platform !== Platform.WhatsApp && c.platform !== Platform.Email);
-        const defaultChannel = contentChannels.length > 0 ? contentChannels[0] : channels[0];
-
-        const newProject: Project = {
-            id: `VID-${Math.floor(Math.random() * 1000)}`,
-            title: 'New Project',
-            topic: '',
-            vertical: Vertical.Software,
-            platform: defaultChannel ? defaultChannel.platform : Platform.LinkedIn,
-            channelId: defaultChannel ? defaultChannel.id : undefined,
-            role: 'creator',
-            creator: currentUser.role === 'creator' ? currentUser.name : 'Unassigned',
-            editor: 'Unassigned',
-            stage: Stage.Backlog,
-            status: Status.NotStarted,
-            priority: Priority.Medium,
-            lastUpdated: Date.now(),
-            dueDate: Date.now() + (7 * 24 * 60 * 60 * 1000),
-            durationMinutes: 0,
-            script: '',
-            tasks: [],
-            technicalNotes: '',
-            comments: [],
-            hasMographNeeds: false,
-            archived: false
-        };
-        setProjects([...projects, newProject]);
-        setSelectedProject(newProject);
+    const handleSelectProject = (project: Project) => {
+        setSelectedProject(project);
     };
 
-    // --- FILTERING ---
-    // This memo is primarily for the Kanban Board and Dashboard stats where archiving matters.
-    const filteredProjects = useMemo(() => {
-        return projects.filter(p => {
-            // Global Search
-            const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.creator.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesVertical = selectedVertical === 'all' || p.vertical === selectedVertical;
-
-            // Role-Based Visibility for Kanban
-            let matchesRole = true;
-            if (activeView === 'kanban') {
-                if (currentRole === 'creator') matchesRole = p.creator === currentUser.name;
-                if (currentRole === 'editor') matchesRole = p.editor === currentUser.name;
-            }
-
-            // Hide archived from Kanban
-            const matchesArchive = activeView === 'kanban' ? !p.archived : true;
-
-            return matchesSearch && matchesVertical && matchesRole && matchesArchive;
-        });
-    }, [projects, searchQuery, selectedVertical, currentRole, currentUser, activeView]);
-
-
-    // --- RENDER HELPERS ---
-    const renderKanbanColumn = (stage: Stage) => {
-        const columnProjects = filteredProjects.filter(p => p.stage === stage);
-
-        return (
-            <div className="flex-shrink-0 w-80 bg-[#121212] flex flex-col h-full border-r border-[#1f1f1f]">
-                <div className="p-4 flex items-center justify-between border-b border-[#1f1f1f] bg-[#161616]">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-[#888] uppercase tracking-wider">{stage}</span>
-                        <span className="bg-[#222] text-[#666] text-[10px] px-1.5 py-0.5 rounded-md font-mono">{columnProjects.length}</span>
-                    </div>
-                </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                    {columnProjects.map(project => {
-                        const isStuck = (Date.now() - project.lastUpdated) > (48 * 60 * 60 * 1000) && project.status !== Status.Done;
-                        const isMoGraphHighlighted = currentRole === 'mograph' && project.hasMographNeeds;
-
-                        return (
-                            <div
-                                key={project.id}
-                                onClick={() => setSelectedProject(project)}
-                                className={`group relative bg-[#1e1e1e] border rounded-xl p-4 cursor-pointer hover:-translate-y-1 transition-all duration-200 shadow-sm hover:shadow-lg
-                  ${isStuck ? 'border-rose-500/40' : isMoGraphHighlighted ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.1)]' : 'border-[#2f2f2f] hover:border-[#444]'}
-                 `}
-                            >
-                                {isStuck && (
-                                    <div className="absolute top-3 right-3 flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border uppercase tracking-wide
-                        ${project.priority === Priority.High ? 'bg-amber-900/20 text-amber-500 border-amber-900/30' : 'bg-[#252525] text-[#666] border-transparent'}
-                    `}>
-                                        {project.priority}
-                                    </span>
-                                    <span className="text-[10px] text-[#444] font-mono">{project.id}</span>
-                                </div>
-
-                                <h4 className="text-sm font-medium text-white leading-tight mb-3">{project.title}</h4>
-
-                                <div className="flex items-center justify-between mt-4">
-                                    <div className="flex -space-x-2">
-                                        <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#1e1e1e] flex items-center justify-center text-[10px] text-indigo-300 font-bold">
-                                            {project.creator.charAt(0)}
-                                        </div>
-                                        {project.editor !== 'Unassigned' && (
-                                            <div className="w-6 h-6 rounded-full bg-[#333] border border-[#1e1e1e] flex items-center justify-center text-[10px] text-[#888] font-bold">
-                                                {project.editor.charAt(0)}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {/* Move Back */}
-                                        {Object.values(Stage).indexOf(project.stage) > 0 && project.status !== Status.Done && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); regressStage(project); }}
-                                                className="p-1.5 bg-[#252525] hover:bg-[#333] rounded text-[#888] hover:text-white"
-                                                title="Demote / Rework"
-                                            >
-                                                <ChevronLeft size={14} />
-                                            </button>
-                                        )}
-
-                                        {/* Move Forward */}
-                                        {project.status !== Status.Done && project.status !== Status.Blocked && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); advanceStage(project); }}
-                                                className="p-1.5 bg-[#252525] hover:bg-[#333] rounded text-[#888] hover:text-emerald-400"
-                                                title="Advance Stage"
-                                            >
-                                                <ChevronRight size={14} />
-                                            </button>
-                                        )}
-                                        {project.status === Status.Blocked && <Lock size={14} className="text-rose-500" />}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
+    if (!isAuthenticated) {
+        return <Login onLogin={handleLogin} />;
+    }
 
     return (
-        <div className="flex h-screen bg-[#0d0d0d] text-slate-300 font-sans selection:bg-indigo-500/30">
-
-            {/* --- SIDEBAR --- */}
-            <aside className="w-64 border-r border-[#1f1f1f] bg-[#121212] flex flex-col justify-between hidden md:flex z-20">
+        <div className="flex h-screen bg-[#121212] text-white font-sans overflow-hidden">
+            {/* Sidebar */}
+            <div className="w-64 bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col justify-between hidden md:flex">
                 <div>
                     <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f]">
                         <div className="w-6 h-6 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-lg mr-3"></div>
@@ -334,191 +162,168 @@ const App = () => {
                     </div>
 
                     <div className="p-4">
-                        <div className="text-xs font-mono text-[#555] uppercase tracking-wider mb-2 px-2">Menu</div>
-
-                        {/* Manager Menus */}
-                        {currentRole === 'manager' && (
-                            <div className="space-y-1">
-                                <button onClick={() => setActiveView('dashboard')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'dashboard' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <LayoutGrid size={16} /> <span>Overview</span>
-                                </button>
-                                <button onClick={() => setActiveView('content')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'content' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <FileVideo size={16} /> <span>All Content</span>
-                                </button>
-                                <button onClick={() => setActiveView('calendar')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'calendar' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Calendar size={16} /> <span>Editorial Cal.</span>
-                                </button>
-                                <button onClick={() => setActiveView('team')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'team' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Users size={16} /> <span>Team</span>
-                                </button>
-                                <button onClick={() => setActiveView('manage-channels')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'manage-channels' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Tv size={16} /> <span>Channels</span>
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Creator Menus */}
-                        {currentRole === 'creator' && (
-                            <div className="space-y-1">
-                                <button onClick={() => setActiveView('dashboard')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'dashboard' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <LayoutGrid size={16} /> <span>My Dashboard</span>
-                                </button>
-                                <button onClick={() => setActiveView('kanban')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'kanban' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <ListTodo size={16} /> <span>My Board</span>
-                                </button>
-                                <button onClick={() => setActiveView('calendar')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'calendar' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Calendar size={16} /> <span>Schedule</span>
-                                </button>
-                                <button onClick={() => setActiveView('my-library')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'my-library' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Library size={16} /> <span>My Library</span>
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Editor/MoGraph Menus */}
-                        {(currentRole === 'editor' || currentRole === 'mograph') && (
-                            <div className="space-y-1">
-                                <button onClick={() => setActiveView('dashboard')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'dashboard' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <LayoutGrid size={16} /> <span>My Dashboard</span>
-                                </button>
-                                <button onClick={() => setActiveView('kanban')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'kanban' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <MonitorPlay size={16} /> <span>Work Queue</span>
-                                </button>
-                                <button onClick={() => setActiveView('my-library')} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeView === 'my-library' ? 'bg-[#222] text-white' : 'hover:bg-[#1a1a1a] text-[#888]'}`}>
-                                    <Library size={16} /> <span>My Library</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Bottom User Card */}
-                <div className="p-4 border-t border-[#1f1f1f]">
-                    <div className="flex items-center space-x-3 px-3 py-2 bg-[#191919] rounded-xl border border-[#2a2a2a]">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentUser.avatarColor}`}>
-                            {currentUser.name.charAt(0)}
-                        </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm text-white font-medium truncate">{currentUser.name}</p>
-                            <p className="text-[10px] text-[#666] capitalize truncate">{currentUser.role}</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 flex flex-col min-w-0">
-
-                {/* Top Bar with Debug Switcher */}
-                <header className="h-16 border-b border-[#1f1f1f] bg-[#121212] flex items-center justify-between px-6 z-20">
-                    <div className="flex items-center flex-1 space-x-4">
-                        <div className="flex items-center w-full max-w-md bg-[#191919] border border-[#2f2f2f] rounded-lg px-3 py-1.5 focus-within:border-[#444] transition-colors">
-                            <Search size={16} className="text-[#555]" />
-                            <input
-                                type="text"
-                                placeholder="Search workspace..."
-                                className="flex-1 bg-transparent border-none focus:outline-none text-sm px-3 text-white placeholder-[#555]"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4 ml-4">
-                        {/* DEBUG CONTEXT SWITCHER */}
-                        <div className="flex items-center space-x-2 bg-[#191919] px-2 py-1 rounded-lg border border-[#2a2a2a]">
-                            <span className="text-[10px] font-mono text-[#555] uppercase px-2">Simulate:</span>
-                            <select
-                                className="bg-transparent text-xs text-[#888] focus:outline-none cursor-pointer hover:text-white"
-                                value={currentUser.id}
-                                onChange={(e) => {
-                                    const user = users.find(u => u.id === e.target.value);
-                                    if (user) setCurrentUser(user);
-                                }}
+                        <div className="text-xs font-bold text-[#444] uppercase tracking-wider mb-3 px-4">Menu</div>
+                        <nav className="space-y-1">
+                            <button
+                                onClick={() => setActiveView('dashboard')}
+                                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'dashboard' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
                             >
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                                ))}
-                            </select>
+                                <LayoutDashboard size={18} className={activeView === 'dashboard' ? 'text-indigo-400' : ''} />
+                                <span>Dashboard</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveView('projects')}
+                                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'projects' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                            >
+                                <Film size={18} className={activeView === 'projects' ? 'text-indigo-400' : ''} />
+                                <span>Projects</span>
+                                {projects.filter(p => p.status === 'In Progress').length > 0 && (
+                                    <span className="ml-auto text-[10px] font-bold bg-[#252525] text-[#ccc] py-0.5 px-2 rounded-full">{projects.filter(p => p.status === 'In Progress').length}</span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveView('board')}
+                                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'board' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                            >
+                                <CheckSquare size={18} className={activeView === 'board' ? 'text-indigo-400' : ''} />
+                                <span>Board</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveView('calendar')}
+                                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'calendar' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                            >
+                                <Calendar size={18} className={activeView === 'calendar' ? 'text-indigo-400' : ''} />
+                                <span>Calendar</span>
+                            </button>
+
+                            {currentRole === 'manager' && (
+                                <>
+                                    <div className="text-xs font-bold text-[#444] uppercase tracking-wider mt-6 mb-3 px-4">Admin</div>
+                                    <button
+                                        onClick={() => setActiveView('team')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'team' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                                    >
+                                        <Users size={18} className={activeView === 'team' ? 'text-indigo-400' : ''} />
+                                        <span>Team</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveView('channels')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'channels' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                                    >
+                                        <Radio size={18} className={activeView === 'channels' ? 'text-indigo-400' : ''} />
+                                        <span>Channels</span>
+                                    </button>
+                                </>
+                            )}
+                        </nav>
+                    </div>
+                </div>
+
+                <div className="p-4 border-t border-[#1f1f1f]">
+                    <div className="flex items-center p-2 rounded-xl bg-[#151515] border border-[#222]">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${currentUser?.avatarColor || 'bg-gray-600'} text-white`}>
+                            {currentUser?.name.charAt(0) || 'U'}
                         </div>
+                        <div className="ml-3 overflow-hidden">
+                            <div className="text-sm font-medium text-white truncate">{currentUser?.name || 'User'}</div>
+                            <div className="text-xs text-[#666] capitalize">{currentUser?.role || 'Guest'}</div>
+                        </div>
+                        <div className="flex items-center ml-auto space-x-1">
+                            <button className="p-1.5 text-[#666] hover:text-white rounded-lg hover:bg-[#252525]">
+                                <Settings size={14} />
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="p-1.5 text-[#666] hover:text-rose-500 rounded-lg hover:bg-[#252525/50]"
+                                title="Logout"
+                            >
+                                <LogOut size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div className="h-6 w-px bg-[#2f2f2f]"></div>
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden bg-[#0d0d0d]">
+                <header className="h-16 flex items-center justify-between px-8 border-b border-[#1f1f1f] bg-[#0d0d0d]/80 backdrop-blur-md sticky top-0 z-10">
+                    <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[#888]">
+                        {activeView === 'dashboard' && 'Dashboard'}
+                        {activeView === 'projects' && 'Projects'}
+                        {activeView === 'board' && 'Board View'}
+                        {activeView === 'calendar' && 'Content Calendar'}
+                        {activeView === 'team' && 'Team Management'}
+                        {activeView === 'channels' && 'Channel Credentials'}
+                    </h2>
 
-                        <select
-                            className="bg-[#191919] border border-[#2f2f2f] text-sm text-[#888] rounded-lg px-3 py-1.5 focus:outline-none hover:border-[#444]"
-                            value={selectedVertical}
-                            onChange={(e) => setSelectedVertical(e.target.value as Vertical | 'all')}
-                        >
-                            <option value="all">All Verticals</option>
-                            {Object.values(Vertical).map(v => <option key={v} value={v}>{v}</option>)}
-                        </select>
+                    {/* Search Bar */}
+                    <div className="hidden lg:flex items-center bg-[#151515] border border-[#222] rounded-xl px-3 py-1.5 w-64 mx-8 focus-within:border-[#333] transition-colors">
+                        <Search size={14} className="text-[#555]" />
+                        <input
+                            type="text"
+                            placeholder="Search projects..."
+                            className="bg-transparent border-none outline-none text-sm text-white ml-2 w-full placeholder-[#555]"
+                        />
+                    </div>
 
-                        <button
-                            onClick={createNewProject}
-                            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
-                            <Plus size={16} /> <span>New</span>
-                        </button>
+
+                    <div className="flex items-center space-x-4">
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className={`p-2 transition-colors relative ${showNotifications ? 'text-white bg-[#1f1f1f] rounded-lg' : 'text-[#666] hover:text-white'}`}
+                            >
+                                <Bell size={20} />
+                                {notifications.some(n => !n.read) && (
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0d0d0d]"></span>
+                                )}
+                            </button>
+                            {showNotifications && (
+                                <NotificationPanel
+                                    notifications={notifications}
+                                    onClose={() => setShowNotifications(false)}
+                                    onMarkAllRead={handleMarkAllRead}
+                                />
+                            )}
+                        </div>
+                        <div className="h-4 w-[1px] bg-[#333]"></div>
+                        <div className="flex items-center space-x-2 text-sm text-[#666]">
+                            <Clock size={14} />
+                            <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        </div>
                     </div>
                 </header>
 
-                {/* Dynamic View Content */}
-                <div className="flex-1 overflow-hidden relative bg-[#0d0d0d]">
-
-                    {activeView === 'dashboard' && (
-                        <div className="h-full overflow-y-auto">
-                            <Dashboard projects={projects.filter(p => !p.archived)} currentUser={currentUser} users={users} />
-                        </div>
-                    )}
-
-                    {activeView === 'content' && (
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                    {activeView === 'dashboard' && <Dashboard projects={projects} currentUser={currentUser || INITIAL_USERS[0]} users={users} />}
+                    {activeView === 'projects' && (
                         <ProjectList
-                            projects={projects} // Manager sees all, including archived if filtered in component
+                            projects={projects}
                             channels={channels}
-                            onSelectProject={setSelectedProject}
+                            onSelectProject={handleSelectProject}
                         />
                     )}
-
-                    {activeView === 'my-library' && (
-                        <ProjectList
-                            projects={projects.filter(p => p.creator === currentUser.name || p.editor === currentUser.name)}
+                    {activeView === 'board' && (
+                        <ProjectBoard
+                            projects={projects}
                             channels={channels}
-                            onSelectProject={setSelectedProject}
+                            onSelectProject={handleSelectProject}
+                            onCreateProject={handleCreateProject}
+                            onUpdateProject={handleUpdateProject}
                         />
                     )}
-
                     {activeView === 'calendar' && (
                         <CalendarView
-                            projects={filteredProjects}
-                            onSelectProject={setSelectedProject}
+                            projects={projects}
+                            onSelectProject={handleSelectProject}
                         />
                     )}
+                    {activeView === 'team' && <TeamManagement users={users} onUpdateUsers={handleUpdateUsers} />}
+                    {activeView === 'channels' && <ManageChannels channels={channels} onUpdateChannels={handleUpdateChannels} />}
+                </main>
+            </div>
 
-                    {activeView === 'team' && (
-                        <div className="h-full overflow-y-auto">
-                            <TeamManagement users={users} onUpdateUsers={setUsers} />
-                        </div>
-                    )}
-
-                    {activeView === 'manage-channels' && (
-                        <div className="h-full overflow-y-auto">
-                            <ManageChannels channels={channels} onUpdateChannels={setChannels} />
-                        </div>
-                    )}
-
-                    {activeView === 'kanban' && (
-                        <div className="h-full overflow-x-auto flex divide-x divide-[#1f1f1f]">
-                            {Object.values(Stage).map(stage => (
-                                <div key={stage} className="h-full">
-                                    {renderKanbanColumn(stage)}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                </div>
-            </main>
-
-            {/* Detail Modal */}
+            {/* Project Detail Modal */}
             {selectedProject && (
                 <ProjectModal
                     project={selectedProject}
@@ -528,9 +333,8 @@ const App = () => {
                     onUpdate={handleUpdateProject}
                 />
             )}
-
         </div>
     );
-};
+}
 
 export default App;

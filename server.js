@@ -85,24 +85,40 @@ app.post('/api/login', async (req, res) => {
 // Update global state
 app.post('/api/state', async (req, res) => {
     try {
-        // We expect the entire state or partial state in the body
-        // For simplicity in this "Single JSON Model" approach, we might update the whole doc
-        // Or specific fields if provided.
+        const { users, projects, channels } = req.body;
 
         let state = await StudioState.findOne();
         if (!state) {
-            state = new StudioState(req.body);
+            state = new StudioState({ users, projects, channels });
         } else {
-            if (req.body.users) state.users = req.body.users;
-            if (req.body.projects) state.projects = req.body.projects;
-            if (req.body.channels) state.channels = req.body.channels;
-            state.lastUpdated = Date.now();
+            // Smart Merge for Users to preserve passwords not sent by frontend
+            if (users && Array.isArray(users)) {
+                // Create a map of existing users for fast lookup
+                const existingUsersMap = new Map();
+                state.users.forEach(u => {
+                    if (u.id) existingUsersMap.set(u.id, u);
+                });
+
+                const mergedUsers = users.map(newUser => {
+                    const existingUser = existingUsersMap.get(newUser.id);
+                    if (existingUser && existingUser.password && !newUser.password) {
+                        return { ...newUser, password: existingUser.password };
+                    }
+                    return newUser;
+                });
+                state.users = mergedUsers;
+            }
+
+            if (projects) state.projects = projects;
+            if (channels) state.channels = channels;
+            state.lastUpdated = new Date();
         }
 
         await state.save();
-        res.json(state);
+        res.json({ success: true, message: 'State updated' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: 'Server Error' });
     }
 });
 

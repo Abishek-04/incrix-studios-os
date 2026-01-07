@@ -118,3 +118,12 @@ export interface KpiData {
   stuckCount: number;
   urgentCount: number;
 }
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: number;
+  read: boolean;
+}
