@@ -330,7 +330,7 @@ const App = () => {
                 <div>
                     <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f]">
                         <div className="w-6 h-6 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-lg mr-3"></div>
-                        <span className="font-bold text-white tracking-tight">Incrix OS</span>
+                        <span className="font-bold text-white tracking-tight">Incrix Studios</span>
                     </div>
 
                     <div className="p-4">
