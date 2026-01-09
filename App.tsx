@@ -246,7 +246,7 @@ function App() {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden bg-[#0d0d0d]">
-                <header className="h-16 flex items-center justify-between px-8 border-b border-[#1f1f1f] bg-[#0d0d0d]/80 backdrop-blur-md sticky top-0 z-10">
+                <header className="h-16 flex items-center justify-between px-8 border-b border-[#1f1f1f] bg-[#0d0d0d]/80 backdrop-blur-md sticky top-0 z-50">
                     <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[#888]">
                         {activeView === 'dashboard' && 'Dashboard'}
                         {activeView === 'projects' && 'Projects'}

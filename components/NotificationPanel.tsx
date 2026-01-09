@@ -29,7 +29,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
     };
 
     return (
-        <div className="absolute top-16 right-8 w-80 bg-[#151515] border border-[#222] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-16 right-8 w-80 bg-[#151515] border border-[#222] rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center justify-between p-4 border-b border-[#222]">
                 <h3 className="font-bold text-white text-sm">Notifications</h3>
                 <div className="flex items-center space-x-2">
