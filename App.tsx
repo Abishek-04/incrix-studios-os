@@ -67,8 +67,16 @@ function App() {
     // Notification State
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
+
+    // Auth State with Persistence
+    const [currentUser, setCurrentUser] = useState<User | undefined>(() => {
+        const saved = localStorage.getItem('currentUser');
+        return saved ? JSON.parse(saved) : undefined;
+    });
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+        return !!localStorage.getItem('currentUser');
+    });
+
     const [currentRole, setCurrentRole] = useState<Role>('manager'); // Default fallback
 
     // Modal State
@@ -110,11 +118,13 @@ function App() {
     }, [currentUser]);
 
     const handleLogin = (user: User) => {
+        localStorage.setItem('currentUser', JSON.stringify(user));
         setCurrentUser(user);
         setIsAuthenticated(true);
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('currentUser');
         setIsAuthenticated(false);
         setCurrentUser(undefined);
     };
