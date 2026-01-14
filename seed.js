@@ -5,7 +5,7 @@ import process from 'process';
 dotenv.config();
 
 const INITIAL_USERS = [
-    { id: 'usr1', name: 'Alex D.', role: 'manager', email: 'alex@incrix.com', password: 'password', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
+    { id: 'usr1', name: 'Twinkle', role: 'manager', email: 'twinkle@incrix.com', password: 'password', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
     { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', password: 'password', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
     { id: 'usr3', name: 'Jegannath', role: 'creator', email: 'jegan@incrix.com', password: 'password', avatarColor: 'bg-emerald-600', niche: 'Coding', active: true, quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } },
     { id: 'usr4', name: 'Johnson', role: 'creator', email: 'johnson@incrix.com', password: 'password', avatarColor: 'bg-amber-600', niche: 'Vlog', active: true, quota: { longVideo: 1, shortVideo: 5, period: 'weekly' } },
