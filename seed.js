@@ -15,7 +15,7 @@ const INITIAL_USERS = [
 
 const INITIAL_CHANNELS = [
     { id: 'ch1', platform: 'youtube', name: 'Incrix Tech', link: 'https://youtube.com/@incrixtech', email: 'tech@incrix.com', credentials: 'Password123!' },
-    { id: 'ch2', platform: 'instagram', name: 'Incrix Life', link: 'https://instagram.com/incrixlife', email: 'social@incrix.com', credentials: 'SecurePassword!' },
+    { id: 'ch2', platform: 'instagram', name: 'john_at_incrix', link: 'https://instagram.com/john', email: 'social@incrix.com', credentials: 'Johnson@insta243' },
     { id: 'ch3', platform: 'whatsapp', name: 'Core Team', link: 'https://chat.whatsapp.com/invite/12345', email: 'Incrix Bot', credentials: 'API_KEY_123' }
 ];
 
