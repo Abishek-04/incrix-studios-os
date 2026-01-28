@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LayoutDashboard, Settings, Film, Users, Video, BarChart2, Radio, Smartphone, Type, MessageSquare, Bell, FileText, CheckSquare, Clock, LogOut, Search } from 'lucide-react';
+import { Calendar, LayoutDashboard, Settings, Film, Users, Video, BarChart2, Radio, Smartphone, Type, MessageSquare, Bell, FileText, CheckSquare, Clock, LogOut, Search, MoreHorizontal } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import Dashboard from './components/Dashboard';
 import ProjectList from './components/ProjectList';
@@ -311,7 +311,7 @@ function App() {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-0">
                     {activeView === 'dashboard' && <Dashboard projects={projects} currentUser={currentUser || INITIAL_USERS[0]} users={users} />}
                     {activeView === 'projects' && (
                         <ProjectList
@@ -350,6 +350,47 @@ function App() {
                     onUpdate={handleUpdateProject}
                 />
             )}
+
+            {/* Mobile Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#0a0a0a] border-t border-[#1f1f1f] md:hidden z-50 flex items-center justify-around px-2 pb-safe">
+                <button
+                    onClick={() => setActiveView('dashboard')}
+                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeView === 'dashboard' ? 'text-indigo-400' : 'text-[#666]'}`}
+                >
+                    <LayoutDashboard size={20} />
+                    <span className="text-[10px] font-medium">Home</span>
+                </button>
+                <button
+                    onClick={() => setActiveView('projects')}
+                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeView === 'projects' ? 'text-indigo-400' : 'text-[#666]'}`}
+                >
+                    <Film size={20} />
+                    <span className="text-[10px] font-medium">Projects</span>
+                </button>
+                <button
+                    onClick={() => setActiveView('board')}
+                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeView === 'board' ? 'text-indigo-400' : 'text-[#666]'}`}
+                >
+                    <CheckSquare size={20} />
+                    <span className="text-[10px] font-medium">Board</span>
+                </button>
+                <button
+                    onClick={() => setActiveView('calendar')}
+                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeView === 'calendar' ? 'text-indigo-400' : 'text-[#666]'}`}
+                >
+                    <Calendar size={20} />
+                    <span className="text-[10px] font-medium">Calendar</span>
+                </button>
+                {currentRole === 'manager' && (
+                    <button
+                        onClick={() => setActiveView('team')} // Simplified for mobile, defaulting to Team
+                        className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${['team', 'channels'].includes(activeView) ? 'text-indigo-400' : 'text-[#666]'}`}
+                    >
+                        <MoreHorizontal size={20} />
+                        <span className="text-[10px] font-medium">Menu</span>
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
