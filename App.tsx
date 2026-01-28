@@ -14,7 +14,7 @@ import { fetchState, saveState } from './services/api';
 
 // Initial data (keep as fallback)
 const INITIAL_USERS: User[] = [
-    { id: 'usr1', name: 'Alex D.', role: 'manager', email: 'alex@incrix.com', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
+    { id: 'usr1', name: 'Twinkle', role: 'manager', email: 'twinkle@incrix.com', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
     { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
     { id: 'usr3', name: 'Jegannath', role: 'creator', email: 'jegan@incrix.com', avatarColor: 'bg-emerald-600', niche: 'Coding', active: true, quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } },
     { id: 'usr4', name: 'Johnson', role: 'creator', email: 'johnson@incrix.com', avatarColor: 'bg-amber-600', niche: 'Vlog', active: true, quota: { longVideo: 1, shortVideo: 5, period: 'weekly' } },
@@ -67,20 +67,27 @@ function App() {
     // Notification State
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
-
-    // Auth State with Persistence
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return !!localStorage.getItem('auth_user');
+    });
     const [currentUser, setCurrentUser] = useState<User | undefined>(() => {
-        const saved = localStorage.getItem('currentUser');
-        return saved ? JSON.parse(saved) : undefined;
+        const savedUser = localStorage.getItem('auth_user');
+        if (savedUser) {
+            try {
+                return JSON.parse(savedUser);
+            } catch (e) {
+                console.error("Failed to parse auth user", e);
+                return undefined;
+            }
+        }
+        return undefined;
     });
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-        return !!localStorage.getItem('currentUser');
-    });
-
     const [currentRole, setCurrentRole] = useState<Role>('manager'); // Default fallback
 
     // Modal State
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+    // Auth state initialized lazily to prevent flash
 
     useEffect(() => {
         const loadState = async () => {
@@ -118,13 +125,13 @@ function App() {
     }, [currentUser]);
 
     const handleLogin = (user: User) => {
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('auth_user', JSON.stringify(user));
         setCurrentUser(user);
         setIsAuthenticated(true);
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('currentUser');
+        localStorage.removeItem('auth_user');
         setIsAuthenticated(false);
         setCurrentUser(undefined);
     };
