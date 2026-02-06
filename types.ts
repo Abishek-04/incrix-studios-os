@@ -6,7 +6,8 @@ export enum Platform {
   TikTok = 'tiktok',
   LinkedIn = 'linkedin',
   WhatsApp = 'whatsapp',
-  Email = 'email'
+  Email = 'email',
+  Course = 'course'
 }
 
 export enum Vertical {
@@ -39,8 +40,10 @@ export enum Priority {
 }
 
 export interface UserQuota {
-  longVideo: number; // Target count
-  shortVideo: number; // Target count
+  youtubeLong: number; // Target count (YouTube Long Form)
+  youtubeShort: number; // Target count (YouTube Shorts)
+  instagramReel: number; // Target count (Instagram Reels)
+  course: number; // Target count (Course Lectures)
   period: 'weekly' | 'monthly';
 }
 
@@ -59,6 +62,16 @@ export interface User {
   quota?: UserQuota;
 }
 
+export interface DailyTask {
+  id: string;
+  date: string; // ISO date YYYY-MM-DD
+  timeSlot: 'AM' | 'PM';
+  userId: string;
+  userName: string; // Cached for display
+  task: string;
+  done: boolean;
+}
+
 export interface Channel {
   id: string;
   platform: Platform;
@@ -67,6 +80,7 @@ export interface Channel {
   avatarUrl?: string; // Optional real image URL
   email: string;
   credentials?: string; // API Key or Token
+  memberId?: string; // Assigned team member ID
 }
 
 export interface Comment {
@@ -91,6 +105,7 @@ export interface Project {
   topic: string;
   vertical: Vertical;
   platform: Platform;
+  contentFormat?: 'LongForm' | 'ShortForm'; // Distinguish YT Long vs Short
   channelId?: string; // Links to a specific Channel entity
   role: Role; // The primary role currently responsible
   creator: string; // Name or ID

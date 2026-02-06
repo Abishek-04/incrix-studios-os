@@ -9,64 +9,26 @@ import TeamManagement from './components/TeamManagement';
 import ProjectBoard from './components/ProjectBoard';
 import Login from './components/Login';
 import ProjectModal from './components/ProjectModal';
-import { Project, User, Channel, Role, Platform, Vertical, Stage, Status, Priority, Notification } from './types';
+import SettingsModal from './components/SettingsModal';
+import DailyTasks from './components/DailyTasks';
+import { Project, User, Channel, Role, Platform, Vertical, Stage, Status, Priority, Notification, DailyTask } from './types';
 import { fetchState, saveState } from './services/api';
 
 // Initial data (keep as fallback)
-const INITIAL_USERS: User[] = [
-    { id: 'usr1', name: 'Twinkle', role: 'manager', email: 'twinkle@incrix.com', avatarColor: 'bg-indigo-600', active: true, phoneNumber: '+1234567890', notifyViaWhatsapp: true },
-    { id: 'usr2', name: 'Abishek', role: 'creator', email: 'abishek@incrix.com', avatarColor: 'bg-purple-600', niche: 'Tech', active: true, quota: { longVideo: 2, shortVideo: 4, period: 'weekly' } },
-    { id: 'usr3', name: 'Jegannath', role: 'creator', email: 'jegan@incrix.com', avatarColor: 'bg-emerald-600', niche: 'Coding', active: true, quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } },
-    { id: 'usr4', name: 'Johnson', role: 'creator', email: 'johnson@incrix.com', avatarColor: 'bg-amber-600', niche: 'Vlog', active: true, quota: { longVideo: 1, shortVideo: 5, period: 'weekly' } },
-    { id: 'usr5', name: 'Manisha', role: 'creator', email: 'manisha@incrix.com', avatarColor: 'bg-pink-600', niche: 'Lifestyle', active: true, quota: { longVideo: 0, shortVideo: 7, period: 'weekly' } },
-    { id: 'usr6', name: 'Mike T.', role: 'editor', email: 'mike@incrix.com', avatarColor: 'bg-blue-600', active: true },
-];
-
-const INITIAL_CHANNELS: Channel[] = [
-    { id: 'ch1', platform: Platform.YouTube, name: 'Incrix Tech', link: 'https://youtube.com/@incrixtech', email: 'tech@incrix.com', credentials: 'Password123!' },
-    { id: 'ch2', platform: Platform.Instagram, name: 'Incrix Life', link: 'https://instagram.com/incrixlife', email: 'social@incrix.com', credentials: 'SecurePassword!' },
-    { id: 'ch3', platform: Platform.WhatsApp, name: 'Core Team', link: 'https://chat.whatsapp.com/invite/12345', email: 'Incrix Bot', credentials: 'API_KEY_123' }
-];
-
-const INITIAL_PROJECTS: Project[] = [
-    {
-        id: 'PRJ-TEST-1',
-        title: 'Incrix OS Demo Video',
-        topic: 'Showcase features',
-        vertical: Vertical.Software,
-        platform: Platform.YouTube,
-        role: 'manager',
-        creator: 'Abishek',
-        editor: 'Mike T.',
-        stage: Stage.Scripting,
-        status: Status.InProgress,
-        priority: Priority.High,
-        lastUpdated: Date.now(),
-        dueDate: Date.now() + 86400000 * 7,
-        durationMinutes: 15,
-        script: '',
-        tasks: [],
-        technicalNotes: '',
-        comments: [],
-        hasMographNeeds: false,
-        archived: false
-    }
-];
-
-const INITIAL_NOTIFICATIONS: Notification[] = [
-    { id: 'n1', title: 'Welcome to Incrix OS', message: 'System updated successfully to version 2.0', type: 'success', timestamp: Date.now() - 100000, read: false },
-    { id: 'n2', title: 'Pending Review', message: 'Project "Incrix Tech" needs approval', type: 'warning', timestamp: Date.now() - 3600000, read: false }
-];
+const INITIAL_USERS: User[] = [];
+const INITIAL_CHANNELS: Channel[] = [];
+const INITIAL_PROJECTS: Project[] = [];
+const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 function App() {
-    const [activeView, setActiveView] = useState('dashboard');
-    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-    const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-    const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
+    const [activeView, setActiveView] = useState(() => localStorage.getItem('activeView') || 'dashboard');
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [channels, setChannels] = useState<Channel[]>([]);
 
     // Notification State
     const [showNotifications, setShowNotifications] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
         return !!localStorage.getItem('auth_user');
     });
@@ -74,6 +36,7 @@ function App() {
         const savedUser = localStorage.getItem('auth_user');
         if (savedUser) {
             try {
+                // Ensure parsed user has valid role/data structure if needed
                 return JSON.parse(savedUser);
             } catch (e) {
                 console.error("Failed to parse auth user", e);
@@ -86,24 +49,29 @@ function App() {
 
     // Modal State
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Daily Tasks State
+    const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Auth state initialized lazily to prevent flash
 
     useEffect(() => {
         const loadState = async () => {
-            const backendState = await fetchState();
-            if (backendState) {
-                if (backendState.users && backendState.users.length > 0) setUsers(backendState.users);
-                if (backendState.channels && backendState.channels.length > 0) setChannels(backendState.channels);
-                if (backendState.projects && backendState.projects.length > 0) setProjects(backendState.projects);
-
-                if ((!backendState.projects || backendState.projects.length === 0) && INITIAL_PROJECTS.length > 0) {
-                    await saveState({
-                        users: INITIAL_USERS,
-                        channels: INITIAL_CHANNELS,
-                        projects: INITIAL_PROJECTS
-                    });
+            try {
+                const backendState = await fetchState();
+                if (backendState) {
+                    // Only set state if we have valid arrays, otherwise default to empty
+                    setUsers(backendState.users || []);
+                    setChannels(backendState.channels || []);
+                    setProjects(backendState.projects || []);
+                    setDailyTasks(backendState.dailyTasks || []);
                 }
+            } catch (error) {
+                console.error("Failed to load backend state", error);
             }
         };
         if (isAuthenticated) {
@@ -111,16 +79,30 @@ function App() {
         }
     }, [isAuthenticated]);
 
+    // Debounced Save State
     useEffect(() => {
-        if (isAuthenticated && (projects.length > 0 || users.length > 0)) {
-            saveState({ projects, users, channels });
+        if (!isAuthenticated) return;
+        // Optimization: Don't save if state is completely empty to avoid overwriting DB with initial empty state on first load
+        // But do allow saving if we have at least user data (implying we are logged in and have fetched or created data)
+        if (users.length === 0 && projects.length === 0 && channels.length === 0) return;
+
+        const timeoutId = setTimeout(() => {
+            saveState({ projects, users, channels, dailyTasks });
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [projects, users, channels, dailyTasks, isAuthenticated]);
+
+    // Persist Active View
+    useEffect(() => {
+        if (activeView) {
+            localStorage.setItem('activeView', activeView);
         }
-    }, [projects, users, channels, isAuthenticated]);
+    }, [activeView]);
 
     useEffect(() => {
         if (currentUser) {
             setCurrentRole(currentUser.role);
-            if (currentUser.role === 'editor') setActiveView('projects');
         }
     }, [currentUser]);
 
@@ -128,10 +110,17 @@ function App() {
         localStorage.setItem('auth_user', JSON.stringify(user));
         setCurrentUser(user);
         setIsAuthenticated(true);
+        // Set default view based on role
+        if (user.role === 'editor') {
+            setActiveView('projects');
+        } else {
+            setActiveView('dashboard');
+        }
     };
 
     const handleLogout = () => {
         localStorage.removeItem('auth_user');
+        localStorage.removeItem('activeView');
         setIsAuthenticated(false);
         setCurrentUser(undefined);
     };
@@ -152,6 +141,13 @@ function App() {
         }
     };
 
+    const handleDeleteProject = (projectId: string) => {
+        setProjects(projects.filter(p => p.id !== projectId));
+        if (selectedProject && selectedProject.id === projectId) {
+            setSelectedProject(null);
+        }
+    };
+
     const handleUpdateUsers = (updatedUsers: User[]) => {
         setUsers(updatedUsers);
     };
@@ -168,9 +164,13 @@ function App() {
         return <Login onLogin={handleLogin} />;
     }
 
+    // Filter projects for children that might not handle it themselves (or pass query down)
+    // We pass the full list + query to children so they can filter themselves (better for boards/lists with internal filters too)
+
     return (
         <div className="flex h-screen bg-[#121212] text-white font-sans overflow-hidden">
             {/* Sidebar */}
+
             <div className="w-64 bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col justify-between hidden md:flex">
                 <div>
                     <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f]">
@@ -212,6 +212,13 @@ function App() {
                                 <Calendar size={18} className={activeView === 'calendar' ? 'text-indigo-400' : ''} />
                                 <span>Calendar</span>
                             </button>
+                            <button
+                                onClick={() => setActiveView('daily')}
+                                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'daily' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
+                            >
+                                <CheckSquare size={18} className={activeView === 'daily' ? 'text-indigo-400' : ''} />
+                                <span>Daily Tasks</span>
+                            </button>
 
                             {currentRole === 'manager' && (
                                 <>
@@ -246,7 +253,11 @@ function App() {
                             <div className="text-xs text-[#666] capitalize">{currentUser?.role || 'Guest'}</div>
                         </div>
                         <div className="flex items-center ml-auto space-x-1">
-                            <button className="p-1.5 text-[#666] hover:text-white rounded-lg hover:bg-[#252525]">
+                            <button
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="p-1.5 text-[#666] hover:text-white rounded-lg hover:bg-[#252525]"
+                                title="Settings"
+                            >
                                 <Settings size={14} />
                             </button>
                             <button
@@ -271,6 +282,7 @@ function App() {
                         {activeView === 'calendar' && 'Content Calendar'}
                         {activeView === 'team' && 'Team Management'}
                         {activeView === 'channels' && 'Channel Credentials'}
+                        {activeView === 'daily' && 'Daily Tasks'}
                     </h2>
 
                     {/* Search Bar */}
@@ -279,12 +291,21 @@ function App() {
                         <input
                             type="text"
                             placeholder="Search projects..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-transparent border-none outline-none text-sm text-white ml-2 w-full placeholder-[#555]"
                         />
                     </div>
 
 
                     <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-2 text-[#666] hover:text-white rounded-lg hover:bg-[#1f1f1f] transition-colors"
+                            title="Settings"
+                        >
+                            <Settings size={20} />
+                        </button>
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
@@ -312,12 +333,14 @@ function App() {
                 </header>
 
                 <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-0">
-                    {activeView === 'dashboard' && <Dashboard projects={projects} currentUser={currentUser || INITIAL_USERS[0]} users={users} />}
+                    {activeView === 'dashboard' && <Dashboard projects={projects} currentUser={currentUser || INITIAL_USERS[0]} users={users} onSelectProject={handleSelectProject} />}
                     {activeView === 'projects' && (
                         <ProjectList
                             projects={projects}
                             channels={channels}
                             onSelectProject={handleSelectProject}
+                            searchQuery={searchQuery}
+                            onDeleteProject={handleDeleteProject}
                         />
                     )}
                     {activeView === 'board' && (
@@ -327,6 +350,8 @@ function App() {
                             onSelectProject={handleSelectProject}
                             onCreateProject={handleCreateProject}
                             onUpdateProject={handleUpdateProject}
+                            searchQuery={searchQuery}
+                            onDeleteProject={handleDeleteProject}
                         />
                     )}
                     {activeView === 'calendar' && (
@@ -335,8 +360,16 @@ function App() {
                             onSelectProject={handleSelectProject}
                         />
                     )}
-                    {activeView === 'team' && <TeamManagement users={users} onUpdateUsers={handleUpdateUsers} />}
-                    {activeView === 'channels' && <ManageChannels channels={channels} onUpdateChannels={handleUpdateChannels} />}
+                    {activeView === 'daily' && (
+                        <DailyTasks
+                            tasks={dailyTasks}
+                            users={users}
+                            currentUser={currentUser!}
+                            onUpdateTasks={setDailyTasks}
+                        />
+                    )}
+                    {activeView === 'team' && <TeamManagement users={users} projects={projects} onUpdateUsers={handleUpdateUsers} />}
+                    {activeView === 'channels' && <ManageChannels channels={channels} users={users} onUpdateChannels={handleUpdateChannels} />}
                 </main>
             </div>
 
@@ -346,8 +379,25 @@ function App() {
                     project={selectedProject}
                     currentUserRole={currentRole}
                     channels={channels}
+                    users={users} // Pass users for assignment features later
                     onClose={() => setSelectedProject(null)}
                     onUpdate={handleUpdateProject}
+                    onCreate={handleCreateProject}
+                    onDelete={handleDeleteProject}
+                />
+            )}
+
+            {isSettingsOpen && currentUser && (
+                <SettingsModal
+                    user={currentUser}
+                    projects={projects}
+                    channels={channels}
+                    users={users}
+                    onClose={() => setIsSettingsOpen(false)}
+                    onUpdateUser={(updatedUser) => {
+                        handleUpdateUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+                        setCurrentUser(updatedUser);
+                    }}
                 />
             )}
 

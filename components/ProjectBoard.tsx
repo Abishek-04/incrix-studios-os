@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Project, Stage, Channel, Priority, Platform, Vertical, Status } from '../types';
-import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter } from 'lucide-react';
+import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2 } from 'lucide-react';
+import ConfirmationModal from './ui/ConfirmationModal';
 
 interface ProjectBoardProps {
     projects: Project[];
@@ -8,11 +9,14 @@ interface ProjectBoardProps {
     onSelectProject: (project: Project) => void;
     onCreateProject: (project: Project) => void;
     onUpdateProject: (project: Project) => void;
+    searchQuery: string;
+    onDeleteProject: (id: string) => void;
 }
 
-const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject }) => {
-    const [searchQuery, setSearchQuery] = useState('');
+const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject }) => {
+    // Local search state removed in favor of global props
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
     // Define the columns based on the Stage enum order
     const columns = [
@@ -118,16 +122,7 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects, channels, onSelec
             {/* Header / Toolbar */}
             <div className="flex items-center justify-between px-8 py-4 border-b border-[#252525]">
                 <div className="flex items-center space-x-4">
-                    <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#666]" />
-                        <input
-                            type="text"
-                            placeholder="Filter cards..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-[#444] placeholder-[#555] w-64 transition-colors"
-                        />
-                    </div>
+                    {/* Global search is used instead of local search now */}
 
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -160,109 +155,153 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects, channels, onSelec
 
             {/* Board */}
             <div className="flex-1 overflow-x-auto p-8 space-x-6">
-                <div className="inline-flex h-full space-x-6">
-                    {columns.map((stage, colIndex) => {
-                        const stageProjects = getProjectsForStage(stage);
+                {projects.length === 0 && !searchQuery ? (
+                    <div className="flex-1 flex flex-col items-center justify-center h-full border-2 border-dashed border-[#222] rounded-2xl bg-[#111]">
+                        <div className="w-16 h-16 bg-[#1e1e1e] rounded-full flex items-center justify-center mb-6 shadow-xl">
+                            <Plus size={32} className="text-indigo-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Start Your First Project</h2>
+                        <p className="text-[#666] max-w-md text-center mb-8">
+                            Your board is empty. Create a new project to start tracking your video production workflow from concept to completion.
+                        </p>
+                        <button
+                            onClick={handleCreateNew}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-indigo-500/20 flex items-center space-x-2"
+                        >
+                            <Plus size={20} />
+                            <span>Create Project</span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="inline-flex h-full space-x-6">
+                        {columns.map((stage, colIndex) => {
+                            const stageProjects = getProjectsForStage(stage);
 
-                        return (
-                            <div key={stage} className="w-80 flex flex-col h-full bg-[#181818] rounded-xl border border-[#252525] flex-shrink-0">
-                                {/* Column Header */}
-                                <div className="p-4 border-b border-[#252525] flex items-center justify-between sticky top-0 bg-[#181818] z-10 rounded-t-xl group">
-                                    <div className="flex items-center space-x-2">
-                                        <h3 className="font-bold text-white text-sm">{stage}</h3>
-                                        <div className="bg-[#252525] text-[#888] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                                            {stageProjects.length}
+                            return (
+                                <div key={stage} className="w-80 flex flex-col h-full bg-[#181818] rounded-xl border border-[#252525] flex-shrink-0">
+                                    {/* Column Header */}
+                                    <div className="p-4 border-b border-[#252525] flex items-center justify-between sticky top-0 bg-[#181818] z-10 rounded-t-xl group">
+                                        <div className="flex items-center space-x-2">
+                                            <h3 className="font-bold text-white text-sm">{stage}</h3>
+                                            <div className="bg-[#252525] text-[#888] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                                {stageProjects.length}
+                                            </div>
                                         </div>
+                                        <button className="text-[#444] hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                                            <MoreHorizontal size={14} />
+                                        </button>
                                     </div>
-                                    <button className="text-[#444] hover:text-white transition-colors opacity-0 group-hover:opacity-100">
-                                        <MoreHorizontal size={14} />
-                                    </button>
-                                </div>
 
-                                {/* Cards Container */}
-                                <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
-                                    {stageProjects.map(project => (
-                                        <div
-                                            key={project.id}
-                                            onClick={() => onSelectProject(project)}
-                                            className="bg-[#1f1f1f] p-4 rounded-xl border border-[#2a2a2a] hover:border-[#444] hover:bg-[#222] transition-all cursor-pointer group shadow-sm hover:shadow-md relative"
-                                        >
-                                            {/* Hover Controls for Moving */}
-                                            <div className="absolute top-1/2 -translate-y-1/2 -left-3 hidden group-hover:flex">
-                                                {colIndex > 0 && (
-                                                    <button
-                                                        onClick={(e) => handleMoveProject(e, project, 'left')}
-                                                        className="p-1 bg-[#252525] border border-[#333] rounded-full text-[#888] hover:text-white hover:bg-[#333] shadow-lg"
-                                                        title="Move Back"
-                                                    >
-                                                        <ChevronLeft size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="absolute top-1/2 -translate-y-1/2 -right-3 hidden group-hover:flex">
-                                                {colIndex < columns.length - 1 && (
-                                                    <button
-                                                        onClick={(e) => handleMoveProject(e, project, 'right')}
-                                                        className="p-1 bg-[#252525] border border-[#333] rounded-full text-[#888] hover:text-white hover:bg-[#333] shadow-lg"
-                                                        title="Move Forward"
-                                                    >
-                                                        <ChevronRight size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
-
-
-                                            {/* Project Meta */}
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getPriorityColor(project.priority)}`}>
-                                                    {project.priority}
+                                    {/* Cards Container */}
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+                                        {stageProjects.map(project => (
+                                            <div
+                                                key={project.id}
+                                                onClick={() => onSelectProject(project)}
+                                                className="bg-[#1f1f1f] p-4 rounded-xl border border-[#2a2a2a] hover:border-[#444] hover:bg-[#222] transition-all cursor-pointer group shadow-sm hover:shadow-md relative"
+                                            >
+                                                {/* Hover Controls for Moving */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 -left-3 hidden group-hover:flex">
+                                                    {colIndex > 0 && (
+                                                        <button
+                                                            onClick={(e) => handleMoveProject(e, project, 'left')}
+                                                            className="p-1 bg-[#252525] border border-[#333] rounded-full text-[#888] hover:text-white hover:bg-[#333] shadow-lg"
+                                                            title="Move Back"
+                                                        >
+                                                            <ChevronLeft size={14} />
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                {project.hasMographNeeds && (
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Mograph Needed"></div>
-                                                )}
-                                            </div>
-
-                                            {/* Title */}
-                                            <h4 className="text-sm font-semibold text-white mb-1 line-clamp-2 leading-tight group-hover:text-indigo-300 transition-colors">
-                                                {project.title}
-                                            </h4>
-                                            <p className="text-xs text-[#666] mb-4 truncate">{project.topic}</p>
-
-                                            {/* Footer Info */}
-                                            <div className="pt-3 border-t border-[#2a2a2a] flex items-center justify-between">
-                                                {/* Avatar / Assignee */}
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="w-5 h-5 rounded-full bg-indigo-900 border border-[#2a2a2a] flex items-center justify-center text-[9px] text-white font-bold" title={project.creator}>
-                                                        {project.creator.charAt(0)}
-                                                    </div>
-                                                    {project.editor !== 'Unassigned' && (
-                                                        <div className="w-5 h-5 rounded-full bg-[#333] border border-[#2a2a2a] flex items-center justify-center text-[9px] text-white font-bold" title={project.editor}>
-                                                            {project.editor.charAt(0)}
-                                                        </div>
+                                                <div className="absolute top-1/2 -translate-y-1/2 -right-3 hidden group-hover:flex">
+                                                    {colIndex < columns.length - 1 && (
+                                                        <button
+                                                            onClick={(e) => handleMoveProject(e, project, 'right')}
+                                                            className="p-1 bg-[#252525] border border-[#333] rounded-full text-[#888] hover:text-white hover:bg-[#333] shadow-lg"
+                                                            title="Move Forward"
+                                                        >
+                                                            <ChevronRight size={14} />
+                                                        </button>
                                                     )}
                                                 </div>
 
-                                                {/* Due Date */}
-                                                <div className={`flex items-center space-x-1 text-[10px] ${new Date(project.dueDate) < new Date() && project.stage !== Stage.Done ? 'text-rose-400' : 'text-[#666]'}`}>
-                                                    <Calendar size={10} />
-                                                    <span>{new Date(project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                {/* Delete Button (Top Right) */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setProjectToDelete(project);
+                                                    }}
+                                                    className="absolute top-2 right-2 text-[#444] hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                    title="Delete Project"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+
+                                                {/* Project Meta */}
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getPriorityColor(project.priority)}`}>
+                                                        {project.priority}
+                                                    </div>
+                                                    {project.hasMographNeeds && (
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Mograph Needed"></div>
+                                                    )}
+                                                </div>
+
+                                                {/* Title */}
+                                                <h4 className="text-sm font-semibold text-white mb-1 line-clamp-2 leading-tight group-hover:text-indigo-300 transition-colors">
+                                                    {project.title}
+                                                </h4>
+                                                <p className="text-xs text-[#666] mb-4 truncate">{project.topic}</p>
+
+                                                {/* Footer Info */}
+                                                <div className="pt-3 border-t border-[#2a2a2a] flex items-center justify-between">
+                                                    {/* Avatar / Assignee */}
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-5 h-5 rounded-full bg-indigo-900 border border-[#2a2a2a] flex items-center justify-center text-[9px] text-white font-bold" title={project.creator}>
+                                                            {project.creator.charAt(0)}
+                                                        </div>
+                                                        {project.editor !== 'Unassigned' && (
+                                                            <div className="w-5 h-5 rounded-full bg-[#333] border border-[#2a2a2a] flex items-center justify-center text-[9px] text-white font-bold" title={project.editor}>
+                                                                {project.editor.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Due Date */}
+                                                    <div className={`flex items-center space-x-1 text-[10px] ${new Date(project.dueDate) < new Date() && project.stage !== Stage.Done ? 'text-rose-400' : 'text-[#666]'}`}>
+                                                        <Calendar size={10} />
+                                                        <span>{new Date(project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
 
-                                    {stageProjects.length === 0 && (
-                                        <div className="py-8 text-center border-2 border-dashed border-[#252525] rounded-xl opacity-50">
-                                            <p className="text-[10px] text-[#444] font-medium uppercase tracking-wider">Empty</p>
-                                        </div>
-                                    )}
+                                        {stageProjects.length === 0 && (
+                                            <div className="py-8 text-center border-2 border-dashed border-[#252525] rounded-xl opacity-50">
+                                                <p className="text-[10px] text-[#444] font-medium uppercase tracking-wider">Empty</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
-        </div>
+
+
+            <ConfirmationModal
+                isOpen={!!projectToDelete}
+                title="Delete Project?"
+                message={`Are you sure you want to delete "${projectToDelete?.title}"? This action cannot be undone.`}
+                onConfirm={() => {
+                    if (projectToDelete) {
+                        onDeleteProject(projectToDelete.id);
+                        setProjectToDelete(null);
+                    }
+                }}
+                onCancel={() => setProjectToDelete(null)}
+            />
+        </div >
     );
 }
 

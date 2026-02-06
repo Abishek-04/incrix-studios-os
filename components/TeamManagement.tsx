@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { User, Role } from '../types';
+import { User, Role, Project, Platform, Stage } from '../types';
 import { Plus, Trash2, Edit2, Save, X, Shield, Mail, Target, Phone, MessageCircle, Bell } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
 import Toast, { ToastType } from './ui/Toast';
 
 interface TeamManagementProps {
     users: User[];
+    projects: Project[];
     onUpdateUsers: (users: User[]) => void;
 }
 
-const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers }) => {
+const TeamManagement: React.FC<TeamManagementProps> = ({ users, projects, onUpdateUsers }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -33,7 +34,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
         notifyViaWhatsapp: false,
         notifyViaEmail: false,
         niche: '',
-        quota: { longVideo: 1, shortVideo: 3, period: 'weekly' }
+        quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' }
     });
 
     const showToast = (message: string, type: ToastType = 'success') => {
@@ -65,23 +66,34 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
                 avatarColor: `bg-${['indigo', 'purple', 'emerald', 'amber', 'rose'][Math.floor(Math.random() * 5)]}-500`,
                 niche: formData.niche,
                 active: true,
-                quota: formData.quota || { longVideo: 1, shortVideo: 3, period: 'weekly' }
+                quota: formData.quota || { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' }
             };
             onUpdateUsers([...users, newUser]);
             setIsAdding(false);
             showToast('New team member added successfully.');
         }
-        setFormData({ name: '', role: 'creator', email: '', phoneNumber: '', notifyViaWhatsapp: false, notifyViaEmail: false, niche: '', quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } });
+        setFormData({ name: '', role: 'creator', email: '', phoneNumber: '', notifyViaWhatsapp: false, notifyViaEmail: false, niche: '', quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' } });
     };
 
     const startEdit = (user: User) => {
         setEditingId(user.id);
+        const defaultQuota = { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' as const };
+
+        // Migrate old data on the fly if needed, or just default to 0
+        const currentQuota = user.quota ? {
+            youtubeLong: user.quota.youtubeLong || 0,
+            youtubeShort: user.quota.youtubeShort || 0,
+            instagramReel: user.quota.instagramReel || 0,
+            course: user.quota.course || 0,
+            period: user.quota.period || 'weekly'
+        } : defaultQuota;
+
         setFormData({
             ...user,
             phoneNumber: user.phoneNumber || '',
             notifyViaWhatsapp: user.notifyViaWhatsapp || false,
             notifyViaEmail: user.notifyViaEmail || false,
-            quota: user.quota || { longVideo: 0, shortVideo: 0, period: 'weekly' }
+            quota: currentQuota
         });
         setIsAdding(true);
     };
@@ -98,6 +110,26 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
             setDeleteModalOpen(false);
             setUserToDelete(null);
         }
+    };
+
+    // Calculate metrics for table
+    const getMetrics = (userId: string) => {
+        // Filter projects assigned to this user that are 'Done'
+        // Assuming projects have an 'assignedTo' field or similar. 
+        // Based on Dashboard logic it seems calculating based on ALL projects or handling filtering outside?
+        // Wait, Dashboard logic filters by `p.channelId`? No, let's look at `Dashboard.tsx` again or `types.ts`.
+        // `Project` has `channelId`. Channels have `members`. 
+        // However, usually projects are assigned to people. `Project` has `assignedTo` array usually?
+        // Let's check `types.ts` again. It has `assignedTo?: string[]`.
+
+        const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId)));
+
+        return {
+            ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length,
+            ytShort: userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length,
+            igReel: userProjects.filter(p => p.platform === Platform.Instagram).length,
+            course: userProjects.filter(p => p.platform === Platform.Course).length
+        };
     };
 
     return (
@@ -123,7 +155,20 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
                     <p className="text-[#666]">Manage access, roles, and profiles for your creative team.</p>
                 </div>
                 <button
-                    onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ name: '', role: 'creator', email: '', phoneNumber: '', notifyViaWhatsapp: false, notifyViaEmail: false, niche: '', quota: { longVideo: 1, shortVideo: 3, period: 'weekly' } }); }}
+                    onClick={() => {
+                        setIsAdding(true);
+                        setEditingId(null);
+                        setFormData({
+                            name: '',
+                            role: 'creator',
+                            email: '',
+                            phoneNumber: '',
+                            notifyViaWhatsapp: false,
+                            notifyViaEmail: false,
+                            niche: '',
+                            quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' }
+                        });
+                    }}
                     className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
                     <Plus size={16} /> <span>Add Member</span>
                 </button>
@@ -218,30 +263,52 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
                             <h4 className="text-xs font-bold text-[#666] uppercase tracking-wider border-b border-[#333] pb-2 flex items-center"><Target size={12} className="mr-1" /> Output Targets</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">Long Form / {formData.quota?.period === 'weekly' ? 'Week' : 'Month'}</label>
+                                    <label className="text-xs text-[#666]">YT Long</label>
                                     <input
                                         type="number"
                                         className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
-                                        value={formData.quota?.longVideo || 0}
+                                        value={formData.quota?.youtubeLong || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, longVideo: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota!, youtubeLong: parseInt(e.target.value) || 0 }
                                         })}
                                     />
-                                    <span className="text-[10px] text-[#555]">YouTube</span>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">Short Form / {formData.quota?.period === 'weekly' ? 'Week' : 'Month'}</label>
+                                    <label className="text-xs text-[#666]">YT Shorts</label>
                                     <input
                                         type="number"
                                         className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
-                                        value={formData.quota?.shortVideo || 0}
+                                        value={formData.quota?.youtubeShort || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, shortVideo: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota!, youtubeShort: parseInt(e.target.value) || 0 }
                                         })}
                                     />
-                                    <span className="text-[10px] text-[#555]">Insta/TikTok</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-[#666]">IG Reels</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        value={formData.quota?.instagramReel || 0}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            quota: { ...formData.quota!, instagramReel: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-[#666]">Course</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        value={formData.quota?.course || 0}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            quota: { ...formData.quota!, course: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-1">
@@ -276,68 +343,96 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, onUpdateUsers })
                             <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">User</th>
                             <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">Contact</th>
                             <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">Role</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">Target (L/S)</th>
+                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">YT Long</th>
+                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">YT Shorts</th>
+                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">IG Reels</th>
+                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">Course</th>
                             <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#2f2f2f]">
-                        {users.map(user => (
-                            <tr key={user.id} className="group hover:bg-[#252525] transition-colors duration-150">
-                                <td className="p-4">
-                                    <div className="flex items-center space-x-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${user.avatarColor} shadow-md`}>
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-medium text-white">{user.name}</div>
-                                            <div className="text-xs text-[#666]">{user.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex space-x-2">
-                                        {user.notifyViaWhatsapp && (
-                                            <div className="text-emerald-500 bg-emerald-500/10 p-1 rounded border border-emerald-500/20" title={user.phoneNumber}>
-                                                <MessageCircle size={14} />
+                        {users.map(user => {
+                            const metrics = getMetrics(user.id);
+                            const q = user.quota || { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0 };
+
+                            return (
+                                <tr key={user.id} className="group hover:bg-[#252525] transition-colors duration-150">
+                                    <td className="p-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${user.avatarColor} shadow-md`}>
+                                                {user.name.charAt(0)}
                                             </div>
-                                        )}
-                                        {user.notifyViaEmail && (
-                                            <div className="text-indigo-500 bg-indigo-500/10 p-1 rounded border border-indigo-500/20">
-                                                <Mail size={14} />
+                                            <div>
+                                                <div className="text-sm font-medium text-white">{user.name}</div>
+                                                <div className="text-xs text-[#666]">{user.email}</div>
                                             </div>
-                                        )}
-                                        {!user.notifyViaEmail && !user.notifyViaWhatsapp && (
-                                            <span className="text-[#444] text-xs italic">No alerts</span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize border
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex space-x-2">
+                                            {user.notifyViaWhatsapp && (
+                                                <div className="text-emerald-500 bg-emerald-500/10 p-1 rounded border border-emerald-500/20" title={user.phoneNumber}>
+                                                    <MessageCircle size={14} />
+                                                </div>
+                                            )}
+                                            {user.notifyViaEmail && (
+                                                <div className="text-indigo-500 bg-indigo-500/10 p-1 rounded border border-indigo-500/20">
+                                                    <Mail size={14} />
+                                                </div>
+                                            )}
+                                            {!user.notifyViaEmail && !user.notifyViaWhatsapp && (
+                                                <span className="text-[#444] text-xs italic">No alerts</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize border
                                         ${user.role === 'manager' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                            user.role === 'creator' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                                                user.role === 'editor' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-pink-500/10 text-pink-400 border-pink-500/20'}`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-sm text-[#ccc]">
-                                    {user.quota ? (
-                                        <span className="font-mono text-xs">
-                                            {user.quota.longVideo}L / {user.quota.shortVideo}S <span className="text-[#666] text-[10px]">({user.quota.period})</span>
+                                                user.role === 'creator' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                                                    user.role === 'editor' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-pink-500/10 text-pink-400 border-pink-500/20'}`}>
+                                            {user.role}
                                         </span>
-                                    ) : '-'}
-                                </td>
-                                <td className="p-4 text-right">
-                                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => startEdit(user)} className="p-1.5 text-[#666] hover:text-white bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-[#444] transition-all">
-                                            <Edit2 size={14} />
-                                        </button>
-                                        <button onClick={() => confirmDelete(user.id)} className="p-1.5 text-[#666] hover:text-rose-500 bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-rose-900/30 transition-all">
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+
+                                    {/* Metrics Columns */}
+                                    <td className="p-4 text-center">
+                                        <div className="text-xs font-mono">
+                                            <span className={metrics.ytLong >= (q.youtubeLong || 0) && (q.youtubeLong || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytLong}</span>
+                                            <span className="text-[#555]">/{q.youtubeLong || 0}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <div className="text-xs font-mono">
+                                            <span className={metrics.ytShort >= (q.youtubeShort || 0) && (q.youtubeShort || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytShort}</span>
+                                            <span className="text-[#555]">/{q.youtubeShort || 0}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <div className="text-xs font-mono">
+                                            <span className={metrics.igReel >= (q.instagramReel || 0) && (q.instagramReel || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.igReel}</span>
+                                            <span className="text-[#555]">/{q.instagramReel || 0}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <div className="text-xs font-mono">
+                                            <span className={metrics.course >= (q.course || 0) && (q.course || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.course}</span>
+                                            <span className="text-[#555]">/{q.course || 0}</span>
+                                        </div>
+                                    </td>
+
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => startEdit(user)} className="p-1.5 text-[#666] hover:text-white bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-[#444] transition-all">
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button onClick={() => confirmDelete(user.id)} className="p-1.5 text-[#666] hover:text-rose-500 bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-rose-900/30 transition-all">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>

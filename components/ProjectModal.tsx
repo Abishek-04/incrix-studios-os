@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Project, Role, Stage, Status, Channel, Platform } from '../types';
+import { Project, Role, Stage, Status, Channel, Platform, User } from '../types';
 import { fetchSocialMetrics } from '../services/socialService';
-import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info } from 'lucide-react';
+import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save } from 'lucide-react';
+import ConfirmationModal from './ui/ConfirmationModal';
+import Toast, { ToastType } from './ui/Toast';
 
 interface ProjectModalProps {
   project: Project;
   currentUserRole: Role;
   channels: Channel[];
+  users: User[];
   onClose: () => void;
   onUpdate: (updatedProject: Project) => void;
+  onCreate: (newProject: Project) => void;
+  onDelete: (id: string) => void;
 }
 
-const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, channels, onClose, onUpdate }) => {
+const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, channels, users, onClose, onUpdate, onCreate, onDelete }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'production' | 'discussion' | 'performance'>('overview');
   const [localProject, setLocalProject] = useState<Project>(project);
   const [isFetchingMetrics, setIsFetchingMetrics] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [newTaskText, setNewTaskText] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
+    visible: false,
+    message: '',
+    type: 'success'
+  });
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ visible: true, message, type });
+  };
 
   // Sync prop changes
   useEffect(() => {
@@ -29,6 +44,29 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
       ...localProject,
       lastUpdated: Date.now()
     });
+  };
+
+  const handleSaveAndClose = () => {
+    handleSave();
+    onClose();
+  };
+
+  const handleDuplicate = () => {
+    if (confirm("Save this as a new project?")) {
+      const newProject: Project = {
+        ...localProject,
+        id: `PRJ-${Date.now()}`,
+        title: `${localProject.title} (Copy)`,
+        lastUpdated: Date.now(),
+        metrics: undefined, // Reset metrics
+        comments: [], // Reset comments
+        tasks: localProject.tasks.map(t => ({ ...t, done: false })) // Reset task status but keep checklist
+      };
+      onCreate(newProject);
+      onClose();
+      // Toast would be on parent, but alert is fine for now as modal closes
+      // Or we could trigger a callback prop for toast
+    }
   };
 
   const handleToggleArchive = () => {
@@ -106,7 +144,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
     setIsBroadcasting(true);
     setTimeout(() => {
       setIsBroadcasting(false);
-      alert(`📢 Broadcast Sent!\n\nStatus: ${localProject.status}\nStage: ${localProject.stage}\n\nDelivered to: WhatsApp Group & Email List.`);
+      showToast(`Broadcast Sent! Status: ${localProject.status}`, 'success');
     }, 1500);
   };
 
@@ -127,7 +165,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
 
   const handleFetchMetrics = async () => {
     if (!localProject.publishedLink) {
-      alert("Please add a Published Link to fetch data.");
+      showToast("Please add a Published Link first.", 'error');
       return;
     }
 
@@ -147,19 +185,22 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
       onUpdate(updated);
     } catch (e) {
       console.error(e);
-      alert("Could not fetch metrics. Please check the URL.");
+      showToast("Could not fetch metrics. Check URL.", 'error');
     } finally {
       setIsFetchingMetrics(false);
     }
   };
 
   const handleRepurpose = () => {
-    alert("🚀 Repurposing Started!\n\nA new project 'Short: " + localProject.title + "' has been added to the Backlog.");
+    showToast("Repurposing Started! Added to Backlog.", 'success');
   };
+
+  const creators = users.filter(u => u.role === 'creator');
+  const editors = users.filter(u => u.role === 'editor' || u.role === 'mograph');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-[#191919] border border-[#2f2f2f] w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-[#191919] border border-[#2f2f2f] w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
         <div className="p-6 border-b border-[#2f2f2f] flex justify-between items-start bg-[#1e1e1e]">
@@ -187,11 +228,55 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                 </div>
               </div>
 
+              {/* Creator Assessment */}
+              <select
+                value={localProject.creator}
+                onChange={(e) => {
+                  const updated = { ...localProject, creator: e.target.value };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+              >
+                <option value="Unassigned">No Creator</option>
+                {creators.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+              </select>
+
+              {/* Editor Assessment */}
+              <select
+                value={localProject.editor}
+                onChange={(e) => {
+                  const updated = { ...localProject, editor: e.target.value };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+              >
+                <option value="Unassigned">No Editor</option>
+                {editors.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+              </select>
+
               <span className="text-[#555] text-xs font-mono">{localProject.id}</span>
               {localProject.archived && (
                 <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[#888] font-mono uppercase">Archived</span>
               )}
             </div>
+
+            {/* YouTube Format Selector */}
+            {localProject.platform === Platform.YouTube && (
+              <select
+                value={localProject.contentFormat || 'LongForm'}
+                onChange={(e) => {
+                  const updated = { ...localProject, contentFormat: e.target.value as 'LongForm' | 'ShortForm' };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+              >
+                <option value="LongForm">Long Form</option>
+                <option value="ShortForm">Shorts</option>
+              </select>
+            )}
 
             <input
               type="text"
@@ -204,6 +289,17 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
           </div>
           <div className="flex items-center space-x-2">
             <button
+              onClick={handleSaveAndClose}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium shadow-lg shadow-indigo-900/20"
+              title="Save & Close"
+            >
+              <Save size={16} />
+              <span className="hidden sm:inline">Save</span>
+            </button>
+
+            <div className="w-px h-6 bg-[#2f2f2f] mx-2"></div>
+
+            <button
               onClick={handleBroadcast}
               className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-white rounded-lg transition-all flex items-center space-x-2 text-xs font-medium"
               title="Send Update to WhatsApp/Email"
@@ -212,6 +308,23 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
               <span className="hidden sm:inline">Broadcast</span>
             </button>
             <div className="w-px h-6 bg-[#2f2f2f] mx-2"></div>
+
+            {/* Duplicate Button */}
+            <button
+              onClick={handleDuplicate}
+              className="p-2 text-[#666] hover:text-indigo-400 rounded-lg transition-colors"
+              title="Save as New Project"
+            >
+              <Files size={18} />
+            </button>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-[#666] hover:text-rose-500 rounded-lg transition-colors"
+              title="Delete Project"
+            >
+              <Trash2 size={18} />
+            </button>
             <button
               onClick={handleToggleArchive}
               className={`p-2 rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium
@@ -560,6 +673,24 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
 
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title="Delete Project?"
+        message={`Are you sure you want to delete "${localProject.title}"? This action cannot be undone.`}
+        onConfirm={() => {
+          onDelete(localProject.id);
+          onClose();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.visible}
+        onClose={() => setToast({ ...toast, visible: false })}
+      />
     </div>
   );
 };

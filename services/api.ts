@@ -1,9 +1,10 @@
-import { Project, User, Channel } from '../types';
+import { Project, User, Channel, DailyTask } from '../types';
 
 interface StudioState {
     users: User[];
     projects: Project[];
     channels: Channel[];
+    dailyTasks: DailyTask[];
     lastUpdated?: string;
 }
 

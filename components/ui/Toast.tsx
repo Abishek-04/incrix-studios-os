@@ -23,7 +23,7 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'success', isVisible, onC
     if (!isVisible) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-300">
             <div className={`flex items-center space-x-3 pl-4 pr-10 py-3 rounded-xl border shadow-2xl backdrop-blur-md
                 ${type === 'success' ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-100' : 'bg-rose-950/40 border-rose-500/30 text-rose-100'}
             `}>

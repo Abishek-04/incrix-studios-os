@@ -43,6 +43,7 @@ const studioStateSchema = new mongoose.Schema({
     users: { type: Array, default: [] },
     projects: { type: Array, default: [] },
     channels: { type: Array, default: [] },
+    dailyTasks: { type: Array, default: [] },
     lastUpdated: { type: Date, default: Date.now }
 }, { strict: false });
 
@@ -99,11 +100,11 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/state', async (req, res) => {
     try {
         await connectToDatabase();
-        const { users, projects, channels } = req.body;
+        const { users, projects, channels, dailyTasks } = req.body;
 
         let state = await StudioState.findOne();
         if (!state) {
-            state = new StudioState({ users, projects, channels });
+            state = new StudioState({ users, projects, channels, dailyTasks });
         } else {
             if (users && Array.isArray(users)) {
                 const existingUsersMap = new Map();
@@ -123,6 +124,7 @@ app.post('/api/state', async (req, res) => {
 
             if (projects) state.projects = projects;
             if (channels) state.channels = channels;
+            if (dailyTasks) state.dailyTasks = dailyTasks;
             state.lastUpdated = new Date();
         }
 
