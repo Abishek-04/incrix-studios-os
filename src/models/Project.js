@@ -10,7 +10,7 @@ const ProjectSchema = new Schema(
     vertical: { type: String, required: true, index: true },
     platform: { type: String, required: true, index: true },
     contentFormat: { type: String, enum: ['LongForm', 'ShortForm'] },
-    channelId: { type: Schema.Types.ObjectId, ref: 'Channel', index: true },
+    channelId: { type: String, index: true },
     role: { type: String, required: true, index: true },
     creator: { type: String, required: true, index: true },
     editor: { type: String, index: true },

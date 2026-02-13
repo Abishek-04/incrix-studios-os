@@ -19,8 +19,8 @@ export async function POST(request) {
     // Import User model here to avoid circular dependencies
     const User = (await import('@/models/User')).default;
 
-    // Find user by email
-    const user = await User.findOne({ email, active: true });
+    // Find user by email and explicitly include password field
+    const user = await User.findOne({ email, active: true }).select('+password');
 
     if (!user) {
       return NextResponse.json(
@@ -29,9 +29,9 @@ export async function POST(request) {
       );
     }
 
-    // For now, simple password check (in production, use bcrypt)
-    // The user.password should be hashed, but keeping simple for migration
-    if (user.password !== password) {
+    // Compare password using bcrypt
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
