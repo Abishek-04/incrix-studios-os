@@ -61,7 +61,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <input
                             type="email"
                             required
-                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white placeholder-[#444] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
+                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white placeholder-[#999] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
                             placeholder="name@incrix.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -73,7 +73,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <input
                             type="password"
                             required
-                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white placeholder-[#444] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
+                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white placeholder-[#999] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -100,7 +100,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </button>
 
                     <div className="text-center mt-6">
-                        <p className="text-[#444] text-xs">Protected by Incrix Security</p>
+                        <p className="text-[#999] text-xs">Protected by Incrix Security</p>
                     </div>
                 </form>
             </div>

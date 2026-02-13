@@ -56,7 +56,20 @@ const calculateProgress = (user: User, allProjects: Project[]) => {
     // Default quotas to 0 if undefined (migration safety)
     const q = user.quota || { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0 };
 
+    // Calculate days remaining in period
+    let endDate = new Date();
+    if (user.quota.period === 'weekly') {
+        const dayOfWeek = endDate.getDay();
+        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+        endDate = new Date(endDate.getTime() + daysUntilSunday * 86400000);
+    } else {
+        endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+    }
+    const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000));
+
     return {
+        daysRemaining,
+        period: user.quota.period,
         youtubeLong: {
             actual: ytLongActual,
             target: q.youtubeLong || 0,
@@ -160,7 +173,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                         </div>
                     </div>
 
-                    <p className="text-xs text-[#555]">
+                    <p className="text-xs text-[#999]">
                         Navigate to the <b>Projects</b> or <b>Board</b> tab to create your first item.
                     </p>
                 </div>
@@ -179,8 +192,11 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                     </div>
                     {personalStats.quotaProgress && (
                         <div className="text-right">
-                            <span className="text-xs text-[#666] uppercase tracking-wider block mb-1">Current Goal Period</span>
+                            <span className="text-xs text-[#999] uppercase tracking-wider block mb-1">Current Goal Period</span>
                             <span className="text-sm font-mono text-indigo-400 capitalize">{currentUser.quota?.period}</span>
+                            <div className={`text-xs mt-1 font-medium ${personalStats.quotaProgress.daysRemaining <= 2 ? 'text-rose-400' : personalStats.quotaProgress.daysRemaining <= 5 ? 'text-amber-400' : 'text-[#999]'}`}>
+                                {personalStats.quotaProgress.daysRemaining} days remaining
+                            </div>
                         </div>
                     )}
                 </div>
@@ -200,7 +216,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                 </div>
                             </div>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.youtubeLong.actual}<span className="text-[#444] text-lg">/{personalStats.quotaProgress.youtubeLong.target}</span></span>
+                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.youtubeLong.actual}<span className="text-[#999] text-lg">/{personalStats.quotaProgress.youtubeLong.target}</span></span>
                                 <span className="text-xs text-[#666]">{personalStats.quotaProgress.youtubeLong.pipeline} in pipeline</span>
                             </div>
                             <div className="h-2 bg-[#111] rounded-full overflow-hidden">
@@ -220,7 +236,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                 </div>
                             </div>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.youtubeShort.actual}<span className="text-[#444] text-lg">/{personalStats.quotaProgress.youtubeShort.target}</span></span>
+                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.youtubeShort.actual}<span className="text-[#999] text-lg">/{personalStats.quotaProgress.youtubeShort.target}</span></span>
                                 <span className="text-xs text-[#666]">{personalStats.quotaProgress.youtubeShort.pipeline} in pipeline</span>
                             </div>
                             <div className="h-2 bg-[#111] rounded-full overflow-hidden">
@@ -240,7 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                 </div>
                             </div>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.instagramReel.actual}<span className="text-[#444] text-lg">/{personalStats.quotaProgress.instagramReel.target}</span></span>
+                                <span className="text-3xl font-bold text-white">{personalStats.quotaProgress.instagramReel.actual}<span className="text-[#999] text-lg">/{personalStats.quotaProgress.instagramReel.target}</span></span>
                                 <span className="text-xs text-[#666]">{personalStats.quotaProgress.instagramReel.pipeline} in pipeline</span>
                             </div>
                             <div className="h-2 bg-[#111] rounded-full overflow-hidden">
@@ -260,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                 </div>
                             </div>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-3xl font-bold text-white max-w-full truncate">{personalStats.quotaProgress.course.actual}<span className="text-[#444] text-lg">/{personalStats.quotaProgress.course.target}</span></span>
+                                <span className="text-3xl font-bold text-white max-w-full truncate">{personalStats.quotaProgress.course.actual}<span className="text-[#999] text-lg">/{personalStats.quotaProgress.course.target}</span></span>
                                 <span className="text-xs text-[#666]">{personalStats.quotaProgress.course.pipeline} in pipeline</span>
                             </div>
                             <div className="h-2 bg-[#111] rounded-full overflow-hidden">
@@ -329,7 +345,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                     <span className="text-xs text-[#666] uppercase">{p.stage}</span>
                                 </div>
                             ))}
-                        {personalStats.pending === 0 && <div className="text-[#555] text-sm italic">All caught up!</div>}
+                        {personalStats.pending === 0 && <div className="text-[#999] text-sm italic">All caught up!</div>}
                     </div>
                 </div>
             </div>
@@ -369,7 +385,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                         </div>
                     </div>
 
-                    <p className="text-xs text-[#555]">
+                    <p className="text-xs text-[#999]">
                         Navigate to the <b>Projects</b> or <b>Board</b> tab to create your first item.
                     </p>
                 </div>
@@ -391,7 +407,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                         <p className="text-[#666] text-xs uppercase tracking-wider font-semibold mb-1">Production Volume</p>
                         <div className="flex items-baseline space-x-1">
                             <span className="text-2xl font-bold text-white">{managerKpis.totalVolume}</span>
-                            <span className="text-sm text-[#444]">min</span>
+                            <span className="text-sm text-[#999]">min</span>
                         </div>
                     </div>
                     <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-500">
@@ -465,7 +481,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, currentUser, users, onS
                                         </div>
                                         <div>
                                             <div className="text-sm font-medium text-white">{creator.name}</div>
-                                            <div className="text-[10px] text-[#666] uppercase">{creator.quota?.period} Quota</div>
+                                            <div className="text-[10px] text-[#999] uppercase">{creator.quota?.period} Quota &bull; {progress.daysRemaining}d left</div>
                                         </div>
                                     </div>
                                     {isBehind ? (

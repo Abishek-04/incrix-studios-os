@@ -6,9 +6,10 @@ interface NotificationPanelProps {
     notifications: Notification[];
     onClose: () => void;
     onMarkAllRead: () => void;
+    onNotificationClick?: (notification: Notification) => void;
 }
 
-const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, onClose, onMarkAllRead }) => {
+const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, onClose, onMarkAllRead, onNotificationClick }) => {
     const getIcon = (type: string) => {
         switch (type) {
             case 'success': return <CheckCircle size={16} className="text-emerald-500" />;
@@ -54,7 +55,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
                     notifications.map((notif) => (
                         <div
                             key={notif.id}
-                            className={`p-4 border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors ${!notif.read ? 'bg-[#1a1a1a]/50' : ''}`}
+                            onClick={() => onNotificationClick?.(notif)}
+                            className={`p-4 border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors cursor-pointer ${!notif.read ? 'bg-[#1a1a1a]/50' : ''}`}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${notif.title}: ${notif.message}`}
                         >
                             <div className="flex items-start space-x-3">
                                 <div className="mt-0.5 flex-shrink-0">
@@ -63,7 +68,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white mb-0.5">{notif.title}</p>
                                     <p className="text-xs text-[#888] leading-relaxed mb-2">{notif.message}</p>
-                                    <span className="text-[10px] text-[#555]">{getTimeAgo(notif.timestamp)}</span>
+                                    <span className="text-[10px] text-[#999]">{getTimeAgo(notif.timestamp)}</span>
                                 </div>
                                 {!notif.read && (
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div>

@@ -130,12 +130,12 @@ const DailyTasks: React.FC<DailyTasksProps> = ({ tasks, users, currentUser, onUp
                             <Clock size={20} />
                         </div>
                         <h3 className="text-xl font-bold text-white">Morning (AM)</h3>
-                        <span className="ml-auto text-xs font-mono text-[#555] bg-[#111] px-2 py-1 rounded">{amTasks.length} tasks</span>
+                        <span className="ml-auto text-xs font-mono text-[#999] bg-[#111] px-2 py-1 rounded">{amTasks.length} tasks</span>
                     </div>
 
                     <div className="space-y-3">
                         {amTasks.length === 0 && (
-                            <div className="text-center py-8 text-[#444] text-sm italic">No tasks scheduled for AM</div>
+                            <div className="text-center py-8 text-[#999] text-sm italic">No tasks scheduled for AM</div>
                         )}
                         {amTasks.map(task => (
                             <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
@@ -150,12 +150,12 @@ const DailyTasks: React.FC<DailyTasksProps> = ({ tasks, users, currentUser, onUp
                             <Clock size={20} />
                         </div>
                         <h3 className="text-xl font-bold text-white">Afternoon (PM)</h3>
-                        <span className="ml-auto text-xs font-mono text-[#555] bg-[#111] px-2 py-1 rounded">{pmTasks.length} tasks</span>
+                        <span className="ml-auto text-xs font-mono text-[#999] bg-[#111] px-2 py-1 rounded">{pmTasks.length} tasks</span>
                     </div>
 
                     <div className="space-y-3">
                         {pmTasks.length === 0 && (
-                            <div className="text-center py-8 text-[#444] text-sm italic">No tasks scheduled for PM</div>
+                            <div className="text-center py-8 text-[#999] text-sm italic">No tasks scheduled for PM</div>
                         )}
                         {pmTasks.map(task => (
                             <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
@@ -172,7 +172,7 @@ const TaskItem: React.FC<{ task: DailyTask, onToggle: (id: string) => void, onDe
         <div className={`group flex items-center p-3 rounded-lg border transition-all ${task.done ? 'bg-[#0a0a0a] border-[#1f1f1f] opacity-60' : 'bg-[#1a1a1a] border-[#333] hover:border-[#555]'}`}>
             <button
                 onClick={() => onToggle(task.id)}
-                className={`mr-3 ${task.done ? 'text-green-500' : 'text-[#444] group-hover:text-[#666]'}`}
+                className={`mr-3 ${task.done ? 'text-green-500' : 'text-[#999] group-hover:text-[#666]'}`}
             >
                 {task.done ? <CheckCircle size={20} /> : <Circle size={20} />}
             </button>
@@ -180,14 +180,14 @@ const TaskItem: React.FC<{ task: DailyTask, onToggle: (id: string) => void, onDe
                 <div className={`text-sm font-medium truncate ${task.done ? 'text-[#666] line-through' : 'text-white'}`}>
                     {task.task}
                 </div>
-                <div className="text-xs text-[#555] mt-0.5 flex items-center">
+                <div className="text-xs text-[#999] mt-0.5 flex items-center">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-1.5 opacity-50"></span>
                     {task.userName}
                 </div>
             </div>
             <button
                 onClick={() => onDelete(task.id)}
-                className="ml-2 text-[#444] hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded hover:bg-[#252525]"
+                className="ml-2 text-[#999] hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded hover:bg-[#252525]"
             >
                 <Trash2 size={14} />
             </button>

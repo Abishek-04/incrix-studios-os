@@ -165,13 +165,13 @@ const ManageChannels: React.FC<ManageChannelsProps> = ({ channels, users, onUpda
                         {/* 1. Link Input */}
                         <div className="relative">
                             <input
-                                className="w-full bg-[#151515] border border-[#333] rounded-xl p-4 pl-12 text-sm text-white focus:border-indigo-500 outline-none transition-all placeholder-[#555]"
+                                className="w-full bg-[#151515] border border-[#333] rounded-xl p-4 pl-12 text-sm text-white focus:border-indigo-500 outline-none transition-all placeholder-[#999]"
                                 value={urlInput}
                                 onChange={e => analyzeLink(e.target.value)}
                                 placeholder="Paste URL (Social Profile, WhatsApp Group Link) or Email Address"
                                 autoFocus
                             />
-                            <div className="absolute left-4 top-4 text-[#555]">
+                            <div className="absolute left-4 top-4 text-[#999]">
                                 {isDetecting ? <Loader2 size={18} className="animate-spin text-indigo-500" /> : <Globe size={18} />}
                             </div>
                         </div>
@@ -280,7 +280,7 @@ const ManageChannels: React.FC<ManageChannelsProps> = ({ channels, users, onUpda
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={() => deleteChannel(channel.id)} className="text-[#444] hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 bg-[#252525] p-2 rounded-lg">
+                            <button onClick={() => deleteChannel(channel.id)} className="text-[#999] hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 bg-[#252525] p-2 rounded-lg">
                                 <Trash2 size={16} />
                             </button>
                         </div>
@@ -295,7 +295,7 @@ const ManageChannels: React.FC<ManageChannelsProps> = ({ channels, users, onUpda
                                 <div className="p-3 bg-[#151515] rounded-lg border border-[#2a2a2a] relative hover:border-[#333] transition-colors">
                                     <div className="flex items-center justify-between mb-2 border-b border-[#222] pb-2">
                                         <span className="text-xs font-medium text-[#666]">{channel.platform === Platform.WhatsApp ? 'API Token' : 'Password'}</span>
-                                        <button onClick={() => toggleCredentials(channel.id)} className="text-[#555] hover:text-indigo-400 transition-colors">
+                                        <button onClick={() => toggleCredentials(channel.id)} className="text-[#999] hover:text-indigo-400 transition-colors">
                                             {showCredentials[channel.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>
                                     </div>
@@ -308,7 +308,7 @@ const ManageChannels: React.FC<ManageChannelsProps> = ({ channels, users, onUpda
                             {/* Assigned Member Display/Edit */}
                             <div className="pt-2 border-t border-[#2a2a2a]">
                                 <div className="flex items-center space-x-2 mb-1">
-                                    <UserIcon size={12} className="text-[#555]" />
+                                    <UserIcon size={12} className="text-[#999]" />
                                     <span className="text-[10px] text-[#666] uppercase tracking-wide">Owner</span>
                                 </div>
                                 <select

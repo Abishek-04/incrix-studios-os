@@ -78,7 +78,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, projects, channels,
                                     <div className="space-y-1">
                                         <label className="text-xs text-[#888]">Email</label>
                                         <div className="relative">
-                                            <Mail size={14} className="absolute left-3 top-3 text-[#555]" />
+                                            <Mail size={14} className="absolute left-3 top-3 text-[#999]" />
                                             <input
                                                 className="w-full bg-[#151515] border border-[#333] rounded-lg p-2.5 pl-9 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
                                                 value={formData.email}
@@ -89,7 +89,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, projects, channels,
                                     <div className="space-y-1">
                                         <label className="text-xs text-[#888]">Phone</label>
                                         <div className="relative">
-                                            <Phone size={14} className="absolute left-3 top-3 text-[#555]" />
+                                            <Phone size={14} className="absolute left-3 top-3 text-[#999]" />
                                             <input
                                                 className="w-full bg-[#151515] border border-[#333] rounded-lg p-2.5 pl-9 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
                                                 value={formData.phoneNumber}

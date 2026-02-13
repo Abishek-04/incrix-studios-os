@@ -85,9 +85,13 @@ export interface Channel {
 
 export interface Comment {
   id: string;
-  author: Role;
+  authorId: string;      // User ID for identification
+  authorName: string;    // Display name
+  authorRole: Role;      // Role for badge color
   text: string;
   timestamp: number;
+  edited?: boolean;      // Track if comment was edited
+  editedAt?: number;     // When it was edited
 }
 
 export interface PerformanceMetrics {
@@ -141,4 +145,6 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   timestamp: number;
   read: boolean;
+  relatedEntityType?: 'project' | 'user' | 'channel' | 'task';
+  relatedEntityId?: string;  // ID of related project/user/etc for navigation
 }

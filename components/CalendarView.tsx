@@ -98,7 +98,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ projects, onSelectProject }
                                     {cell && (
                                         <>
                                             <span className={`text-xs font-mono font-bold mb-2 block
-                                                ${isCurrentMonth && cell.day === today ? 'text-indigo-400' : 'text-[#444]'}`}>
+                                                ${isCurrentMonth && cell.day === today ? 'text-indigo-400' : 'text-[#999]'}`}>
                                                 {cell.day}
                                             </span>
                                             

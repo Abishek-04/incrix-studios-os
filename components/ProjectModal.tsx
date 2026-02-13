@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Project, Role, Stage, Status, Channel, Platform, User } from '../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Project, Role, Stage, Status, Channel, Platform, User, Comment, Notification } from '../types';
 import { fetchSocialMetrics } from '../services/socialService';
-import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save } from 'lucide-react';
+import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save, Check, AlertCircle } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
 import Toast, { ToastType } from './ui/Toast';
+import { MentionInput } from './ui/MentionInput';
+import { NotificationService } from '../services/notificationService';
 
 interface ProjectModalProps {
   project: Project;
   currentUserRole: Role;
+  currentUser?: User;
   channels: Channel[];
   users: User[];
   onClose: () => void;
   onUpdate: (updatedProject: Project) => void;
   onCreate: (newProject: Project) => void;
   onDelete: (id: string) => void;
+  onNotification?: (notification: Notification) => void;
 }
 
-const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, channels, users, onClose, onUpdate, onCreate, onDelete }) => {
+const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'production' | 'discussion' | 'performance'>('overview');
   const [localProject, setLocalProject] = useState<Project>(project);
   const [isFetchingMetrics, setIsFetchingMetrics] = useState(false);
@@ -24,6 +28,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
   const [newTaskText, setNewTaskText] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [titleError, setTitleError] = useState('');
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
     visible: false,
     message: '',
@@ -39,14 +45,42 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
     setLocalProject(project);
   }, [project]);
 
-  const handleSave = () => {
-    onUpdate({
-      ...localProject,
-      lastUpdated: Date.now()
-    });
-  };
+  // ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !showDeleteConfirm) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, showDeleteConfirm]);
+
+  const handleSave = useCallback(() => {
+    if (!localProject.title.trim()) {
+      setTitleError('Project title is required');
+      return;
+    }
+    setTitleError('');
+    setSaveState('saving');
+    try {
+      onUpdate({
+        ...localProject,
+        lastUpdated: Date.now()
+      });
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 2000);
+    } catch {
+      setSaveState('error');
+      setTimeout(() => setSaveState('idle'), 3000);
+    }
+  }, [localProject, onUpdate]);
 
   const handleSaveAndClose = () => {
+    if (!localProject.title.trim()) {
+      setTitleError('Project title is required');
+      return;
+    }
     handleSave();
     onClose();
   };
@@ -124,9 +158,12 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
 
   const sendMessage = () => {
     if (!newMessage.trim()) return;
-    const comment = {
-      id: Date.now().toString(),
-      author: currentUserRole,
+
+    const comment: Comment = {
+      id: `CMT-${Date.now()}`,
+      authorId: currentUser?.id || 'unknown',
+      authorName: currentUser?.name || 'Unknown User',
+      authorRole: currentUserRole,
       text: newMessage,
       timestamp: Date.now()
     };
@@ -137,6 +174,39 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
     };
     setLocalProject(updated);
     onUpdate(updated);
+
+    // Extract @mentions and send notifications
+    if (onNotification && currentUser) {
+      const mentions = NotificationService.extractMentions(newMessage);
+
+      // Notify mentioned users
+      mentions.forEach(username => {
+        const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase());
+        if (mentionedUser && mentionedUser.id !== currentUser.id) {
+          onNotification(NotificationService.notifyMention(
+            mentionedUser.id,
+            currentUser.name,
+            localProject.id,
+            localProject.title
+          ));
+        }
+      });
+
+      // Notify project team (excluding self and already-mentioned)
+      const mentionNames = mentions.map(m => m.toLowerCase());
+      [localProject.creator, localProject.editor].forEach(teamMember => {
+        const user = users.find(u => u.name === teamMember);
+        if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase())) {
+          onNotification(NotificationService.notifyComment(
+            user.id,
+            currentUser.name,
+            localProject.id,
+            localProject.title
+          ));
+        }
+      });
+    }
+
     setNewMessage('');
   };
 
@@ -198,23 +268,45 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
   const creators = users.filter(u => u.role === 'creator');
   const editors = users.filter(u => u.role === 'editor' || u.role === 'mograph');
 
+  // Helper for comment avatar colors
+  const getUserAvatarColor = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.avatarColor || 'bg-gray-600';
+  };
+
+  const getRoleBadgeColor = (role: Role) => {
+    switch (role) {
+      case 'manager': return 'bg-indigo-500/20 text-indigo-400';
+      case 'creator': return 'bg-emerald-500/20 text-emerald-400';
+      case 'editor': return 'bg-amber-500/20 text-amber-400';
+      case 'mograph': return 'bg-purple-500/20 text-purple-400';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-[#191919] border border-[#2f2f2f] w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="project-modal-title"
+    >
+      <div className="bg-[#191919] border border-[#2f2f2f] w-full h-full sm:h-[85vh] sm:max-w-6xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
-        <div className="p-6 border-b border-[#2f2f2f] flex justify-between items-start bg-[#1e1e1e]">
-          <div className="flex-1 mr-8">
-            <div className="flex items-center space-x-3 mb-3">
+        <div className="p-4 sm:p-6 border-b border-[#2f2f2f] flex justify-between items-start bg-[#1e1e1e]">
+          <div className="flex-1 mr-4 sm:mr-8 min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-3">
               {/* Channel Selector */}
-              <div className="relative group min-w-[200px]">
-                <div className="absolute left-2.5 top-2 text-[#888] pointer-events-none">
+              <div className="relative group min-w-[160px] sm:min-w-[200px]">
+                <div className="absolute left-2.5 top-2 text-[#999] pointer-events-none">
                   <Globe size={14} />
                 </div>
                 <select
                   value={localProject.channelId || ''}
                   onChange={(e) => handleChannelChange(e.target.value)}
-                  className="w-full appearance-none bg-[#252525] border border-[#333] text-white text-xs font-medium rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer hover:bg-[#2a2a2a] transition-colors uppercase tracking-wide"
+                  aria-label="Select channel"
+                  className="w-full appearance-none bg-[#252525] border border-[#333] text-white text-xs font-medium rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-[#1e1e1e] cursor-pointer hover:bg-[#2a2a2a] transition-colors uppercase tracking-wide"
                 >
                   <option value="" disabled>Select Channel</option>
                   {channels.map(c => (
@@ -223,7 +315,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                     </option>
                   ))}
                 </select>
-                <div className="absolute right-2.5 top-2 pointer-events-none text-[#666]">
+                <div className="absolute right-2.5 top-2 pointer-events-none text-[#999]">
                   <ChevronDown size={14} />
                 </div>
               </div>
@@ -236,7 +328,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+                aria-label="Assign creator"
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="Unassigned">No Creator</option>
                 {creators.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
@@ -250,15 +343,16 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+                aria-label="Assign editor"
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="Unassigned">No Editor</option>
                 {editors.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
               </select>
 
-              <span className="text-[#555] text-xs font-mono">{localProject.id}</span>
+              <span className="text-[#999] text-xs font-mono hidden sm:inline">{localProject.id}</span>
               {localProject.archived && (
-                <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[#888] font-mono uppercase">Archived</span>
+                <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[#999] font-mono uppercase">Archived</span>
               )}
             </div>
 
@@ -271,7 +365,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none"
+                aria-label="Content format"
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
               >
                 <option value="LongForm">Long Form</option>
                 <option value="ShortForm">Shorts</option>
@@ -279,64 +374,97 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
             )}
 
             <input
+              id="project-modal-title"
               type="text"
               value={localProject.title}
-              onChange={(e) => setLocalProject({ ...localProject, title: e.target.value })}
+              onChange={(e) => {
+                setLocalProject({ ...localProject, title: e.target.value });
+                if (e.target.value.trim()) setTitleError('');
+              }}
               onBlur={handleSave}
-              className="bg-transparent text-2xl font-bold text-white w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#444]"
+              className={`bg-transparent text-xl sm:text-2xl font-bold text-white w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#999] ${titleError ? 'text-rose-400' : ''}`}
               placeholder="Project Title"
+              aria-label="Project title"
             />
+            {titleError && (
+              <p className="text-xs text-rose-500 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> {titleError}
+              </p>
+            )}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+            {/* Save State Indicator */}
+            {saveState !== 'idle' && (
+              <span className={`text-xs font-medium flex items-center gap-1 mr-2 ${
+                saveState === 'saving' ? 'text-[#999]' :
+                saveState === 'saved' ? 'text-emerald-400' :
+                'text-rose-400'
+              }`}>
+                {saveState === 'saving' && <><Loader2 size={12} className="animate-spin" /> Saving...</>}
+                {saveState === 'saved' && <><Check size={12} /> Saved</>}
+                {saveState === 'error' && <><AlertCircle size={12} /> Error</>}
+              </span>
+            )}
+
             <button
               onClick={handleSaveAndClose}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium shadow-lg shadow-indigo-900/20"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium shadow-lg shadow-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
               title="Save & Close"
+              aria-label="Save and close"
             >
               <Save size={16} />
               <span className="hidden sm:inline">Save</span>
             </button>
 
-            <div className="w-px h-6 bg-[#2f2f2f] mx-2"></div>
+            <div className="w-px h-6 bg-[#2f2f2f] mx-1 sm:mx-2 hidden sm:block"></div>
 
             <button
               onClick={handleBroadcast}
-              className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-white rounded-lg transition-all flex items-center space-x-2 text-xs font-medium"
+              className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-white rounded-lg transition-all flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
               title="Send Update to WhatsApp/Email"
+              aria-label="Broadcast update"
             >
               {isBroadcasting ? <Loader2 size={18} className="animate-spin" /> : <MessageCircle size={18} />}
-              <span className="hidden sm:inline">Broadcast</span>
+              <span className="hidden lg:inline">Broadcast</span>
             </button>
-            <div className="w-px h-6 bg-[#2f2f2f] mx-2"></div>
+            <div className="w-px h-6 bg-[#2f2f2f] mx-1 hidden sm:block"></div>
 
             {/* Duplicate Button */}
             <button
               onClick={handleDuplicate}
-              className="p-2 text-[#666] hover:text-indigo-400 rounded-lg transition-colors"
+              className="p-2 text-[#999] hover:text-indigo-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden sm:block"
               title="Save as New Project"
+              aria-label={`Duplicate project ${localProject.title}`}
             >
               <Files size={18} />
             </button>
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-[#666] hover:text-rose-500 rounded-lg transition-colors"
+              className="p-2 text-[#999] hover:text-rose-500 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500"
               title="Delete Project"
+              aria-label={`Delete project ${localProject.title}`}
             >
               <Trash2 size={18} />
             </button>
             <button
               onClick={handleToggleArchive}
-              className={`p-2 rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium
-                    ${localProject.archived ? 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20' : 'bg-[#252525] text-[#666] hover:text-white hover:bg-[#333]'}
+              className={`p-2 rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden sm:flex
+                    ${localProject.archived ? 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20' : 'bg-[#252525] text-[#999] hover:text-white hover:bg-[#333]'}
                 `}
               title={localProject.archived ? "Unarchive Project" : "Archive Project"}
+              aria-label={localProject.archived ? "Unarchive project" : "Archive project"}
             >
               {localProject.archived ? <RefreshCw size={18} /> : <Archive size={18} />}
-              <span className="hidden sm:inline">{localProject.archived ? 'Unarchive' : 'Archive'}</span>
+              <span className="hidden lg:inline">{localProject.archived ? 'Unarchive' : 'Archive'}</span>
             </button>
-            <div className="w-px h-6 bg-[#2f2f2f] mx-2"></div>
-            <button onClick={onClose} className="text-[#666] hover:text-white transition-colors">
+            <div className="w-px h-6 bg-[#2f2f2f] mx-1 hidden sm:block"></div>
+            <button
+              onClick={onClose}
+              className="text-[#999] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1"
+              aria-label="Close modal (ESC)"
+              title="Close (ESC)"
+            >
               <X size={24} />
             </button>
           </div>
@@ -436,7 +564,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                                 ${task.done ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'border-[#444] hover:border-[#666]'}`}>
                         {task.done && <div className="w-2 h-2 bg-current rounded-sm" />}
                       </button>
-                      <span className={`text-sm ${task.done ? 'text-[#444] line-through' : 'text-[#ccc]'}`}>
+                      <span className={`text-sm ${task.done ? 'text-[#999] line-through' : 'text-[#ccc]'}`}>
                         {task.text}
                       </span>
                     </div>
@@ -456,7 +584,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
                       onChange={(e) => setNewTaskText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                       placeholder="Add a new task..."
-                      className="flex-1 bg-transparent border-none text-sm text-[#eee] placeholder-[#444] focus:outline-none focus:placeholder-[#666] h-6"
+                      className="flex-1 bg-transparent border-none text-sm text-[#eee] placeholder-[#999] focus:outline-none focus:placeholder-[#666] h-6"
                     />
                   </div>
                 </div>
@@ -638,33 +766,52 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, currentUserRole, c
             <div className="flex flex-col h-full">
               <div className="flex-1 space-y-4 overflow-y-auto mb-4">
                 {localProject.comments.length === 0 ? (
-                  <div className="text-center text-[#444] mt-10 text-sm">No discussion yet.</div>
+                  <div className="text-center text-[#999] mt-10 text-sm">No discussion yet. Start the conversation below.</div>
                 ) : (
-                  localProject.comments.map(comment => (
-                    <div key={comment.id} className={`flex flex-col ${comment.author === currentUserRole ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-baseline space-x-2 mb-1">
-                        <span className="text-xs font-bold text-[#888] uppercase tracking-wider">{comment.author}</span>
-                        <span className="text-[10px] text-[#444] font-mono">{new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  localProject.comments.map(comment => {
+                    const isOwn = comment.authorId === currentUser?.id ||
+                      (!comment.authorId && comment.authorRole === currentUserRole);
+                    const authorName = comment.authorName || comment.authorRole || 'Unknown';
+                    const authorRole = comment.authorRole || comment.authorRole;
+
+                    return (
+                      <div key={comment.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white ${comment.authorId ? getUserAvatarColor(comment.authorId) : 'bg-gray-600'}`}>
+                            {authorName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-white">{authorName}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${getRoleBadgeColor(authorRole)}`}>
+                            {authorRole}
+                          </span>
+                          <span className="text-[10px] text-[#999] font-mono">
+                            {new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {comment.edited && <span className="text-[10px] text-[#999]">(edited)</span>}
+                        </div>
+                        <div className={`max-w-[80%] rounded-lg p-3 text-sm leading-relaxed ${isOwn ? 'bg-indigo-600 text-white' : 'bg-[#222] text-[#ddd]'}`}>
+                          {comment.text}
+                        </div>
                       </div>
-                      <div className={`max-w-[80%] rounded-lg p-3 text-sm ${comment.author === currentUserRole ? 'bg-indigo-600 text-white' : 'bg-[#222] text-[#ccc]'}`}>
-                        {comment.text}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
-              <div className="flex items-center space-x-2 pt-4 border-t border-[#2f2f2f]">
-                <input
-                  type="text"
-                  className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="Type a message..."
+              <div className="flex items-end space-x-2 pt-4 border-t border-[#2f2f2f]">
+                <MentionInput
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                  onChange={setNewMessage}
+                  onSubmit={sendMessage}
+                  users={users}
+                  placeholder="Type a message... (@ to mention)"
+                  className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-[#999]"
                 />
                 <button
                   onClick={sendMessage}
-                  className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
+                  disabled={!newMessage.trim()}
+                  className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-[#333] disabled:text-[#666] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  aria-label="Send message"
+                >
                   <Send size={18} />
                 </button>
               </div>

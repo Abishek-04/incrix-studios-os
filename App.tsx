@@ -129,6 +129,23 @@ function App() {
         setNotifications(notifications.map(n => ({ ...n, read: true })));
     };
 
+    const addNotification = (notification: Notification) => {
+        setNotifications(prev => [notification, ...prev]);
+    };
+
+    const handleNotificationClick = (notification: Notification) => {
+        // Mark as read
+        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+        // Navigate to related project
+        if (notification.relatedEntityType === 'project' && notification.relatedEntityId) {
+            const project = projects.find(p => p.id === notification.relatedEntityId);
+            if (project) {
+                setSelectedProject(project);
+                setShowNotifications(false);
+            }
+        }
+    };
+
     const handleCreateProject = (newProject: Project) => {
         setProjects([newProject, ...projects]);
     };
@@ -179,7 +196,7 @@ function App() {
                     </div>
 
                     <div className="p-4">
-                        <div className="text-xs font-bold text-[#444] uppercase tracking-wider mb-3 px-4">Menu</div>
+                        <div className="text-xs font-bold text-[#999] uppercase tracking-wider mb-3 px-4">Menu</div>
                         <nav className="space-y-1">
                             <button
                                 onClick={() => setActiveView('dashboard')}
@@ -222,7 +239,7 @@ function App() {
 
                             {currentRole === 'manager' && (
                                 <>
-                                    <div className="text-xs font-bold text-[#444] uppercase tracking-wider mt-6 mb-3 px-4">Admin</div>
+                                    <div className="text-xs font-bold text-[#999] uppercase tracking-wider mt-6 mb-3 px-4">Admin</div>
                                     <button
                                         onClick={() => setActiveView('team')}
                                         className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === 'team' ? 'bg-[#1e1e1e] text-white shadow-lg shadow-black/20' : 'text-[#888] hover:text-white hover:bg-[#1a1a1a]'}`}
@@ -287,13 +304,13 @@ function App() {
 
                     {/* Search Bar */}
                     <div className="hidden lg:flex items-center bg-[#151515] border border-[#222] rounded-xl px-3 py-1.5 w-64 mx-8 focus-within:border-[#333] transition-colors">
-                        <Search size={14} className="text-[#555]" />
+                        <Search size={14} className="text-[#999]" />
                         <input
                             type="text"
                             placeholder="Search projects..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent border-none outline-none text-sm text-white ml-2 w-full placeholder-[#555]"
+                            className="bg-transparent border-none outline-none text-sm text-white ml-2 w-full placeholder-[#999]"
                         />
                     </div>
 
@@ -321,6 +338,7 @@ function App() {
                                     notifications={notifications}
                                     onClose={() => setShowNotifications(false)}
                                     onMarkAllRead={handleMarkAllRead}
+                                    onNotificationClick={handleNotificationClick}
                                 />
                             )}
                         </div>
@@ -378,12 +396,14 @@ function App() {
                 <ProjectModal
                     project={selectedProject}
                     currentUserRole={currentRole}
+                    currentUser={currentUser}
                     channels={channels}
-                    users={users} // Pass users for assignment features later
+                    users={users}
                     onClose={() => setSelectedProject(null)}
                     onUpdate={handleUpdateProject}
                     onCreate={handleCreateProject}
                     onDelete={handleDeleteProject}
+                    onNotification={addNotification}
                 />
             )}
 

@@ -381,7 +381,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, projects, onUpda
                                                 </div>
                                             )}
                                             {!user.notifyViaEmail && !user.notifyViaWhatsapp && (
-                                                <span className="text-[#444] text-xs italic">No alerts</span>
+                                                <span className="text-[#999] text-xs italic">No alerts</span>
                                             )}
                                         </div>
                                     </td>
@@ -398,25 +398,25 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ users, projects, onUpda
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.ytLong >= (q.youtubeLong || 0) && (q.youtubeLong || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytLong}</span>
-                                            <span className="text-[#555]">/{q.youtubeLong || 0}</span>
+                                            <span className="text-[#999]">/{q.youtubeLong || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.ytShort >= (q.youtubeShort || 0) && (q.youtubeShort || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytShort}</span>
-                                            <span className="text-[#555]">/{q.youtubeShort || 0}</span>
+                                            <span className="text-[#999]">/{q.youtubeShort || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.igReel >= (q.instagramReel || 0) && (q.instagramReel || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.igReel}</span>
-                                            <span className="text-[#555]">/{q.instagramReel || 0}</span>
+                                            <span className="text-[#999]">/{q.instagramReel || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.course >= (q.course || 0) && (q.course || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.course}</span>
-                                            <span className="text-[#555]">/{q.course || 0}</span>
+                                            <span className="text-[#999]">/{q.course || 0}</span>
                                         </div>
                                     </td>
 
