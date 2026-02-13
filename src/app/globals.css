@@ -1,8 +1,43 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --font-inter: system-ui, -apple-system, sans-serif;
+    --font-jetbrains: 'Courier New', monospace;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html,
   body {
-    @apply bg-[#121212] text-white;
+    height: 100%;
+    font-family: var(--font-inter);
+  }
+
+  body {
+    @apply bg-[#0d0d0d] text-white antialiased;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  #__next {
+    height: 100%;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thumb-rounded::-webkit-scrollbar-thumb {
+    border-radius: 4px;
   }
 }
 
@@ -23,4 +58,71 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #444;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-custom {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.zoom-in-95 {
+  animation: zoomIn 0.5s ease-out;
+}
+
+.slide-in-from-top-1 {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.duration-500 {
+  animation-duration: 0.5s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
 }
