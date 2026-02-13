@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 
   value: string;
   users);
-  placeholder?: string;
-  className?: string;
 
 export const MentionInput = ({
   value,
@@ -25,7 +23,7 @@ export const MentionInput = ({
   );
 
   // Handle input change and detect @mentions
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     const newValue = e.target.value;
     onChange(newValue);
 
@@ -76,7 +74,7 @@ export const MentionInput = ({
   };
 
   // Handle keyboard navigation in mention dropdown
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e) => {
     if (showMentions && filteredUsers.length > 0) => {
       if (e.key === 'ArrowDown') => {
         e.preventDefault();

@@ -1,12 +1,10 @@
 import React from 'react';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
-    notifications: Notification[];
-    onNotificationClick?: (notification: Notification) => void;
 
 const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificationClick }) => {
-    const getIcon = (type: string) => {
-        switch (type) => {
+    const getIcon = (type) => {
+        switch (type) {
             case 'success': return <CheckCircle size={16} className="text-emerald-500" />;
             case 'warning': return <AlertTriangle size={16} className="text-amber-500" />;
             case 'error': return <AlertCircle size={16} className="text-rose-500" />;
@@ -14,7 +12,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
         }
     };
 
-    const getTimeAgo = (timestamp: number) => {
+    const getTimeAgo = (timestamp) => {
         const seconds = Math.floor(Date.now() - timestamp) / 1000);
         if (seconds < 60) return 'Just now';
         const minutes = Math.floor(seconds / 60);

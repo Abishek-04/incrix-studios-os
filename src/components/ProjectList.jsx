@@ -86,7 +86,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return filtered.sort(a, b) => {
             let comparison = 0;
 
-            switch (sortBy) => {
+            switch (sortBy) {
                 case 'creator':
                     comparison = a.creator.localeCompare(b.creator);
                     break;

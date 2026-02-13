@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
     message: string;
-    type?: ToastType;
     isVisible: boolean;
 
 const Toast = ({ message, type = 'success', isVisible, onClose }) => {

@@ -114,7 +114,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     };
 
     const getPlatformIcon = (platform: Platform) => {
-        switch (platform) => {
+        switch (platform) {
             case Platform.WhatsApp: return <MessageCircle size={18} />;
             case Platform.Email: return <Mail size={18} />;
             default: return <Globe size={18} />;
@@ -122,7 +122,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     };
 
     const getPlatformColor = (platform: Platform) => {
-        switch (platform) => {
+        switch (platform) {
             case Platform.WhatsApp: return 'bg-emerald-600';
             case Platform.Email: return 'bg-blue-500';
             case Platform.YouTube: return 'bg-red-600';

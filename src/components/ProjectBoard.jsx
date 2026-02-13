@@ -70,7 +70,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         onSelectProject(newProject); // Open it immediately
     };
 
-    const handleMoveProject = (e: React.MouseEvent, project: Project, direction: 'left' | 'right') => {
+    const handleMoveProject = (e) => {
         e.stopPropagation();
         const currentIndex = columns.indexOf(project.stage);
         let newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
@@ -110,7 +110,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     }, [projects, searchQuery, selectedMonth]);
 
     const getPriorityColor = (priority: Priority) => {
-        switch (priority) => {
+        switch (priority) {
             case Priority.High:
                 return 'bg-rose-500/30 text-rose-300 border-rose-500/50 shadow-lg shadow-rose-500/10';
             case Priority.Medium:

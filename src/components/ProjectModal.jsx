@@ -13,10 +13,8 @@ import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { NotificationService } from '@/services/notificationService';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-  currentUser?: User;
   channels: Channel[];
   users);
-  onNotification?: (notification: Notification) => void;
 
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -269,7 +267,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const getRoleBadgeColor = (role: Role) => {
-    switch (role) => {
+    switch (role) {
       case 'manager': return 'bg-indigo-500/20 text-indigo-400';
       case 'creator': return 'bg-emerald-500/20 text-emerald-400';
       case 'editor': return 'bg-amber-500/20 text-amber-400';
