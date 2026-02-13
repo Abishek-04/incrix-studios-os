@@ -1,7 +1,0 @@
-
-> incrix-studios-os@0.0.0 server
-> node server.js
-
-[dotenv@17.2.3] injecting env (2) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
-Server running on port 5001
-MongoDB Connected

@@ -6,10 +6,6 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // MongoDB connection timeout
-  serverRuntimeConfig: {
-    maxDuration: 10,
-  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
