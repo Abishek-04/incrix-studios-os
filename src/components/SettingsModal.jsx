@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { X, Save, Download, User as UserIcon, Mail, Phone, Bell, Shield } from 'lucide-react';
 
-    user: User;
-    projects: Project[];
     channels: Channel[];
-    users: User[];
+    users);
 
 const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser }) => {
     const [formData, setFormData] = useState<Partial<User>>({ ...user });

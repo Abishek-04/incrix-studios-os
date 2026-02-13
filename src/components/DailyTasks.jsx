@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, CheckCircle, Circle, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
     tasks: DailyTask[];
-    users: User[];
-    currentUser: User;
+    users);
 
 const DailyTasks = ({ tasks, users, currentUser, onUpdateTasks }) => {
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
@@ -33,11 +34,11 @@ const DailyTasks = ({ tasks, users, currentUser, onUpdateTasks }) => {
     };
 
     const toggleTask = (taskId: string) => {
-        onUpdateTasks(tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t));
+        onUpdateTasks(tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t);
     };
 
     const deleteTask = (taskId: string) => {
-        onUpdateTasks(tasks.filter(t => t.id !== taskId));
+        onUpdateTasks(tasks.filter(t => t.id !== taskId);
     };
 
     const filteredTasks = tasks.filter(t => t.date === filterDate);
@@ -92,7 +93,7 @@ const DailyTasks = ({ tasks, users, currentUser, onUpdateTasks }) => {
                         >
                             {users.map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
+                            )}
                         </select>
                     </div>
 
@@ -135,7 +136,7 @@ const DailyTasks = ({ tasks, users, currentUser, onUpdateTasks }) => {
                         )}
                         {amTasks.map(task => (
                             <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
-                        ))}
+                        )}
                     </div>
                 </div>
 
@@ -155,7 +156,7 @@ const DailyTasks = ({ tasks, users, currentUser, onUpdateTasks }) => {
                         )}
                         {pmTasks.map(task => (
                             <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} />
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>

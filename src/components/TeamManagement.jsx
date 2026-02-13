@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Edit2, Save, X, Shield, Mail, Target, Phone, MessageCircle, Bell } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import ConfirmationModal from './ui/ConfirmationModal';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import Toast, { ToastType } from './ui/Toast';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-    users: User[];
-    projects: Project[];
+    users);
 
 const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     const [isAdding, setIsAdding] = useState(false);
@@ -38,12 +41,12 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     };
 
     const handleSave = () => {
-        if (!formData.name || !formData.email) {
+        if (!formData.name || !formData.email) => {
             showToast('Please fill in all required fields.', 'error');
             return;
         }
 
-        if (editingId) {
+        if (editingId) => {
             // Update existing
             const updated = users.map(u => u.id === editingId ? { ...u, ...formData } as User : u);
             onUpdateUsers(updated);
@@ -71,7 +74,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         setFormData({ name: '', role: 'creator', email: '', phoneNumber: '', notifyViaWhatsapp: false, notifyViaEmail: false, niche: '', quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' } });
     };
 
-    const startEdit = (user: User) => {
+    const startEdit = (user) => {
         setEditingId(user.id);
         const defaultQuota = { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' as const };
 
@@ -100,8 +103,8 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     };
 
     const handleDelete = () => {
-        if (userToDelete) {
-            onUpdateUsers(users.filter(u => u.id !== userToDelete));
+        if (userToDelete) => {
+            onUpdateUsers(users.filter(u => u.id !== userToDelete);
             showToast('User removed from team.');
             setDeleteModalOpen(false);
             setUserToDelete(null);
@@ -118,10 +121,10 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         // However, usually projects are assigned to people. `Project` has `assignedTo` array usually?
         // Let's check `types.ts` again. It has `assignedTo?: string[]`.
 
-        const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId)));
+        const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId));
 
         return {
-            ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length,
+            ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length,
             ytShort: userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length,
             igReel: userProjects.filter(p => p.platform === Platform.Instagram).length,
             course: userProjects.filter(p => p.platform === Platform.Course).length
@@ -134,7 +137,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                 message={toast.message}
                 type={toast.type}
                 isVisible={toast.visible}
-                onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                onClose={() => setToast(prev => ({ ...prev, visible: false })}
             />
 
             <ConfirmationModal

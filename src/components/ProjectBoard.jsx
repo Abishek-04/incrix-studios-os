@@ -1,9 +1,12 @@
 import React, { useMemo, useState } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2 } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import ConfirmationModal from './ui/ConfirmationModal';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-    projects: Project[];
     channels: Channel[];
     searchQuery: string;
 
@@ -76,7 +79,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         if (newIndex < 0) newIndex = 0;
         if (newIndex >= columns.length) newIndex = columns.length - 1;
 
-        if (newIndex !== currentIndex) {
+        if (newIndex !== currentIndex) => {
             const newStage = columns[newIndex];
             onUpdateProject({ ...project, stage: newStage, lastUpdated: Date.now() });
         }
@@ -90,12 +93,12 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 if (p.stage !== stage) return false;
 
                 // Apply Filters
-                if (searchQuery) {
+                if (searchQuery) => {
                     const query = searchQuery.toLowerCase();
-                    if (!p.title.toLowerCase().includes(query) && !p.topic.toLowerCase().includes(query)) return false;
+                    if (!p.title.toLowerCase().includes(query) && !p.topic.toLowerCase().includes(query) return false;
                 }
 
-                if (selectedMonth !== 'all') {
+                if (selectedMonth !== 'all') => {
                     const date = new Date(p.dueDate);
                     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     if (key !== selectedMonth) return false;
@@ -107,7 +110,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     }, [projects, searchQuery, selectedMonth]);
 
     const getPriorityColor = (priority: Priority) => {
-        switch (priority) {
+        switch (priority) => {
             case Priority.High:
                 return 'bg-rose-500/30 text-rose-300 border-rose-500/50 shadow-lg shadow-rose-500/10';
             case Priority.Medium:
@@ -136,7 +139,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                             <option value="all">All Dates</option>
                             {availableMonths.map(month => (
                                 <option key={month} value={month}>{formatMonth(month)}</option>
-                            ))}
+                            )}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -232,7 +235,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                     role="button"
                                                     tabIndex={0}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                        if (e.key === 'Enter' || e.key === ' ') => {
                                                             e.preventDefault();
                                                             onSelectProject(project);
                                                         }
@@ -341,7 +344,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                         )}
                                                     </div>
                                                 </motion.div>
-                                            ))}
+                                            )}
                                         </AnimatePresence>
 
                                         {stageProjects.length === 0 && (
@@ -374,7 +377,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 title="Delete Project?"
                 message={`Are you sure you want to delete "${projectToDelete?.title}"? This action cannot be undone.`}
                 onConfirm={() => {
-                    if (projectToDelete) {
+                    if (projectToDelete) => {
                         onDeleteProject(projectToDelete.id);
                         setProjectToDelete(null);
                     }

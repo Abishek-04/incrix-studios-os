@@ -1,21 +1,21 @@
 
 import React, { useMemo } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { AlertCircle, CheckCircle, Clock, Activity, Flame, Calendar, Target, TrendingUp, AlertTriangle, Film, Users } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-    projects: Project[];
-    currentUser: User;
-    users?: User[]; // Optional list of all users for Manager view
 
 // Helper to calculate quota progress
-const calculateProgress = (user: User, allProjects: Project[]) => {
+const calculateProgress = (user, allProjects) => {
     if (!user.quota) return null;
 
     const now = new Date();
     let startDate = new Date();
 
     // Set start date based on period
-    if (user.quota.period === 'weekly') {
+    if (user.quota.period === 'weekly') => {
         const day = startDate.getDay();
         const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
         startDate.setDate(diff);
@@ -37,12 +37,12 @@ const calculateProgress = (user: User, allProjects: Project[]) => {
         p.stage !== Stage.Backlog
     );
 
-    const ytLongActual = userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
+    const ytLongActual = userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length;
     const ytShortActual = userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
     const instaReelActual = userProjects.filter(p => p.platform === Platform.Instagram).length;
     const courseActual = userProjects.filter(p => p.platform === Platform.Course).length;
 
-    const ytLongPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
+    const ytLongPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length;
     const ytShortPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
     const instaReelPipeline = pipelineProjects.filter(p => p.platform === Platform.Instagram).length;
     const coursePipeline = pipelineProjects.filter(p => p.platform === Platform.Course).length;
@@ -52,14 +52,14 @@ const calculateProgress = (user: User, allProjects: Project[]) => {
 
     // Calculate days remaining in period
     let endDate = new Date();
-    if (user.quota.period === 'weekly') {
+    if (user.quota.period === 'weekly') => {
         const dayOfWeek = endDate.getDay();
         const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
         endDate = new Date(endDate.getTime() + daysUntilSunday * 86400000);
     } else {
         endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
     }
-    const daysRemaining = Math.max(0, Math.ceil(endDate.getTime() - Date.now()) / 86400000));
+    const daysRemaining = Math.max(0, Math.ceil(endDate.getTime() - Date.now() / 86400000);
 
     return {
         daysRemaining,
@@ -101,7 +101,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
             const isStuck = (Date.now() - p.lastUpdated) > (48 * 60 * 60 * 1000);
             return isStuck && p.status !== Status.Done;
         }).length;
-        const urgent = projects.filter(p => (p.dueDate - Date.now()) < (3 * 24 * 60 * 60 * 1000) && p.stage !== Stage.Done).length;
+        const urgent = projects.filter(p => (p.dueDate - Date.now() < (3 * 24 * 60 * 60 * 1000) && p.stage !== Stage.Done).length;
         const doneCount = projects.filter(p => p.stage === Stage.Done).length;
         const totalCount = projects.length;
         const successRate = totalCount > 0 ? Math.round(doneCount / totalCount) * 100) : 0;
@@ -111,11 +111,11 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     const workloadData = useMemo(() => {
         const creators: Record<string, number> = {};
         projects.forEach(p => {
-            if (p.status === Status.InProgress) {
+            if (p.status === Status.InProgress) => {
                 creators[p.creator] = (creators[p.creator] || 0) + 1;
             }
         });
-        return Object.entries(creators).map([name, count]) => ({ name, count, risk: count > 3 }));
+        return Object.entries(creators).map([name, count]) => ({ name, count, risk: count > 3 });
     }, [projects]);
 
     // --- Personal Stats (Creator/Editor) ---
@@ -131,7 +131,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
 
         return { pending, completed, nextDeadline, quotaProgress };
     }, [projects, currentUser]);
-    if (projects.length === 0) {
+    if (projects.length === 0) => {
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col items-center justify-center text-center">
                 <div className="max-w-md space-y-6">
@@ -171,7 +171,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
         );
     }
 
-    if (!isManager) {
+    if (!isManager) => {
         // --- CREATOR / EDITOR DASHBOARD ---
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -303,7 +303,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                             {personalStats.nextDeadline ? (
                                 <div>
                                     <div className="text-lg font-bold text-white truncate max-w-[150px]">{personalStats.nextDeadline.title}</div>
-                                    <div className="text-xs text-amber-500 mt-1">Due in {Math.ceil(personalStats.nextDeadline.dueDate - Date.now()) / (1000 * 60 * 60 * 24))} days</div>
+                                    <div className="text-xs text-amber-500 mt-1">Due in {Math.ceil(personalStats.nextDeadline.dueDate - Date.now() / (1000 * 60 * 60 * 24)} days</div>
                                 </div>
                             ) : (
                                 <span className="text-lg text-[#666] italic">No deadlines</span>
@@ -334,7 +334,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                                     </div>
                                     <span className="text-xs text-[#666] uppercase">{p.stage}</span>
                                 </div>
-                            ))}
+                            )}
                         {personalStats.pending === 0 && <div className="text-[#999] text-sm italic">All caught up!</div>}
                     </div>
                 </div>
@@ -343,7 +343,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     }
 
     // --- MANAGER DASHBOARD ---
-    if (projects.length === 0) {
+    if (projects.length === 0) => {
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col items-center justify-center text-center">
                 <div className="max-w-md space-y-6">
@@ -549,7 +549,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
                                     {workloadData.map(entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.risk ? '#ef4444' : '#6366f1'} />
-                                    ))}
+                                    )}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>

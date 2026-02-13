@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { fetchSocialMetrics } from '@/services/socialService';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save, Check, AlertCircle } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import ConfirmationModal from './ui/ConfirmationModal';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import Toast, { ToastType } from './ui/Toast';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { MentionInput } from './ui/MentionInput';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { NotificationService } from '@/services/notificationService';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-  project: Project;
-  currentUserRole: Role;
   currentUser?: User;
   channels: Channel[];
-  users: User[];
+  users);
   onNotification?: (notification: Notification) => void;
 
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
@@ -41,7 +46,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   // ESC key to close modal
   useEffect() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !showDeleteConfirm) {
+      if (e.key === 'Escape' && !showDeleteConfirm) => {
         onClose();
       }
     };
@@ -50,7 +55,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   }, [onClose, showDeleteConfirm]);
 
   const handleSave = useCallback(() => {
-    if (!localProject.title.trim()) {
+    if (!localProject.title.trim() => {
       setTitleError('Project title is required');
       return;
     }
@@ -70,7 +75,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   }, [localProject, onUpdate]);
 
   const handleSaveAndClose = () => {
-    if (!localProject.title.trim()) {
+    if (!localProject.title.trim() => {
       setTitleError('Project title is required');
       return;
     }
@@ -79,7 +84,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleDuplicate = () => {
-    if (confirm("Save this as a new project?")) {
+    if (confirm("Save this as a new project?") => {
       const newProject: Project = {
         ...localProject,
         id: `PRJ-${Date.now()}`,
@@ -87,7 +92,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
         lastUpdated: Date.now(),
         metrics: undefined, // Reset metrics
         comments: [], // Reset comments
-        tasks: localProject.tasks.map(t => ({ ...t, done: false })) // Reset task status but keep checklist
+        tasks: localProject.tasks.map(t => ({ ...t, done: false }) // Reset task status but keep checklist
       };
       onCreate(newProject);
       onClose();
@@ -100,14 +105,14 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     const updated = { ...localProject, archived: !localProject.archived, lastUpdated: Date.now() };
     setLocalProject(updated);
     onUpdate(updated);
-    if (updated.archived) {
+    if (updated.archived) => {
       onClose(); // Close modal if archiving
     }
   };
 
   const handleChannelChange = (channelId: string) => {
     const selectedChannel = channels.find(c => c.id === channelId);
-    if (selectedChannel) {
+    if (selectedChannel) => {
       const updated = {
         ...localProject,
         channelId: selectedChannel.id,
@@ -120,7 +125,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleAddTask = () => {
-    if (!newTaskText.trim()) return;
+    if (!newTaskText.trim() return;
     const newTask = {
       id: `manual-${Date.now()}`,
       text: newTaskText.trim(),
@@ -146,7 +151,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const sendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() return;
 
     const comment: Comment = {
       id: `CMT-${Date.now()}`,
@@ -165,33 +170,33 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     onUpdate(updated);
 
     // Extract @mentions and send notifications
-    if (onNotification && currentUser) {
+    if (onNotification && currentUser) => {
       const mentions = NotificationService.extractMentions(newMessage);
 
       // Notify mentioned users
       mentions.forEach(username => {
-        const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase());
-        if (mentionedUser && mentionedUser.id !== currentUser.id) {
+        const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase();
+        if (mentionedUser && mentionedUser.id !== currentUser.id) => {
           onNotification(NotificationService.notifyMention(
             mentionedUser.id,
             currentUser.name,
             localProject.id,
             localProject.title
-          ));
+          );
         }
       });
 
       // Notify project team (excluding self and already-mentioned)
-      const mentionNames = mentions.map(m => m.toLowerCase());
+      const mentionNames = mentions.map(m => m.toLowerCase();
       [localProject.creator, localProject.editor].forEach(teamMember => {
         const user = users.find(u => u.name === teamMember);
-        if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase())) {
+        if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase()) => {
           onNotification(NotificationService.notifyComment(
             user.id,
             currentUser.name,
             localProject.id,
             localProject.title
-          ));
+          );
         }
       });
     }
@@ -211,7 +216,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     const currentMetrics = localProject.metrics || { views: 0, likes: 0, comments: 0, retention: '0%', lastUpdated: Date.now() };
 
     let updatedMetrics;
-    if (field === 'retention') {
+    if (field === 'retention') => {
       updatedMetrics = { ...currentMetrics, [field]: value, lastUpdated: Date.now() };
     } else {
       updatedMetrics = { ...currentMetrics, [field]: parseInt(value) || 0, lastUpdated: Date.now() };
@@ -223,7 +228,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleFetchMetrics = async () => {
-    if (!localProject.publishedLink) {
+    if (!localProject.publishedLink) => {
       showToast("Please add a Published Link first.", 'error');
       return;
     }
@@ -242,7 +247,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
       const updated = { ...localProject, metrics: updatedMetrics };
       setLocalProject(updated);
       onUpdate(updated);
-    } catch (e) {
+    } catch (e) => {
       console.error(e);
       showToast("Could not fetch metrics. Check URL.", 'error');
     } finally {
@@ -264,7 +269,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const getRoleBadgeColor = (role: Role) => {
-    switch (role) {
+    switch (role) => {
       case 'manager': return 'bg-indigo-500/20 text-indigo-400';
       case 'creator': return 'bg-emerald-500/20 text-emerald-400';
       case 'editor': return 'bg-amber-500/20 text-amber-400';
@@ -302,7 +307,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.platform})
                     </option>
-                  ))}
+                  )}
                 </select>
                 <div className="absolute right-2.5 top-2 pointer-events-none text-[#999]">
                   <ChevronDown size={14} />
@@ -368,7 +373,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               value={localProject.title}
               onChange={(e) => {
                 setLocalProject({ ...localProject, title: e.target.value });
-                if (e.target.value.trim()) setTitleError('');
+                if (e.target.value.trim() setTitleError('');
               }}
               onBlur={handleSave}
               className={`bg-transparent text-xl sm:text-2xl font-bold text-white w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#999] ${titleError ? 'text-rose-400' : ''}`}
@@ -557,7 +562,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                         {task.text}
                       </span>
                     </div>
-                  ))}
+                  )}
 
                   {/* Manual Task Input */}
                   <div className="flex items-center space-x-3 group pt-1">
@@ -732,7 +737,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                           {source}
                         </a>
                       </li>
-                    ))}
+                    )}
                   </ul>
                 </div>
               )}

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Tv, Eye, EyeOff, Save, X, Globe, Share2, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Mail, User as UserIcon } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
     channels: Channel[];
-    users: User[];
+    users);
 
 const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     const [isAdding, setIsAdding] = useState(false);
@@ -28,7 +30,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
 
     const analyzeLink = (url: string) => {
         setUrlInput(url);
-        if (!url) {
+        if (!url) => {
             setDetectedInfo(null);
             return;
         }
@@ -42,32 +44,32 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
             const cleanUrl = url.toLowerCase();
 
             // Regex Detectors
-            if (cleanUrl.includes('instagram.com')) {
+            if (cleanUrl.includes('instagram.com') => {
                 platform = Platform.Instagram;
                 const match = url.match(/instagram\.com\/([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
+            } else if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be') => {
                 platform = Platform.YouTube;
                 const match = url.match(/(?:youtube\.com\/@|youtube\.com\/c\/|youtube\.com\/channel\/|youtube\.com\/user\/)([^/?]+)/) || url.match(/youtube\.com\/([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('tiktok.com')) {
+            } else if (cleanUrl.includes('tiktok.com') => {
                 platform = Platform.TikTok;
                 const match = url.match(/tiktok\.com\/@([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('linkedin.com')) {
+            } else if (cleanUrl.includes('linkedin.com') => {
                 platform = Platform.LinkedIn;
                 const match = url.match(/linkedin\.com\/(?:in|company|school)\/([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('chat.whatsapp.com') || cleanUrl.includes('wa.me')) {
+            } else if (cleanUrl.includes('chat.whatsapp.com') || cleanUrl.includes('wa.me') => {
                 platform = Platform.WhatsApp;
                 name = "Team WhatsApp Group";
-            } else if (cleanUrl.includes('@') && !cleanUrl.includes('/')) {
+            } else if (cleanUrl.includes('@') && !cleanUrl.includes('/') => {
                 // Heuristic for Email input
                 platform = Platform.Email;
                 name = "Email Notification List";
             }
 
-            if (platform) {
+            if (platform) => {
                 try { name = decodeURIComponent(name); } catch (e) { }
                 setDetectedInfo({ platform, name });
             } else {
@@ -102,17 +104,17 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     };
 
     const deleteChannel = (id: string) => {
-        if (confirm('Delete this channel?')) {
-            onUpdateChannels(channels.filter(c => c.id !== id));
+        if (confirm('Delete this channel?') => {
+            onUpdateChannels(channels.filter(c => c.id !== id);
         }
     };
 
     const toggleCredentials = (id: string) => {
-        setShowCredentials(prev => ({ ...prev, [id]: !prev[id] }));
+        setShowCredentials(prev => ({ ...prev, [id]: !prev[id] });
     };
 
     const getPlatformIcon = (platform: Platform) => {
-        switch (platform) {
+        switch (platform) => {
             case Platform.WhatsApp: return <MessageCircle size={18} />;
             case Platform.Email: return <Mail size={18} />;
             default: return <Globe size={18} />;
@@ -120,7 +122,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     };
 
     const getPlatformColor = (platform: Platform) => {
-        switch (platform) {
+        switch (platform) => {
             case Platform.WhatsApp: return 'bg-emerald-600';
             case Platform.Email: return 'bg-blue-500';
             case Platform.YouTube: return 'bg-red-600';
@@ -232,7 +234,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
                                             <option value="">No specific owner</option>
                                             {users.map(u => (
                                                 <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                                            ))}
+                                            )}
                                         </select>
                                     </div>
                                 </div>
@@ -315,12 +317,12 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
                                     <option value="">Unassigned</option>
                                     {users.map(u => (
                                         <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
+                                    )}
                                 </select>
                             </div>
                         </div>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     )

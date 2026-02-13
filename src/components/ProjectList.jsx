@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-    projects: Project[];
     channels: Channel[];
     searchQuery: string;
 
@@ -40,8 +41,8 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return date.toLocaleString('default', { month: 'long', year: 'numeric' });
     };
 
-    const getChannelName = (project: Project) => {
-        if (project.channelId) {
+    const getChannelName = (project) => {
+        if (project.channelId) => {
             const channel = channels.find(c => c.id === project.channelId);
             if (channel) return channel.name;
         }
@@ -52,7 +53,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         // First, filter the projects
         const filtered = projects.filter(p => {
             // Search Query Filter
-            if (searchQuery) {
+            if (searchQuery) => {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch = p.title.toLowerCase().includes(query) ||
                     p.topic.toLowerCase().includes(query) ||
@@ -62,7 +63,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
 
             // Status/Archive Filter
             let matchesStatus = true;
-            if (filter === 'archived') {
+            if (filter === 'archived') => {
                 matchesStatus = p.archived;
             } else {
                 if (p.archived) return false; // Hide archived for other views
@@ -72,7 +73,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
 
             // Date Filter
             let matchesDate = true;
-            if (selectedMonth !== 'all') {
+            if (selectedMonth !== 'all') => {
                 const date = new Date(p.dueDate);
                 const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 matchesDate = key === selectedMonth;
@@ -85,7 +86,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return filtered.sort(a, b) => {
             let comparison = 0;
 
-            switch (sortBy) {
+            switch (sortBy) => {
                 case 'creator':
                     comparison = a.creator.localeCompare(b.creator);
                     break;
@@ -132,7 +133,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                             <option value="all">All Dates</option>
                             {availableMonths.map(month => (
                                 <option key={month} value={month}>{formatMonth(month)}</option>
-                            ))}
+                            )}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <svg className="w-3 h-3 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -315,7 +316,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 )}
@@ -403,7 +404,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
 

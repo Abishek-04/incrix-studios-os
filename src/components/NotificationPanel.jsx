@@ -6,7 +6,7 @@ import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificationClick }) => {
     const getIcon = (type: string) => {
-        switch (type) {
+        switch (type) => {
             case 'success': return <CheckCircle size={16} className="text-emerald-500" />;
             case 'warning': return <AlertTriangle size={16} className="text-amber-500" />;
             case 'error': return <AlertCircle size={16} className="text-rose-500" />;
@@ -70,7 +70,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
                                 )}
                             </div>
                         </div>
-                    ))
+                    )
                 )}
             </div>
 

@@ -6,7 +6,7 @@ import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
 const Toast = ({ message, type = 'success', isVisible, onClose }) => {
     useEffect() => {
-        if (isVisible) {
+        if (isVisible) => {
             const timer = setTimeout() => {
                 onClose();
             }, 3000);

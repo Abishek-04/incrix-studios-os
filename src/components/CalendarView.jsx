@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
+import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
-    projects: Project[];
 
 const CalendarView = ({ projects, onSelectProject }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(new Date();
 
     const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
@@ -19,12 +20,12 @@ const CalendarView = ({ projects, onSelectProject }) => {
         let dayCounter = 1;
 
         // Create weeks
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 6; i++) => {
             const week = [];
-            for (let j = 0; j < 7; j++) {
-                if (i === 0 && j < firstDay) {
+            for (let j = 0; j < 7; j++) => {
+                if (i === 0 && j < firstDay) => {
                     week.push(null); // Empty slot before 1st of month
-                } else if (dayCounter > days) {
+                } else if (dayCounter > days) => {
                     week.push(null); // Empty slot after last day
                 } else {
                     const dateTimestamp = new Date(year, month, dayCounter).setHours(0,0,0,0);
@@ -44,8 +45,8 @@ const CalendarView = ({ projects, onSelectProject }) => {
         return grid;
     }, [currentDate, projects]);
 
-    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
 
     const today = new Date().getDate();
     const isCurrentMonth = new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
@@ -77,7 +78,7 @@ const CalendarView = ({ projects, onSelectProject }) => {
                         <div key={day} className="py-3 text-center text-xs font-bold text-[#666] uppercase tracking-wider">
                             {day}
                         </div>
-                    ))}
+                    )}
                 </div>
 
                 {/* Calendar Grid */}
@@ -115,14 +116,14 @@ const CalendarView = ({ projects, onSelectProject }) => {
                                                         {project.stage !== Stage.Done && <Clock size={8} className="inline mr-1" />}
                                                         {project.title}
                                                     </div>
-                                                ))}
+                                                )}
                                             </div>
                                         </>
                                     )}
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </div>
