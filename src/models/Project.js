@@ -1,62 +1,19 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-  id: string;
-  title: string;
-  topic: string;
-  vertical: string;
-  platform: string;
-  contentFormat?: 'LongForm' | 'ShortForm';
-  channelId?: mongoose.Types.ObjectId;
-  role: string;
-  creatorId: mongoose.Types.ObjectId;
-  editorId?: mongoose.Types.ObjectId;
-  stage: string;
-  status: string;
-  priority: string;
-  lastUpdated: number;
-  dueDate: number;
-  durationMinutes: number;
-  script: string;
-  tasks: { id: string; text: string; done: boolean }[];
-  technicalNotes: string;
-  reviewLink?: string;
-  publishedLink?: string;
-  comments: {
-    id: string;
-    authorId: mongoose.Types.ObjectId;
-    text: string;
-    timestamp: number;
-  }[];
-  metrics?: {
-    views: number;
-    likes: number;
-    comments: number;
-    retention: string;
-    sources?: string[];
-    lastUpdated: number;
-  };
-  hasMographNeeds: boolean;
-  archived: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+const { Schema } = mongoose;
 
-const ProjectSchema: Schema = new Schema(
+const ProjectSchema = new Schema(
   {
     id: { type: String, required: true, unique: true, index: true },
-    title: { type: String, required: true, index: 'text' }, // Full-text search
+    title: { type: String, required: true, index: 'text' },
     topic: { type: String, required: true },
     vertical: { type: String, required: true, index: true },
     platform: { type: String, required: true, index: true },
     contentFormat: { type: String, enum: ['LongForm', 'ShortForm'] },
     channelId: { type: Schema.Types.ObjectId, ref: 'Channel', index: true },
     role: { type: String, required: true, index: true },
-    creatorId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      index: true
-    },
-    editorId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    creator: { type: String, required: true, index: true },
+    editor: { type: String, index: true },
     stage: { type: String, required: true, index: true },
     status: { type: String, required: true, index: true },
     priority: { type: String, required: true, index: true },
@@ -77,7 +34,7 @@ const ProjectSchema: Schema = new Schema(
     comments: [
       {
         id: String,
-        authorId: { type: Schema.Types.ObjectId, ref: 'User' },
+        author: String,
         text: String,
         timestamp: Number
       }
@@ -99,10 +56,10 @@ const ProjectSchema: Schema = new Schema(
 );
 
 // Compound indexes for common queries
-ProjectSchema.index({ creatorId: 1, stage: 1 });
+ProjectSchema.index({ creator: 1, stage: 1 });
 ProjectSchema.index({ archived: 1, lastUpdated: -1 });
 ProjectSchema.index({ stage: 1, status: 1 });
 ProjectSchema.index({ dueDate: 1, archived: 1 });
 ProjectSchema.index({ platform: 1, archived: 1 });
 
-export default mongoose.model<IProject>('Project', ProjectSchema);
+export default mongoose.models.Project || mongoose.model('Project', ProjectSchema);

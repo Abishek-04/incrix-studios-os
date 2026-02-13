@@ -1,24 +1,11 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-  id: string;
-  userId: mongoose.Types.ObjectId;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  read: boolean;
-  relatedEntityType?: 'project' | 'user' | 'channel' | 'task';
-  relatedEntityId?: string;
-  createdAt: Date;
+const { Schema } = mongoose;
 
-const NotificationSchema: Schema = new Schema(
+const NotificationSchema = new Schema(
   {
     id: { type: String, required: true, unique: true, index: true },
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      index: true
-    },
+    userId: { type: String, required: true, index: true },
     title: { type: String, required: true },
     message: { type: String, required: true },
     type: {
@@ -42,7 +29,4 @@ const NotificationSchema: Schema = new Schema(
 NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, createdAt: -1 });
 
-export default mongoose.model<INotification>(
-  'Notification',
-  NotificationSchema
-);
+export default mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
