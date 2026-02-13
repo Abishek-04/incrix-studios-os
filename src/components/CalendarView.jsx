@@ -23,9 +23,9 @@ const CalendarView = ({ projects, onSelectProject }) => {
         for (let i = 0; i < 6; i++) => {
             const week = [];
             for (let j = 0; j < 7; j++) => {
-                if (i === 0 && j < firstDay) => {
+                if (i === 0 && j < firstDay) {
                     week.push(null); // Empty slot before 1st of month
-                } else if (dayCounter > days) => {
+                } else if (dayCounter > days) {
                     week.push(null); // Empty slot after last day
                 } else {
                     const dateTimestamp = new Date(year, month, dayCounter).setHours(0,0,0,0);

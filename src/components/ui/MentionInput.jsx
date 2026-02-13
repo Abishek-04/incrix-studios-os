@@ -32,7 +32,7 @@ export const MentionInput = ({
     const textBeforeCursor = newValue.slice(0, cursorPos);
     const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
-    if (lastAtIndex !== -1) => {
+    if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
       // Show mentions if no space after @
       if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) => {
@@ -65,7 +65,7 @@ export const MentionInput = ({
 
     // Focus back on input
     setTimeout() => {
-      if (inputRef.current) => {
+      if (inputRef.current) {
         const newCursorPos = lastAtIndex + user.name.length + 2;
         inputRef.current.focus();
         inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
@@ -75,27 +75,27 @@ export const MentionInput = ({
 
   // Handle keyboard navigation in mention dropdown
   const handleKeyDown = (e) => {
-    if (showMentions && filteredUsers.length > 0) => {
-      if (e.key === 'ArrowDown') => {
+    if (showMentions && filteredUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedMentionIndex(prev) =>
           prev < filteredUsers.length - 1 ? prev + 1 : prev
         );
-      } else if (e.key === 'ArrowUp') => {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedMentionIndex(prev) => (prev > 0 ? prev - 1 : 0);
-      } else if (e.key === 'Enter' && !e.shiftKey) => {
+      } else if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         selectMention(filteredUsers[selectedMentionIndex]);
         return;
-      } else if (e.key === 'Escape') => {
+      } else if (e.key === 'Escape') {
         e.preventDefault();
         setShowMentions(false);
         return;
       }
     }
 
-    if (e.key === 'Enter' && !e.shiftKey && !showMentions) => {
+    if (e.key === 'Enter' && !e.shiftKey && !showMentions) {
       e.preventDefault();
       onSubmit();
     }

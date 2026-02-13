@@ -42,7 +42,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
     };
 
     const getChannelName = (project) => {
-        if (project.channelId) => {
+        if (project.channelId) {
             const channel = channels.find(c => c.id === project.channelId);
             if (channel) return channel.name;
         }
@@ -53,7 +53,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         // First, filter the projects
         const filtered = projects.filter(p => {
             // Search Query Filter
-            if (searchQuery) => {
+            if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch = p.title.toLowerCase().includes(query) ||
                     p.topic.toLowerCase().includes(query) ||
@@ -63,7 +63,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
 
             // Status/Archive Filter
             let matchesStatus = true;
-            if (filter === 'archived') => {
+            if (filter === 'archived') {
                 matchesStatus = p.archived;
             } else {
                 if (p.archived) return false; // Hide archived for other views
@@ -73,7 +73,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
 
             // Date Filter
             let matchesDate = true;
-            if (selectedMonth !== 'all') => {
+            if (selectedMonth !== 'all') {
                 const date = new Date(p.dueDate);
                 const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 matchesDate = key === selectedMonth;

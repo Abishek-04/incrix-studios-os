@@ -20,7 +20,7 @@ const Login = ({ onLogin }) => {
 
             const data = await response.json();
 
-            if (response.ok) => {
+            if (response.ok) {
                 localStorage.setItem('auth_user', JSON.stringify(data.user);
                 onLogin(data.user);
             } else {

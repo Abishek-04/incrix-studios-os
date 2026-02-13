@@ -79,7 +79,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         if (newIndex < 0) newIndex = 0;
         if (newIndex >= columns.length) newIndex = columns.length - 1;
 
-        if (newIndex !== currentIndex) => {
+        if (newIndex !== currentIndex) {
             const newStage = columns[newIndex];
             onUpdateProject({ ...project, stage: newStage, lastUpdated: Date.now() });
         }
@@ -93,12 +93,12 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 if (p.stage !== stage) return false;
 
                 // Apply Filters
-                if (searchQuery) => {
+                if (searchQuery) {
                     const query = searchQuery.toLowerCase();
                     if (!p.title.toLowerCase().includes(query) && !p.topic.toLowerCase().includes(query) return false;
                 }
 
-                if (selectedMonth !== 'all') => {
+                if (selectedMonth !== 'all') {
                     const date = new Date(p.dueDate);
                     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     if (key !== selectedMonth) return false;
@@ -235,7 +235,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                     role="button"
                                                     tabIndex={0}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' || e.key === ' ') => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
                                                             e.preventDefault();
                                                             onSelectProject(project);
                                                         }
@@ -377,7 +377,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 title="Delete Project?"
                 message={`Are you sure you want to delete "${projectToDelete?.title}"? This action cannot be undone.`}
                 onConfirm={() => {
-                    if (projectToDelete) => {
+                    if (projectToDelete) {
                         onDeleteProject(projectToDelete.id);
                         setProjectToDelete(null);
                     }

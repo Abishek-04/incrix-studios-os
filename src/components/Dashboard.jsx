@@ -1,10 +1,7 @@
-
 import React, { useMemo } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { AlertCircle, CheckCircle, Clock, Activity, Flame, Calendar, Target, TrendingUp, AlertTriangle, Film, Users } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
 
 // Helper to calculate quota progress
@@ -15,7 +12,7 @@ const calculateProgress = (user, allProjects) => {
     let startDate = new Date();
 
     // Set start date based on period
-    if (user.quota.period === 'weekly') => {
+    if (user.quota.period === 'weekly') {
         const day = startDate.getDay();
         const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
         startDate.setDate(diff);
@@ -37,12 +34,12 @@ const calculateProgress = (user, allProjects) => {
         p.stage !== Stage.Backlog
     );
 
-    const ytLongActual = userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length;
+    const ytLongActual = userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
     const ytShortActual = userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
     const instaReelActual = userProjects.filter(p => p.platform === Platform.Instagram).length;
     const courseActual = userProjects.filter(p => p.platform === Platform.Course).length;
 
-    const ytLongPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length;
+    const ytLongPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
     const ytShortPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
     const instaReelPipeline = pipelineProjects.filter(p => p.platform === Platform.Instagram).length;
     const coursePipeline = pipelineProjects.filter(p => p.platform === Platform.Course).length;
@@ -52,7 +49,7 @@ const calculateProgress = (user, allProjects) => {
 
     // Calculate days remaining in period
     let endDate = new Date();
-    if (user.quota.period === 'weekly') => {
+    if (user.quota.period === 'weekly') {
         const dayOfWeek = endDate.getDay();
         const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
         endDate = new Date(endDate.getTime() + daysUntilSunday * 86400000);
@@ -111,7 +108,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     const workloadData = useMemo(() => {
         const creators: Record<string, number> = {};
         projects.forEach(p => {
-            if (p.status === Status.InProgress) => {
+            if (p.status === Status.InProgress) {
                 creators[p.creator] = (creators[p.creator] || 0) + 1;
             }
         });
@@ -131,7 +128,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
 
         return { pending, completed, nextDeadline, quotaProgress };
     }, [projects, currentUser]);
-    if (projects.length === 0) => {
+    if (projects.length === 0) {
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col items-center justify-center text-center">
                 <div className="max-w-md space-y-6">
@@ -171,7 +168,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
         );
     }
 
-    if (!isManager) => {
+    if (!isManager) {
         // --- CREATOR / EDITOR DASHBOARD ---
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -343,7 +340,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     }
 
     // --- MANAGER DASHBOARD ---
-    if (projects.length === 0) => {
+    if (projects.length === 0) {
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col items-center justify-center text-center">
                 <div className="max-w-md space-y-6">

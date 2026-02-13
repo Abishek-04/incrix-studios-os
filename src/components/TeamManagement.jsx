@@ -41,12 +41,12 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     };
 
     const handleSave = () => {
-        if (!formData.name || !formData.email) => {
+        if (!formData.name || !formData.email) {
             showToast('Please fill in all required fields.', 'error');
             return;
         }
 
-        if (editingId) => {
+        if (editingId) {
             // Update existing
             const updated = users.map(u => u.id === editingId ? { ...u, ...formData } as User : u);
             onUpdateUsers(updated);
@@ -103,7 +103,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     };
 
     const handleDelete = () => {
-        if (userToDelete) => {
+        if (userToDelete) {
             onUpdateUsers(users.filter(u => u.id !== userToDelete);
             showToast('User removed from team.');
             setDeleteModalOpen(false);
@@ -124,7 +124,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId));
 
         return {
-            ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat).length,
+            ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length,
             ytShort: userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length,
             igReel: userProjects.filter(p => p.platform === Platform.Instagram).length,
             course: userProjects.filter(p => p.platform === Platform.Course).length

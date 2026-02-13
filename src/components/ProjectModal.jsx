@@ -44,7 +44,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   // ESC key to close modal
   useEffect() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !showDeleteConfirm) => {
+      if (e.key === 'Escape' && !showDeleteConfirm) {
         onClose();
       }
     };
@@ -53,7 +53,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   }, [onClose, showDeleteConfirm]);
 
   const handleSave = useCallback(() => {
-    if (!localProject.title.trim() => {
+    if (!localProject.title.trim() {
       setTitleError('Project title is required');
       return;
     }
@@ -73,7 +73,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   }, [localProject, onUpdate]);
 
   const handleSaveAndClose = () => {
-    if (!localProject.title.trim() => {
+    if (!localProject.title.trim() {
       setTitleError('Project title is required');
       return;
     }
@@ -82,7 +82,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleDuplicate = () => {
-    if (confirm("Save this as a new project?") => {
+    if (confirm("Save this as a new project?") {
       const newProject: Project = {
         ...localProject,
         id: `PRJ-${Date.now()}`,
@@ -103,14 +103,14 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     const updated = { ...localProject, archived: !localProject.archived, lastUpdated: Date.now() };
     setLocalProject(updated);
     onUpdate(updated);
-    if (updated.archived) => {
+    if (updated.archived) {
       onClose(); // Close modal if archiving
     }
   };
 
   const handleChannelChange = (channelId: string) => {
     const selectedChannel = channels.find(c => c.id === channelId);
-    if (selectedChannel) => {
+    if (selectedChannel) {
       const updated = {
         ...localProject,
         channelId: selectedChannel.id,
@@ -168,13 +168,13 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     onUpdate(updated);
 
     // Extract @mentions and send notifications
-    if (onNotification && currentUser) => {
+    if (onNotification && currentUser) {
       const mentions = NotificationService.extractMentions(newMessage);
 
       // Notify mentioned users
       mentions.forEach(username => {
         const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase();
-        if (mentionedUser && mentionedUser.id !== currentUser.id) => {
+        if (mentionedUser && mentionedUser.id !== currentUser.id) {
           onNotification(NotificationService.notifyMention(
             mentionedUser.id,
             currentUser.name,
@@ -214,7 +214,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     const currentMetrics = localProject.metrics || { views: 0, likes: 0, comments: 0, retention: '0%', lastUpdated: Date.now() };
 
     let updatedMetrics;
-    if (field === 'retention') => {
+    if (field === 'retention') {
       updatedMetrics = { ...currentMetrics, [field]: value, lastUpdated: Date.now() };
     } else {
       updatedMetrics = { ...currentMetrics, [field]: parseInt(value) || 0, lastUpdated: Date.now() };
@@ -226,7 +226,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleFetchMetrics = async () => {
-    if (!localProject.publishedLink) => {
+    if (!localProject.publishedLink) {
       showToast("Please add a Published Link first.", 'error');
       return;
     }

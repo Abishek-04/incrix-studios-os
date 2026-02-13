@@ -30,7 +30,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
 
     const analyzeLink = (url: string) => {
         setUrlInput(url);
-        if (!url) => {
+        if (!url) {
             setDetectedInfo(null);
             return;
         }
@@ -44,7 +44,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
             const cleanUrl = url.toLowerCase();
 
             // Regex Detectors
-            if (cleanUrl.includes('instagram.com') => {
+            if (cleanUrl.includes('instagram.com') {
                 platform = Platform.Instagram;
                 const match = url.match(/instagram\.com\/([^/?]+)/);
                 if (match) name = match[1];
@@ -52,11 +52,11 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
                 platform = Platform.YouTube;
                 const match = url.match(/(?:youtube\.com\/@|youtube\.com\/c\/|youtube\.com\/channel\/|youtube\.com\/user\/)([^/?]+)/) || url.match(/youtube\.com\/([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('tiktok.com') => {
+            } else if (cleanUrl.includes('tiktok.com') {
                 platform = Platform.TikTok;
                 const match = url.match(/tiktok\.com\/@([^/?]+)/);
                 if (match) name = match[1];
-            } else if (cleanUrl.includes('linkedin.com') => {
+            } else if (cleanUrl.includes('linkedin.com') {
                 platform = Platform.LinkedIn;
                 const match = url.match(/linkedin\.com\/(?:in|company|school)\/([^/?]+)/);
                 if (match) name = match[1];
@@ -69,7 +69,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
                 name = "Email Notification List";
             }
 
-            if (platform) => {
+            if (platform) {
                 try { name = decodeURIComponent(name); } catch (e) { }
                 setDetectedInfo({ platform, name });
             } else {
@@ -104,7 +104,7 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
     };
 
     const deleteChannel = (id: string) => {
-        if (confirm('Delete this channel?') => {
+        if (confirm('Delete this channel?') {
             onUpdateChannels(channels.filter(c => c.id !== id);
         }
     };
