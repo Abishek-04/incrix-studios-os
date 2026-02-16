@@ -11,7 +11,7 @@ const INSTAGRAM_OAUTH_REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI ||
 
 /**
  * GET /api/instagram/auth/callback
- * Handle Instagram OAuth callback
+ * Handle Instagram Business Login OAuth callback
  */
 export async function GET(request) {
   try {
@@ -40,30 +40,32 @@ export async function GET(request) {
       return NextResponse.redirect('/instagram?error=invalid_state');
     }
 
-    // Exchange code for short-lived token
-    const tokenResponse = await axios.get(
-      `https://graph.facebook.com/v21.0/oauth/access_token`,
+    // Step 1: Exchange code for short-lived Instagram token
+    const tokenResponse = await axios.post(
+      'https://api.instagram.com/oauth/access_token',
+      new URLSearchParams({
+        client_id: INSTAGRAM_APP_ID,
+        client_secret: INSTAGRAM_APP_SECRET,
+        grant_type: 'authorization_code',
+        redirect_uri: INSTAGRAM_OAUTH_REDIRECT_URI,
+        code,
+      }),
       {
-        params: {
-          client_id: INSTAGRAM_APP_ID,
-          client_secret: INSTAGRAM_APP_SECRET,
-          redirect_uri: INSTAGRAM_OAUTH_REDIRECT_URI,
-          code,
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
     );
 
     const shortLivedToken = tokenResponse.data.access_token;
+    const igUserId = tokenResponse.data.user_id;
 
-    // Exchange short-lived token for long-lived token (60 days)
+    // Step 2: Exchange for long-lived token (60 days)
     const longLivedResponse = await axios.get(
-      `https://graph.facebook.com/v21.0/oauth/access_token`,
+      'https://graph.instagram.com/access_token',
       {
         params: {
-          grant_type: 'fb_exchange_token',
-          client_id: INSTAGRAM_APP_ID,
+          grant_type: 'ig_exchange_token',
           client_secret: INSTAGRAM_APP_SECRET,
-          fb_exchange_token: shortLivedToken,
+          access_token: shortLivedToken,
         },
       }
     );
@@ -71,111 +73,62 @@ export async function GET(request) {
     const longLivedToken = longLivedResponse.data.access_token;
     const expiresIn = longLivedResponse.data.expires_in; // ~5184000 seconds (60 days)
 
-    // Get user's Facebook pages
-    const pagesResponse = await axios.get(
-      `https://graph.facebook.com/v21.0/me/accounts`,
+    // Step 3: Get Instagram account details
+    const profileResponse = await axios.get(
+      `https://graph.instagram.com/v21.0/me`,
       {
         params: {
+          fields: 'user_id,username,name,account_type,profile_picture_url,followers_count,follows_count,media_count',
           access_token: longLivedToken,
         },
       }
     );
 
-    const pages = pagesResponse.data.data;
-
-    if (!pages || pages.length === 0) {
-      return NextResponse.redirect('/instagram?error=no_pages_found');
-    }
+    const igAccount = profileResponse.data;
 
     await connectDB();
 
-    const connectedAccounts = [];
+    // Create or update channel
+    const channelId = `ig-${igAccount.user_id || igUserId}`;
+    const encryptedToken = encrypt(longLivedToken);
 
-    // For each page, get the connected Instagram Business Account
-    for (const page of pages) {
-      try {
-        const igAccountResponse = await axios.get(
-          `https://graph.facebook.com/v21.0/${page.id}`,
-          {
-            params: {
-              fields: 'instagram_business_account',
-              access_token: page.access_token,
-            },
-          }
-        );
-
-        const igBusinessAccountId = igAccountResponse.data.instagram_business_account?.id;
-
-        if (!igBusinessAccountId) {
-          continue; // Skip pages without Instagram
-        }
-
-        // Get Instagram account details
-        const igDetailsResponse = await axios.get(
-          `https://graph.facebook.com/v21.0/${igBusinessAccountId}`,
-          {
-            params: {
-              fields: 'id,username,profile_picture_url,followers_count,media_count',
-              access_token: page.access_token,
-            },
-          }
-        );
-
-        const igAccount = igDetailsResponse.data;
-
-        // Create or update channel
-        const channelId = `ig-${igAccount.id}`;
-        const encryptedToken = encrypt(page.access_token);
-
-        await Channel.updateOne(
-          { id: channelId },
-          {
-            $set: {
-              id: channelId,
-              platform: 'instagram',
-              name: `@${igAccount.username}`,
-              link: `https://instagram.com/${igAccount.username}`,
-              avatarUrl: igAccount.profile_picture_url,
-              email: userId, // Store user ID who connected it
-              igUserId: igAccount.id,
-              igUsername: igAccount.username,
-              igProfilePicUrl: igAccount.profile_picture_url,
-              fbPageId: page.id,
-              fbPageName: page.name,
-              accessToken: encryptedToken,
-              tokenExpiry: new Date(Date.now() + expiresIn * 1000),
-              tokenRefreshedAt: new Date(),
-              followerCount: igAccount.followers_count,
-              mediaCount: igAccount.media_count,
-              connectionStatus: 'connected',
-              lastSynced: null,
-              memberId: userId,
-            },
-          },
-          { upsert: true }
-        );
-
-        connectedAccounts.push({
-          username: igAccount.username,
-          followers: igAccount.followers_count,
-        });
-      } catch (pageError) {
-        console.error('[Instagram Callback] Error processing page:', pageError);
-      }
-    }
-
-    if (connectedAccounts.length === 0) {
-      return NextResponse.redirect('/instagram?error=no_instagram_accounts');
-    }
+    await Channel.updateOne(
+      { id: channelId },
+      {
+        $set: {
+          id: channelId,
+          platform: 'instagram',
+          name: igAccount.name || `@${igAccount.username}`,
+          link: `https://instagram.com/${igAccount.username}`,
+          avatarUrl: igAccount.profile_picture_url || null,
+          email: userId,
+          igUserId: igAccount.user_id || igUserId,
+          igUsername: igAccount.username,
+          igProfilePicUrl: igAccount.profile_picture_url || null,
+          accountType: igAccount.account_type,
+          accessToken: encryptedToken,
+          tokenExpiry: new Date(Date.now() + expiresIn * 1000),
+          tokenRefreshedAt: new Date(),
+          followerCount: igAccount.followers_count || 0,
+          followsCount: igAccount.follows_count || 0,
+          mediaCount: igAccount.media_count || 0,
+          connectionStatus: 'connected',
+          lastSynced: null,
+          memberId: userId,
+        },
+      },
+      { upsert: true }
+    );
 
     // Redirect to Instagram page with success
     return NextResponse.redirect(
-      `/instagram?success=true&connected=${connectedAccounts.length}`
+      `/instagram?success=true&connected=1`
     );
   } catch (error) {
-    console.error('[Instagram Callback] Error:', error);
+    console.error('[Instagram Callback] Error:', error.response?.data || error.message);
+    const errorMsg = error.response?.data?.error_message || error.message || 'connection_failed';
     return NextResponse.redirect(
-      `/instagram?error=${encodeURIComponent(error.message || 'connection_failed')}`
+      `/instagram?error=${encodeURIComponent(errorMsg)}`
     );
   }
 }

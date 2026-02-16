@@ -6,7 +6,8 @@ const INSTAGRAM_OAUTH_REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI ||
 
 /**
  * GET /api/instagram/auth
- * Initiate Instagram OAuth flow
+ * Initiate Instagram Business Login OAuth flow
+ * Uses Instagram's own OAuth endpoint (not Facebook Login)
  */
 export async function GET(request) {
   try {
@@ -28,28 +29,28 @@ export async function GET(request) {
       );
     }
 
-    // Generate CSRF token
-    const state = generateSecureToken(32);
+    // Generate CSRF token and encode userId in state
+    const token = generateSecureToken(32);
+    const stateData = Buffer.from(JSON.stringify({ userId, token })).toString('base64');
 
-    // Store state in a temporary way (in production, use Redis)
-    // For now, we'll encode userId in the state
-    const stateData = Buffer.from(JSON.stringify({ userId, token: state })).toString('base64');
-
-    // Build Facebook OAuth URL
-    // Start with minimal permissions that are available to all apps
+    // Instagram Business Login scopes
     const scopes = [
-      'pages_show_list',
-      'pages_read_engagement'
+      'instagram_business_basic',
+      'instagram_business_manage_messages',
+      'instagram_business_manage_comments',
     ].join(',');
 
-    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?` +
-      `client_id=${INSTAGRAM_APP_ID}` +
+    // Use Instagram's OAuth endpoint (NOT Facebook's)
+    const oauthUrl = `https://www.instagram.com/oauth/authorize?` +
+      `enable_fb_login=0` +
+      `&force_authentication=1` +
+      `&client_id=${INSTAGRAM_APP_ID}` +
       `&redirect_uri=${encodeURIComponent(INSTAGRAM_OAUTH_REDIRECT_URI)}` +
+      `&response_type=code` +
       `&scope=${encodeURIComponent(scopes)}` +
-      `&state=${stateData}` +
-      `&response_type=code`;
+      `&state=${stateData}`;
 
-    // Redirect to Facebook OAuth
+    // Redirect to Instagram OAuth
     return NextResponse.redirect(oauthUrl);
   } catch (error) {
     console.error('[Instagram Auth] Error:', error);
