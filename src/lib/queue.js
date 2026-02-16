@@ -1,26 +1,55 @@
-import Queue from 'bull';
+// WhatsApp queue using Bull (disabled in production/Vercel)
+// Bull doesn't work in serverless environments like Vercel
+// This file provides no-op implementations when Bull is not available
 
-const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-};
+let Queue;
+let whatsappQueueInstance = null;
 
-// Create Bull queue for WhatsApp notifications
-export const whatsappQueue = new Queue('whatsapp-notifications', {
-  redis: redisConfig,
-  defaultJobOptions: {
-    attempts: 3, // Retry failed jobs 3 times
-    backoff: {
-      type: 'exponential',
-      delay: 5000, // 5 seconds, then 25 seconds, then 125 seconds
-    },
-    removeOnComplete: 100, // Keep last 100 completed jobs for monitoring
-    removeOnFail: 200, // Keep last 200 failed jobs for debugging
-  },
-});
+// Only import Bull in development (not in Vercel/production)
+if (typeof window === 'undefined' && process.env.VERCEL !== '1') {
+  try {
+    Queue = require('bull');
+
+    const redisConfig = {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    };
+
+    // Create Bull queue for WhatsApp notifications
+    whatsappQueueInstance = new Queue('whatsapp-notifications', {
+      redis: redisConfig,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      },
+    });
+
+    // Log queue events for monitoring
+    whatsappQueueInstance.on('completed', (job, result) => {
+      console.log(`[Queue] Job ${job.id} completed:`, result);
+    });
+
+    whatsappQueueInstance.on('failed', (job, err) => {
+      console.error(`[Queue] Job ${job.id} failed:`, err.message);
+    });
+
+    whatsappQueueInstance.on('error', (error) => {
+      console.error('[Queue] Queue error:', error);
+    });
+  } catch (error) {
+    console.warn('[Queue] Bull not available, WhatsApp notifications disabled');
+  }
+}
+
+export const whatsappQueue = whatsappQueueInstance;
 
 // Job type constants
 export const JOB_TYPES = {
@@ -37,7 +66,7 @@ export const JOB_TYPES = {
  * @param {string} params.templateName - WhatsApp template name (optional)
  * @param {Array} params.templateParams - Template parameters (optional)
  * @param {string} params.notificationId - Notification ID for tracking
- * @returns {Promise<Object>} Bull job object
+ * @returns {Promise<Object>} Bull job object or no-op
  */
 export async function queueWhatsAppNotification({
   userId,
@@ -47,7 +76,12 @@ export async function queueWhatsAppNotification({
   templateParams,
   notificationId,
 }) {
-  return whatsappQueue.add(JOB_TYPES.SEND_WHATSAPP, {
+  if (!whatsappQueueInstance) {
+    console.log('[Queue] WhatsApp queue not available (production mode)');
+    return Promise.resolve({ skipped: true, reason: 'Queue not available in production' });
+  }
+
+  return whatsappQueueInstance.add(JOB_TYPES.SEND_WHATSAPP, {
     userId,
     phoneNumber,
     message,
@@ -65,10 +99,15 @@ export async function queueWhatsAppNotification({
  * @param {string} params.message - Message text
  * @param {string} params.templateName - WhatsApp template name (optional)
  * @param {Array} params.templateParams - Template parameters (optional)
- * @returns {Promise<Object>} Bull job object
+ * @returns {Promise<Object>} Bull job object or no-op
  */
 export async function queueBatchWhatsApp({ userIds, message, templateName, templateParams }) {
-  return whatsappQueue.add(JOB_TYPES.SEND_BATCH, {
+  if (!whatsappQueueInstance) {
+    console.log('[Queue] WhatsApp queue not available (production mode)');
+    return Promise.resolve({ skipped: true, reason: 'Queue not available in production' });
+  }
+
+  return whatsappQueueInstance.add(JOB_TYPES.SEND_BATCH, {
     userIds,
     message,
     templateName,
@@ -77,17 +116,4 @@ export async function queueBatchWhatsApp({ userIds, message, templateName, templ
   });
 }
 
-// Log queue events for monitoring
-whatsappQueue.on('completed', (job, result) => {
-  console.log(`[Queue] Job ${job.id} completed:`, result);
-});
-
-whatsappQueue.on('failed', (job, err) => {
-  console.error(`[Queue] Job ${job.id} failed:`, err.message);
-});
-
-whatsappQueue.on('error', (error) => {
-  console.error('[Queue] Queue error:', error);
-});
-
-export default whatsappQueue;
+export default whatsappQueueInstance;
