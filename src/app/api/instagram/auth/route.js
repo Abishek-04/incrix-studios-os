@@ -34,10 +34,8 @@ export async function GET(request) {
 
     // Facebook Login scopes for Instagram Graph API
     const scopes = [
-      'instagram_basic',
       'instagram_manage_comments',
       'pages_show_list',
-      'pages_read_engagement',
       'pages_messaging',
     ].join(',');
 
