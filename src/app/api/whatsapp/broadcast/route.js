@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { queueBatchWhatsApp } from '@/lib/queue';
+// Dynamic import for queue (not available in Vercel production)
 
 /**
  * POST /api/whatsapp/broadcast
@@ -43,19 +43,38 @@ export async function POST(request) {
       );
     }
 
-    // Queue batch WhatsApp job
-    await queueBatchWhatsApp({
-      userIds: users.map((u) => u.id),
-      message,
-      templateName,
-      templateParams,
-    });
+    // Check if running in production (Vercel) where background jobs are not available
+    if (process.env.VERCEL === '1') {
+      console.log('[Broadcast API] WhatsApp queue not available in production');
+      return NextResponse.json({
+        success: false,
+        error: 'WhatsApp broadcasts not available in serverless environment',
+        production: true,
+      }, { status: 503 });
+    }
 
-    return NextResponse.json({
-      success: true,
-      queuedCount: users.length,
-      message: `Broadcast queued for ${users.length} users`,
-    });
+    // Queue batch WhatsApp job (only in development)
+    try {
+      const { queueBatchWhatsApp } = await import('@/lib/queue');
+      await queueBatchWhatsApp({
+        userIds: users.map((u) => u.id),
+        message,
+        templateName,
+        templateParams,
+      });
+
+      return NextResponse.json({
+        success: true,
+        queuedCount: users.length,
+        message: `Broadcast queued for ${users.length} users`,
+      });
+    } catch (queueError) {
+      console.log('[Broadcast API] Queue not available:', queueError.message);
+      return NextResponse.json({
+        success: false,
+        error: 'WhatsApp queue not available',
+      }, { status: 503 });
+    }
   } catch (error) {
     console.error('[Broadcast API] Error:', error);
     return NextResponse.json(

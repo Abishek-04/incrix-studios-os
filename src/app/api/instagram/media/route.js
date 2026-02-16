@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMediaForChannel } from '@/services/instagramMediaService';
-import { queueFullSync } from '@/lib/queues/instagramSyncQueue';
+// Dynamic import for queue (not available in Vercel production)
 
 /**
  * GET /api/instagram/media?channelId=xxx&type=VIDEO&page=1&limit=20
@@ -61,14 +61,34 @@ export async function POST(request) {
       );
     }
 
-    // Queue sync job
-    const job = await queueFullSync(channelId);
+    // Check if running in production (Vercel) where background jobs are not available
+    if (process.env.VERCEL === '1') {
+      console.log('[Instagram Media API] Background sync not available in production');
+      return NextResponse.json({
+        success: true,
+        message: 'Background sync not available in serverless environment. Media will sync on next API call.',
+        production: true,
+      });
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Sync job queued',
-      jobId: job.id,
-    });
+    // Queue sync job (only in development)
+    try {
+      const { queueFullSync } = await import('@/lib/queues/instagramSyncQueue');
+      const job = await queueFullSync(channelId);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Sync job queued',
+        jobId: job?.id,
+      });
+    } catch (queueError) {
+      console.log('[Instagram Media API] Queue not available:', queueError.message);
+      return NextResponse.json({
+        success: true,
+        message: 'Background sync not available. Media will sync on next API call.',
+        queueAvailable: false,
+      });
+    }
   } catch (error) {
     console.error('[Instagram Media API] Sync error:', error);
     return NextResponse.json(
