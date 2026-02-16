@@ -39,14 +39,12 @@ export async function GET(request) {
       'instagram_manage_comments',
     ].join(',');
 
-    // Use Instagram's OAuth endpoint
-    const oauthUrl = `https://www.instagram.com/oauth/authorize?` +
-      `enable_fb_login=0` +
-      `&force_authentication=1` +
-      `&client_id=${INSTAGRAM_APP_ID}` +
+    // Use Instagram API OAuth endpoint (must use Instagram App ID, not Facebook App ID)
+    const oauthUrl = `https://api.instagram.com/oauth/authorize` +
+      `?client_id=${INSTAGRAM_APP_ID}` +
       `&redirect_uri=${encodeURIComponent(INSTAGRAM_OAUTH_REDIRECT_URI)}` +
       `&response_type=code` +
-      `&scope=${encodeURIComponent(scopes)}` +
+      `&scope=${scopes}` +
       `&state=${stateData}`;
 
     // Redirect to Instagram OAuth
