@@ -41,7 +41,9 @@ export async function GET(request) {
 
     // Use Instagram API OAuth endpoint (must use Instagram App ID, not Facebook App ID)
     const oauthUrl = `https://api.instagram.com/oauth/authorize` +
-      `?client_id=${INSTAGRAM_APP_ID}` +
+      `?force_authentication=1` +
+      `&enable_fb_login=1` +
+      `&app_id=${INSTAGRAM_APP_ID}` +
       `&redirect_uri=${encodeURIComponent(INSTAGRAM_OAUTH_REDIRECT_URI)}` +
       `&response_type=code` +
       `&scope=${scopes}` +
