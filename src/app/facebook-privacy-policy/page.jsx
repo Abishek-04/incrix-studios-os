@@ -13,7 +13,7 @@ export default function FacebookPrivacyPolicyPage() {
         </div>
 
         <div className="prose prose-lg max-w-none space-y-8">
-          {/* Introduction */}
+          {/* Introduction 1 */}
           <section className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
             <h2 className="text-2xl font-bold text-gray-900 mt-0">Introduction</h2>
             <p className="text-gray-700">
