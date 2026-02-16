@@ -8,7 +8,7 @@ A comprehensive Role-Based Access Control (RBAC) system with Super Admin capabil
 
 ### Role Hierarchy
 
-1. **Super Admin** 👑
+1. **Super Admin1** 👑
    - Full system access
    - User management
    - Analytics & reporting
