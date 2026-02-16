@@ -56,7 +56,7 @@ const calculateProgress = (user, allProjects) => {
     } else {
         endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
     }
-    const daysRemaining = Math.max(0, Math.ceil(endDate.getTime() - Date.now() / 86400000);
+    const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000));
 
     return {
         daysRemaining,
@@ -92,37 +92,37 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     const isManager = currentUser.role === 'manager';
 
     // --- Manager Stats ---
-    const managerKpis = useMemo() => {
-        const totalVolume = projects.filter(p => p.stage === Stage.Done).reduce(acc, curr) => acc + curr.durationMinutes, 0);
+    const managerKpis = useMemo(() => {
+        const totalVolume = projects.filter(p => p.stage === Stage.Done).reduce((acc, curr) => acc + curr.durationMinutes, 0);
         const stuck = projects.filter(p => {
             const isStuck = (Date.now() - p.lastUpdated) > (48 * 60 * 60 * 1000);
             return isStuck && p.status !== Status.Done;
         }).length;
-        const urgent = projects.filter(p => (p.dueDate - Date.now() < (3 * 24 * 60 * 60 * 1000) && p.stage !== Stage.Done).length;
+        const urgent = projects.filter(p => (p.dueDate - Date.now() < (3 * 24 * 60 * 60 * 1000) && p.stage !== Stage.Done)).length;
         const doneCount = projects.filter(p => p.stage === Stage.Done).length;
         const totalCount = projects.length;
-        const successRate = totalCount > 0 ? Math.round(doneCount / totalCount) * 100) : 0;
+        const successRate = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
         return { totalVolume, stuck, urgent, successRate };
     }, [projects]);
 
     const workloadData = useMemo(() => {
-        const creators: Record<string, number> = {};
+        const creators = {};
         projects.forEach(p => {
             if (p.status === Status.InProgress) {
                 creators[p.creator] = (creators[p.creator] || 0) + 1;
             }
         });
-        return Object.entries(creators).map([name, count]) => ({ name, count, risk: count > 3 });
+        return Object.entries(creators).map(([name, count]) => ({ name, count, risk: count > 3 }));
     }, [projects]);
 
     // --- Personal Stats (Creator/Editor) ---
-    const personalStats = useMemo() => {
+    const personalStats = useMemo(() => {
         const myProjects = projects.filter(p => p.creator === currentUser.name || p.editor === currentUser.name);
         const pending = myProjects.filter(p => p.stage !== Stage.Done).length;
         const completed = myProjects.filter(p => p.stage === Stage.Done).length;
         const nextDeadline = myProjects
             .filter(p => p.stage !== Stage.Done)
-            .sort(a, b) => a.dueDate - b.dueDate)[0];
+            .sort((a, b) => a.dueDate - b.dueDate)[0];
 
         const quotaProgress = calculateProgress(currentUser, projects);
 
@@ -300,7 +300,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                             {personalStats.nextDeadline ? (
                                 <div>
                                     <div className="text-lg font-bold text-white truncate max-w-[150px]">{personalStats.nextDeadline.title}</div>
-                                    <div className="text-xs text-amber-500 mt-1">Due in {Math.ceil(personalStats.nextDeadline.dueDate - Date.now() / (1000 * 60 * 60 * 24)} days</div>
+                                    <div className="text-xs text-amber-500 mt-1">Due in {Math.ceil((personalStats.nextDeadline.dueDate - Date.now()) / (1000 * 60 * 60 * 24))} days</div>
                                 </div>
                             ) : (
                                 <span className="text-lg text-[#666] italic">No deadlines</span>
@@ -331,7 +331,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                                     </div>
                                     <span className="text-xs text-[#666] uppercase">{p.stage}</span>
                                 </div>
-                            )}
+                            ))}
                         {personalStats.pending === 0 && <div className="text-[#999] text-sm italic">All caught up!</div>}
                     </div>
                 </div>
@@ -544,9 +544,9 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                                     cursor={{ fill: 'transparent' }}
                                 />
                                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
-                                    {workloadData.map(entry, index) => (
+                                    {workloadData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.risk ? '#ef4444' : '#6366f1'} />
-                                    )}
+                                    ))}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>

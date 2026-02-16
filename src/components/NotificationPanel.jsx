@@ -13,7 +13,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
     };
 
     const getTimeAgo = (timestamp) => {
-        const seconds = Math.floor(Date.now() - timestamp) / 1000);
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
         if (seconds < 60) return 'Just now';
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes}m ago`;
@@ -45,7 +45,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
                         No new notifications
                     </div>
                 ) : (
-                    notifications.map(notif) => (
+                    notifications.map((notif) => (
                         <div
                             key={notif.id}
                             onClick={() => onNotificationClick?.(notif)}
@@ -68,7 +68,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
                                 )}
                             </div>
                         </div>
-                    )
+                    ))
                 )}
             </div>
 

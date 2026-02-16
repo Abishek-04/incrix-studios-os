@@ -1,10 +1,6 @@
 import React from 'react';
 import { AlertCircle, X } from 'lucide-react';
 
-    isOpen: boolean;
-    title: string;
-    message: string;
-
 const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
 

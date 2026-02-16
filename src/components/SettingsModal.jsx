@@ -2,14 +2,11 @@
 import React, { useState } from 'react';
 import { X, Save, Download, User as UserIcon, Mail, Phone, Bell, Shield } from 'lucide-react';
 
-    channels: Channel[];
-    users);
-
 const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser }) => {
-    const [formData, setFormData] = useState<Partial<User>>({ ...user });
+    const [formData, setFormData] = useState({ ...user });
 
     const handleSave = () => {
-        onUpdateUser({ ...user, ...formData } as User);
+        onUpdateUser({ ...user, ...formData });
         onClose();
     };
 
@@ -108,7 +105,7 @@ const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser 
                                         value={formData.quota?.youtubeLong || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, youtubeLong: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, youtubeLong: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -120,7 +117,7 @@ const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser 
                                         value={formData.quota?.youtubeShort || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, youtubeShort: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, youtubeShort: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -132,7 +129,7 @@ const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser 
                                         value={formData.quota?.instagramReel || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, instagramReel: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, instagramReel: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -144,7 +141,7 @@ const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser 
                                         value={formData.quota?.course || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, course: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, course: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -155,7 +152,7 @@ const SettingsModal = ({ user, projects, channels, users, onClose, onUpdateUser 
                                         value={formData.quota?.period || 'weekly'}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, period: e.target.value as 'weekly' | 'monthly' }
+                                            quota: { ...formData.quota, period: e.target.value }
                                         })}
                                     >
                                         <option value="weekly">Weekly</option>

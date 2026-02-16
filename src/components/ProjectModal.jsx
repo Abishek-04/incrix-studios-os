@@ -1,20 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { fetchSocialMetrics } from '@/services/socialService';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save, Check, AlertCircle } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import ConfirmationModal from './ui/ConfirmationModal';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import Toast, { ToastType } from './ui/Toast';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
+import Toast from './ui/Toast';
 import { MentionInput } from './ui/MentionInput';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import { NotificationService } from '@/services/notificationService';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-
-  channels: Channel[];
-  users);
+import { extractMentions } from '@/utils/mentions';
 
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -32,17 +23,17 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     type: 'success'
   });
 
-  const showToast = (message: string, type: ToastType = 'success') => {
+  const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
   };
 
   // Sync prop changes
-  useEffect() => {
+  useEffect(() => {
     setLocalProject(project);
   }, [project]);
 
   // ESC key to close modal
-  useEffect() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && !showDeleteConfirm) {
         onClose();
@@ -53,7 +44,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   }, [onClose, showDeleteConfirm]);
 
   const handleSave = useCallback(() => {
-    if (!localProject.title.trim() {
+    if (!localProject.title.trim()) {
       setTitleError('Project title is required');
       return;
     }
@@ -65,15 +56,15 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
         lastUpdated: Date.now()
       });
       setSaveState('saved');
-      setTimeout() => setSaveState('idle'), 2000);
+      setTimeout(() => setSaveState('idle'), 2000);
     } catch {
       setSaveState('error');
-      setTimeout() => setSaveState('idle'), 3000);
+      setTimeout(() => setSaveState('idle'), 3000);
     }
   }, [localProject, onUpdate]);
 
   const handleSaveAndClose = () => {
-    if (!localProject.title.trim() {
+    if (!localProject.title.trim()) {
       setTitleError('Project title is required');
       return;
     }
@@ -82,15 +73,15 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleDuplicate = () => {
-    if (confirm("Save this as a new project?") {
-      const newProject: Project = {
+    if (confirm("Save this as a new project?")) {
+      const newProject = {
         ...localProject,
         id: `PRJ-${Date.now()}`,
         title: `${localProject.title} (Copy)`,
         lastUpdated: Date.now(),
         metrics: undefined, // Reset metrics
         comments: [], // Reset comments
-        tasks: localProject.tasks.map(t => ({ ...t, done: false }) // Reset task status but keep checklist
+        tasks: localProject.tasks.map(t => ({ ...t, done: false })) // Reset task status but keep checklist
       };
       onCreate(newProject);
       onClose();
@@ -108,7 +99,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     }
   };
 
-  const handleChannelChange = (channelId: string) => {
+  const handleChannelChange = (channelId) => {
     const selectedChannel = channels.find(c => c.id === channelId);
     if (selectedChannel) {
       const updated = {
@@ -123,7 +114,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleAddTask = () => {
-    if (!newTaskText.trim() return;
+    if (!newTaskText.trim()) return;
     const newTask = {
       id: `manual-${Date.now()}`,
       text: newTaskText.trim(),
@@ -139,7 +130,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     setNewTaskText('');
   };
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = (taskId) => {
     const updatedTasks = localProject.tasks.map(t =>
       t.id === taskId ? { ...t, done: !t.done } : t
     );
@@ -149,9 +140,9 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const sendMessage = () => {
-    if (!newMessage.trim() return;
+    if (!newMessage.trim()) return;
 
-    const comment: Comment = {
+    const comment = {
       id: `CMT-${Date.now()}`,
       authorId: currentUser?.id || 'unknown',
       authorName: currentUser?.name || 'Unknown User',
@@ -169,32 +160,34 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
     // Extract @mentions and send notifications
     if (onNotification && currentUser) {
-      const mentions = NotificationService.extractMentions(newMessage);
+      const mentions = extractMentions(newMessage);
 
       // Notify mentioned users
       mentions.forEach(username => {
-        const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase();
+        const mentionedUser = users.find(u => u.name.toLowerCase() === username.toLowerCase());
         if (mentionedUser && mentionedUser.id !== currentUser.id) {
-          onNotification(NotificationService.notifyMention(
-            mentionedUser.id,
-            currentUser.name,
-            localProject.id,
-            localProject.title
-          );
+          onNotification({
+            type: 'mention',
+            userId: mentionedUser.id,
+            commenterName: currentUser.name,
+            projectId: localProject.id,
+            projectTitle: localProject.title
+          });
         }
       });
 
       // Notify project team (excluding self and already-mentioned)
-      const mentionNames = mentions.map(m => m.toLowerCase();
+      const mentionNames = mentions.map(m => m.toLowerCase());
       [localProject.creator, localProject.editor].forEach(teamMember => {
         const user = users.find(u => u.name === teamMember);
-        if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase()) => {
-          onNotification(NotificationService.notifyComment(
-            user.id,
-            currentUser.name,
-            localProject.id,
-            localProject.title
-          );
+        if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase())) {
+          onNotification({
+            type: 'comment',
+            userId: user.id,
+            commenterName: currentUser.name,
+            projectId: localProject.id,
+            projectTitle: localProject.title
+          });
         }
       });
     }
@@ -204,13 +197,13 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
   const handleBroadcast = () => {
     setIsBroadcasting(true);
-    setTimeout() => {
+    setTimeout(() => {
       setIsBroadcasting(false);
       showToast(`Broadcast Sent! Status: ${localProject.status}`, 'success');
     }, 1500);
   };
 
-  const handleMetricUpdate = (field: keyof typeof localProject.metrics, value: string) => {
+  const handleMetricUpdate = (field, value) => {
     const currentMetrics = localProject.metrics || { views: 0, likes: 0, comments: 0, retention: '0%', lastUpdated: Date.now() };
 
     let updatedMetrics;
@@ -245,7 +238,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
       const updated = { ...localProject, metrics: updatedMetrics };
       setLocalProject(updated);
       onUpdate(updated);
-    } catch (e) => {
+    } catch (e) {
       console.error(e);
       showToast("Could not fetch metrics. Check URL.", 'error');
     } finally {
@@ -261,12 +254,12 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   const editors = users.filter(u => u.role === 'editor' || u.role === 'mograph');
 
   // Helper for comment avatar colors
-  const getUserAvatarColor = (userId: string) => {
+  const getUserAvatarColor = (userId) => {
     const user = users.find(u => u.id === userId);
     return user?.avatarColor || 'bg-gray-600';
   };
 
-  const getRoleBadgeColor = (role: Role) => {
+  const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'manager': return 'bg-indigo-500/20 text-indigo-400';
       case 'creator': return 'bg-emerald-500/20 text-emerald-400';
@@ -305,7 +298,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.platform})
                     </option>
-                  )}
+                  ))}
                 </select>
                 <div className="absolute right-2.5 top-2 pointer-events-none text-[#999]">
                   <ChevronDown size={14} />
@@ -342,6 +335,47 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 {editors.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
               </select>
 
+              {/* Priority Selector */}
+              <select
+                value={localProject.priority}
+                onChange={(e) => {
+                  const updated = { ...localProject, priority: e.target.value, lastUpdated: Date.now() };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                aria-label="Set priority"
+                className={`text-xs font-semibold rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 border ${
+                  localProject.priority === Priority.High
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+                  : localProject.priority === Priority.Medium
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                }`}
+              >
+                <option value={Priority.High}>High Priority</option>
+                <option value={Priority.Medium}>Medium Priority</option>
+                <option value={Priority.Low}>Low Priority</option>
+              </select>
+
+              {/* Stage Selector */}
+              <select
+                value={localProject.stage}
+                onChange={(e) => {
+                  const updated = { ...localProject, stage: e.target.value, lastUpdated: Date.now() };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                aria-label="Set stage"
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={Stage.Backlog}>Backlog</option>
+                <option value={Stage.Scripting}>Scripting</option>
+                <option value={Stage.Shooting}>Shooting</option>
+                <option value={Stage.Editing}>Editing</option>
+                <option value={Stage.Review}>Review</option>
+                <option value={Stage.Done}>Done</option>
+              </select>
+
               <span className="text-[#999] text-xs font-mono hidden sm:inline">{localProject.id}</span>
               {localProject.archived && (
                 <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[#999] font-mono uppercase">Archived</span>
@@ -353,7 +387,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <select
                 value={localProject.contentFormat || 'LongForm'}
                 onChange={(e) => {
-                  const updated = { ...localProject, contentFormat: e.target.value as 'LongForm' | 'ShortForm' };
+                  const updated = { ...localProject, contentFormat: e.target.value };
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
@@ -371,7 +405,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               value={localProject.title}
               onChange={(e) => {
                 setLocalProject({ ...localProject, title: e.target.value });
-                if (e.target.value.trim() setTitleError('');
+                if (e.target.value.trim()) setTitleError('');
               }}
               onBlur={handleSave}
               className={`bg-transparent text-xl sm:text-2xl font-bold text-white w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#999] ${titleError ? 'text-rose-400' : ''}`}
@@ -560,7 +594,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                         {task.text}
                       </span>
                     </div>
-                  )}
+                  ))}
 
                   {/* Manual Task Input */}
                   <div className="flex items-center space-x-3 group pt-1">
@@ -729,13 +763,13 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 <div className="bg-[#151515] rounded-xl border border-[#2a2a2a] p-4">
                   <h5 className="text-xs font-medium text-[#888] flex items-center mb-2"><Info size={12} className="mr-1.5" /> Verified Sources</h5>
                   <ul className="space-y-1">
-                    {localProject.metrics.sources.map(source, idx) => (
+                    {localProject.metrics.sources.map((source, idx) => (
                       <li key={idx} className="text-xs truncate">
                         <a href={source} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
                           {source}
                         </a>
                       </li>
-                    )}
+                    ))}
                   </ul>
                 </div>
               )}

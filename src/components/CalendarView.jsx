@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 
 
 const CalendarView = ({ projects, onSelectProject }) => {
-    const [currentDate, setCurrentDate] = useState(new Date();
+    const [currentDate, setCurrentDate] = useState(new Date());
 
-    const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 
     const monthData = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -20,9 +19,9 @@ const CalendarView = ({ projects, onSelectProject }) => {
         let dayCounter = 1;
 
         // Create weeks
-        for (let i = 0; i < 6; i++) => {
+        for (let i = 0; i < 6; i++) {
             const week = [];
-            for (let j = 0; j < 7; j++) => {
+            for (let j = 0; j < 7; j++) {
                 if (i === 0 && j < firstDay) {
                     week.push(null); // Empty slot before 1st of month
                 } else if (dayCounter > days) {
@@ -45,8 +44,8 @@ const CalendarView = ({ projects, onSelectProject }) => {
         return grid;
     }, [currentDate, projects]);
 
-    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
     const today = new Date().getDate();
     const isCurrentMonth = new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
@@ -78,14 +77,14 @@ const CalendarView = ({ projects, onSelectProject }) => {
                         <div key={day} className="py-3 text-center text-xs font-bold text-[#666] uppercase tracking-wider">
                             {day}
                         </div>
-                    )}
+                    ))}
                 </div>
 
                 {/* Calendar Grid */}
                 <div className="flex-1 grid grid-rows-5">
-                    {monthData.map(week, wIdx) => (
+                    {monthData.map((week, wIdx) => (
                         <div key={wIdx} className="grid grid-cols-7 border-b border-[#2f2f2f] last:border-0">
-                            {week.map(cell, dIdx) => (
+                            {week.map((cell, dIdx) => (
                                 <div 
                                     key={dIdx} 
                                     className={`relative border-r border-[#2f2f2f] last:border-0 p-2 min-h-[100px] transition-colors
@@ -101,13 +100,13 @@ const CalendarView = ({ projects, onSelectProject }) => {
                                             
                                             <div className="space-y-1.5 overflow-y-auto max-h-[100px] pr-1 scrollbar-hide">
                                                 {cell.projects.map(project => (
-                                                    <div 
+                                                    <div
                                                         key={project.id}
                                                         onClick={() => onSelectProject(project)}
                                                         className={`text-[10px] p-1.5 rounded border truncate cursor-pointer transition-all hover:scale-[1.02]
-                                                            ${project.stage === Stage.Done 
-                                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                                                                : project.priority === 'High' 
+                                                            ${project.stage === Stage.Done
+                                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                                : project.priority === 'High'
                                                                     ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                                                                     : 'bg-[#2a2a2a] border-[#333] text-[#ccc]'
                                                             }`}
@@ -116,14 +115,14 @@ const CalendarView = ({ projects, onSelectProject }) => {
                                                         {project.stage !== Stage.Done && <Clock size={8} className="inline mr-1" />}
                                                         {project.title}
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
                                         </>
                                     )}
                                 </div>
-                            )}
+                            ))}
                         </div>
-                    )}
+                    ))}
                 </div>
             </div>
         </div>

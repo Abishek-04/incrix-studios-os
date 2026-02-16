@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-  value: string;
-  users);
-
 export const MentionInput = ({
   value,
   onChange,
@@ -19,7 +16,7 @@ export const MentionInput = ({
 
   // Filter users based on mention search
   const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(mentionSearch.toLowerCase() && u.active
+    u.name.toLowerCase().includes(mentionSearch.toLowerCase()) && u.active
   );
 
   // Handle input change and detect @mentions
@@ -35,7 +32,7 @@ export const MentionInput = ({
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
       // Show mentions if no space after @
-      if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) => {
+      if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) {
         setMentionSearch(textAfterAt);
         setShowMentions(true);
         setSelectedMentionIndex(0);
@@ -64,7 +61,7 @@ export const MentionInput = ({
     setShowMentions(false);
 
     // Focus back on input
-    setTimeout() => {
+    setTimeout(() => {
       if (inputRef.current) {
         const newCursorPos = lastAtIndex + user.name.length + 2;
         inputRef.current.focus();
@@ -78,12 +75,12 @@ export const MentionInput = ({
     if (showMentions && filteredUsers.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedMentionIndex(prev) =>
+        setSelectedMentionIndex(prev =>
           prev < filteredUsers.length - 1 ? prev + 1 : prev
         );
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSelectedMentionIndex(prev) => (prev > 0 ? prev - 1 : 0);
+        setSelectedMentionIndex(prev => (prev > 0 ? prev - 1 : 0));
       } else if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         selectMention(filteredUsers[selectedMentionIndex]);
@@ -102,14 +99,14 @@ export const MentionInput = ({
   };
 
   // Click outside to close mention dropdown
-  useEffect() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         mentionDropdownRef.current &&
-        !mentionDropdownRef.current.contains(event.target as Node) &&
+        !mentionDropdownRef.current.contains(event.target) &&
         inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) => {
+        !inputRef.current.contains(event.target)
+      ) {
         setShowMentions(false);
       }
     };
@@ -136,7 +133,7 @@ export const MentionInput = ({
           ref={mentionDropdownRef}
           className="absolute bottom-full left-0 mb-2 w-full max-w-xs bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3f3f3f] max-h-48 overflow-y-auto z-50"
         >
-          {filteredUsers.map(user, index) => (
+          {filteredUsers.map((user, index) => (
             <button
               key={user.id}
               onClick={() => selectMention(user)}
@@ -158,7 +155,7 @@ export const MentionInput = ({
                 <div className="text-xs text-[#888] capitalize">{user.role}</div>
               </div>
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>

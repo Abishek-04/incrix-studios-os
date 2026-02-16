@@ -1,13 +1,15 @@
+/**
+ * @deprecated This component is deprecated. Use UserManagement from @/components/admin/UserManagement instead.
+ * This component was quota-focused and has been replaced with a modern admin interface.
+ * The new User Management page is now at /team and uses the UserManagement component.
+ * Scheduled for removal in next major version.
+ */
+
 import React, { useState } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Edit2, Save, X, Shield, Mail, Target, Phone, MessageCircle, Bell } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import ConfirmationModal from './ui/ConfirmationModal';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import Toast, { ToastType } from './ui/Toast';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-
-    users);
+import Toast from './ui/Toast';
 
 const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     const [isAdding, setIsAdding] = useState(false);
@@ -25,7 +27,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     });
 
     // Form State
-    const [formData, setFormData] = useState<Partial<User>>({
+    const [formData, setFormData] = useState({
         name: '',
         role: 'creator',
         email: '',
@@ -36,7 +38,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' }
     });
 
-    const showToast = (message: string, type: ToastType = 'success') => {
+    const showToast = (message, type = 'success') => {
         setToast({ visible: true, message, type });
     };
 
@@ -48,16 +50,16 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
 
         if (editingId) {
             // Update existing
-            const updated = users.map(u => u.id === editingId ? { ...u, ...formData } as User : u);
+            const updated = users.map(u => u.id === editingId ? { ...u, ...formData } : u);
             onUpdateUsers(updated);
             setEditingId(null);
             showToast('Team member updated successfully.');
         } else {
             // Create new
-            const newUser: User = {
+            const newUser = {
                 id: `USR-${Date.now()}`,
                 name: formData.name,
-                role: formData.role as Role,
+                role: formData.role,
                 email: formData.email,
                 phoneNumber: formData.phoneNumber,
                 notifyViaWhatsapp: formData.notifyViaWhatsapp,
@@ -76,7 +78,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
 
     const startEdit = (user) => {
         setEditingId(user.id);
-        const defaultQuota = { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' as const };
+        const defaultQuota = { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' };
 
         // Migrate old data on the fly if needed, or just default to 0
         const currentQuota = user.quota ? {
@@ -97,14 +99,14 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         setIsAdding(true);
     };
 
-    const confirmDelete = (id: string) => {
+    const confirmDelete = (id) => {
         setUserToDelete(id);
         setDeleteModalOpen(true);
     };
 
     const handleDelete = () => {
         if (userToDelete) {
-            onUpdateUsers(users.filter(u => u.id !== userToDelete);
+            onUpdateUsers(users.filter(u => u.id !== userToDelete));
             showToast('User removed from team.');
             setDeleteModalOpen(false);
             setUserToDelete(null);
@@ -112,7 +114,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
     };
 
     // Calculate metrics for table
-    const getMetrics = (userId: string) => {
+    const getMetrics = (userId) => {
         // Filter projects assigned to this user that are 'Done'
         // Assuming projects have an 'assignedTo' field or similar. 
         // Based on Dashboard logic it seems calculating based on ALL projects or handling filtering outside?
@@ -121,7 +123,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
         // However, usually projects are assigned to people. `Project` has `assignedTo` array usually?
         // Let's check `types.ts` again. It has `assignedTo?: string[]`.
 
-        const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId));
+        const userProjects = projects.filter(p => p.stage === Stage.Done && (p.assignedTo?.includes(userId)));
 
         return {
             ytLong: userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length,
@@ -137,7 +139,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                 message={toast.message}
                 type={toast.type}
                 isVisible={toast.visible}
-                onClose={() => setToast(prev => ({ ...prev, visible: false })}
+                onClose={() => setToast(prev => ({ ...prev, visible: false }))}
             />
 
             <ConfirmationModal
@@ -237,7 +239,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     <select
                                         className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none cursor-pointer"
                                         value={formData.role}
-                                        onChange={e => setFormData({ ...formData, role: e.target.value as Role })}
+                                        onChange={e => setFormData({ ...formData, role: e.target.value })}
                                     >
                                         <option value="manager">Manager</option>
                                         <option value="creator">Creator</option>
@@ -269,7 +271,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         value={formData.quota?.youtubeLong || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, youtubeLong: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, youtubeLong: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -281,7 +283,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         value={formData.quota?.youtubeShort || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, youtubeShort: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, youtubeShort: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -293,7 +295,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         value={formData.quota?.instagramReel || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, instagramReel: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, instagramReel: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -305,7 +307,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         value={formData.quota?.course || 0}
                                         onChange={e => setFormData({
                                             ...formData,
-                                            quota: { ...formData.quota!, course: parseInt(e.target.value) || 0 }
+                                            quota: { ...formData.quota, course: parseInt(e.target.value) || 0 }
                                         })}
                                     />
                                 </div>
@@ -317,7 +319,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     value={formData.quota?.period || 'weekly'}
                                     onChange={e => setFormData({
                                         ...formData,
-                                        quota: { ...formData.quota!, period: e.target.value as 'weekly' | 'monthly' }
+                                        quota: { ...formData.quota, period: e.target.value }
                                     })}
                                 >
                                     <option value="weekly">Weekly</option>

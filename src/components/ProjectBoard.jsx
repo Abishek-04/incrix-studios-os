@@ -1,14 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2 } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
+import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2, CheckCircle } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-
-    channels: Channel[];
-    searchQuery: string;
 
 const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject }) => {
     // Local search state removed in favor of global props
@@ -26,8 +20,8 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     ];
 
     // Extract unique months from projects for the dropdown
-    const availableMonths = useMemo() => {
-        const months = new Set<string>();
+    const availableMonths = useMemo(() => {
+        const months = new Set();
         projects.forEach(p => {
             const date = new Date(p.dueDate);
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -36,7 +30,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         return Array.from(months).sort().reverse();
     }, [projects]);
 
-    const formatMonth = (key: string) => {
+    const formatMonth = (key) => {
         const [year, month] = key.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1);
         return date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -44,7 +38,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
 
     const handleCreateNew = () => {
         // Create a blank project template
-        const newProject: Project = {
+        const newProject = {
             id: `PRJ-${Date.now().toString().slice(-4)}`,
             title: 'New Untitled Project',
             topic: 'To be decided',
@@ -70,7 +64,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         onSelectProject(newProject); // Open it immediately
     };
 
-    const handleMoveProject = (e) => {
+    const handleMoveProject = async (e, project, direction) => {
         e.stopPropagation();
         const currentIndex = columns.indexOf(project.stage);
         let newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
@@ -82,12 +76,15 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         if (newIndex !== currentIndex) {
             const newStage = columns[newIndex];
             onUpdateProject({ ...project, stage: newStage, lastUpdated: Date.now() });
+
+            // TODO: Send notifications through API route instead of direct import
+            // Notifications should be handled server-side when the project is updated
         }
     };
 
     // Memoize filtered projects for performance
-    const getProjectsForStage = useMemo() => {
-        return (stage: Stage) => {
+    const getProjectsForStage = useMemo(() => {
+        return (stage) => {
             return projects.filter(p => {
                 if (p.archived) return false;
                 if (p.stage !== stage) return false;
@@ -95,7 +92,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 // Apply Filters
                 if (searchQuery) {
                     const query = searchQuery.toLowerCase();
-                    if (!p.title.toLowerCase().includes(query) && !p.topic.toLowerCase().includes(query) return false;
+                    if (!p.title.toLowerCase().includes(query) && !p.topic.toLowerCase().includes(query)) return false;
                 }
 
                 if (selectedMonth !== 'all') {
@@ -109,7 +106,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         };
     }, [projects, searchQuery, selectedMonth]);
 
-    const getPriorityColor = (priority: Priority) => {
+    const getPriorityColor = (priority) => {
         switch (priority) {
             case Priority.High:
                 return 'bg-rose-500/30 text-rose-300 border-rose-500/50 shadow-lg shadow-rose-500/10';
@@ -139,7 +136,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                             <option value="all">All Dates</option>
                             {availableMonths.map(month => (
                                 <option key={month} value={month}>{formatMonth(month)}</option>
-                            )}
+                            ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -177,7 +174,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                     </div>
                 ) : (
                     <div className="flex flex-row h-full gap-4 overflow-x-auto snap-x snap-mandatory pb-4 sm:gap-6 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {columns.map(stage, colIndex) => {
+                        {columns.map((stage, colIndex) => {
                             const stageProjects = getProjectsForStage(stage);
 
                             return (
@@ -193,11 +190,32 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                     }}
                                 >
                                     {/* Column Header */}
-                                    <div className="p-5 border-b-2 border-[#333] flex items-center justify-between sticky top-0 bg-gradient-to-b from-[#1a1a1a] to-[#161616] z-10 rounded-t-xl group backdrop-blur-sm">
+                                    <div className={`p-5 border-b-2 flex items-center justify-between sticky top-0 z-10 rounded-t-xl group backdrop-blur-sm ${
+                                        stage === Stage.Done
+                                        ? 'border-emerald-500/30 bg-gradient-to-b from-emerald-950/30 to-[#161616]'
+                                        : stage === Stage.Shooting
+                                        ? 'border-amber-500/30 bg-gradient-to-b from-amber-950/30 to-[#161616]'
+                                        : stage === Stage.Editing
+                                        ? 'border-purple-500/30 bg-gradient-to-b from-purple-950/30 to-[#161616]'
+                                        : 'border-[#333] bg-gradient-to-b from-[#1a1a1a] to-[#161616]'
+                                    }`}>
                                         <div className="flex items-center gap-3">
-                                            <h3 className="font-bold text-white text-lg tracking-tight">{stage}</h3>
+                                            <h3 className={`font-bold text-lg tracking-tight ${
+                                                stage === Stage.Done ? 'text-emerald-300'
+                                                : stage === Stage.Shooting ? 'text-amber-300'
+                                                : stage === Stage.Editing ? 'text-purple-300'
+                                                : 'text-white'
+                                            }`}>{stage}</h3>
                                             <motion.div
-                                                className="bg-[#252525] text-[#aaa] text-[11px] font-semibold px-2 py-1 rounded-lg min-w-[28px] text-center border border-[#333]"
+                                                className={`text-[11px] font-semibold px-2 py-1 rounded-lg min-w-[28px] text-center border ${
+                                                    stage === Stage.Done
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                                    : stage === Stage.Shooting
+                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                                                    : stage === Stage.Editing
+                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                    : 'bg-[#252525] text-[#aaa] border-[#333]'
+                                                }`}
                                                 key={stageProjects.length}
                                                 initial={{ scale: 1.2 }}
                                                 animate={{ scale: 1 }}
@@ -217,7 +235,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                     {/* Cards Container */}
                                     <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent">
                                         <AnimatePresence mode="popLayout">
-                                            {stageProjects.map(project, index) => (
+                                            {stageProjects.map((project, index) => (
                                                 <motion.div
                                                     key={project.id}
                                                     layout
@@ -241,7 +259,15 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                         }
                                                     }}
                                                     aria-label={`${project.title}, ${project.stage}, Priority: ${project.priority}`}
-                                                    className="bg-[#1a1a1a] p-5 rounded-xl border border-[#333] hover:border-indigo-500/50 hover:bg-[#1f1f1f] transition-all duration-200 cursor-pointer group shadow-lg hover:shadow-2xl hover:shadow-indigo-900/20 relative transform focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#121212]"
+                                                    className={`p-5 rounded-xl border transition-all duration-200 cursor-pointer group shadow-lg relative transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#121212] ${
+                                                        project.stage === Stage.Done
+                                                        ? 'bg-gradient-to-br from-emerald-950/40 to-[#1a1a1a] border-emerald-500/30 hover:border-emerald-400/50 hover:bg-gradient-to-br hover:from-emerald-950/50 hover:to-[#1f1f1f] hover:shadow-2xl hover:shadow-emerald-900/30 focus:ring-emerald-500'
+                                                        : project.stage === Stage.Shooting
+                                                        ? 'bg-gradient-to-br from-amber-950/40 to-[#1a1a1a] border-amber-500/30 hover:border-amber-400/50 hover:bg-gradient-to-br hover:from-amber-950/50 hover:to-[#1f1f1f] hover:shadow-2xl hover:shadow-amber-900/30 focus:ring-amber-500'
+                                                        : project.stage === Stage.Editing
+                                                        ? 'bg-gradient-to-br from-purple-950/40 to-[#1a1a1a] border-purple-500/30 hover:border-purple-400/50 hover:bg-gradient-to-br hover:from-purple-950/50 hover:to-[#1f1f1f] hover:shadow-2xl hover:shadow-purple-900/30 focus:ring-purple-500'
+                                                        : 'bg-[#1a1a1a] border-[#333] hover:border-indigo-500/50 hover:bg-[#1f1f1f] hover:shadow-2xl hover:shadow-indigo-900/20 focus:ring-indigo-500'
+                                                    }`}
                                                 >
                                                     {/* Hover Controls for Moving - Desktop Only */}
                                                     <div className="absolute top-1/2 -translate-y-1/2 -left-3 hidden sm:group-hover:flex">
@@ -284,8 +310,28 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
 
                                                     {/* Project Meta */}
                                                     <div className="flex items-start justify-between mb-4">
-                                                        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold border backdrop-blur-sm ${getPriorityColor(project.priority)}`}>
-                                                            {project.priority}
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <div className={`px-2.5 py-1 rounded-md text-xs font-semibold border backdrop-blur-sm ${getPriorityColor(project.priority)}`}>
+                                                                {project.priority}
+                                                            </div>
+                                                            {project.stage === Stage.Done && (
+                                                                <div className="px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm" title="Completed">
+                                                                    <CheckCircle size={12} className="text-emerald-400" />
+                                                                    <span>Done</span>
+                                                                </div>
+                                                            )}
+                                                            {project.stage === Stage.Shooting && (
+                                                                <div className="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm" title="In Production">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                                                                    <span>Shooting</span>
+                                                                </div>
+                                                            )}
+                                                            {project.stage === Stage.Editing && (
+                                                                <div className="px-2.5 py-1 rounded-md bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm" title="Post-Production">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></div>
+                                                                    <span>Editing</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         {project.hasMographNeeds && (
                                                             <div className="px-2.5 py-1 rounded-md bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm" title="Motion Graphics Required">
@@ -296,21 +342,34 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                     </div>
 
                                                     {/* Title */}
-                                                    <h4 className="text-base font-semibold text-white mb-2 line-clamp-2 leading-snug group-hover:text-indigo-300 transition-colors">
+                                                    <h4 className={`text-base font-semibold mb-2 line-clamp-2 leading-snug transition-colors ${
+                                                        project.stage === Stage.Done
+                                                        ? 'text-emerald-100 group-hover:text-emerald-200'
+                                                        : project.stage === Stage.Shooting
+                                                        ? 'text-amber-100 group-hover:text-amber-200'
+                                                        : project.stage === Stage.Editing
+                                                        ? 'text-purple-100 group-hover:text-purple-200'
+                                                        : 'text-white group-hover:text-indigo-300'
+                                                    }`}>
                                                         {project.title}
                                                     </h4>
-                                                    <p className="text-sm text-[#888] mb-5 truncate">{project.topic}</p>
+                                                    <p className={`text-sm mb-5 truncate ${
+                                                        project.stage === Stage.Done ? 'text-emerald-300/60'
+                                                        : project.stage === Stage.Shooting ? 'text-amber-300/60'
+                                                        : project.stage === Stage.Editing ? 'text-purple-300/60'
+                                                        : 'text-[#888]'
+                                                    }`}>{project.topic}</p>
 
                                                     {/* Footer Info */}
                                                     <div className="pt-4 border-t border-[#333] flex items-center justify-between">
                                                         {/* Avatar / Assignee */}
                                                         <div className="flex items-center space-x-2">
-                                                            <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#333] flex items-center justify-center text-[11px] text-white font-bold" title={project.creator}>
-                                                                {project.creator.charAt(0)}
+                                                            <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#333] flex items-center justify-center text-[11px] text-white font-bold" title={project.creator || 'Unassigned'}>
+                                                                {project.creator?.charAt(0) || '?'}
                                                             </div>
-                                                            {project.editor !== 'Unassigned' && (
+                                                            {project.editor && project.editor !== 'Unassigned' && (
                                                                 <div className="w-6 h-6 rounded-full bg-[#333] border border-[#444] flex items-center justify-center text-[11px] text-white font-bold" title={project.editor}>
-                                                                    {project.editor.charAt(0)}
+                                                                    {project.editor?.charAt(0) || '?'}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -344,7 +403,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                         )}
                                                     </div>
                                                 </motion.div>
-                                            )}
+                                            ))}
                                         </AnimatePresence>
 
                                         {stageProjects.length === 0 && (
@@ -386,5 +445,6 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             />
         </div >
     );
+};
 
 export default ProjectBoard;

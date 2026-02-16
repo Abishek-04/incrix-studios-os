@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import ManageChannels from '@/components/ManageChannels';
-import { fetchState } from '@/services/api';
+import { fetchState, saveState } from '@/services/api';
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
 
-  useEffect() => {
+  useEffect(() => {
     const loadData = async () => {
       try {
         const data = await fetchState();
@@ -22,5 +22,16 @@ export default function ChannelsPage() {
     loadData();
   }, []);
 
-  return <ManageChannels channels={channels} users={users} onUpdate={() => {}} />;
+  const handleUpdateChannels = (updatedChannels) => {
+    setChannels(updatedChannels);
+    saveState({ channels: updatedChannels });
+  };
+
+  return (
+    <ManageChannels
+      channels={channels}
+      users={users}
+      onUpdateChannels={handleUpdateChannels}
+    />
+  );
 }

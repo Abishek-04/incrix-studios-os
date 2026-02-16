@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DailyTasks from '@/components/DailyTasks';
-import { fetchState } from '@/services/api';
+import NotionDailyTasks from '@/components/NotionDailyTasks';
+import { fetchState, saveState } from '@/services/api';
 
 export default function DailyPage() {
   const [dailyTasks, setDailyTasks] = useState([]);
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -14,6 +15,16 @@ export default function DailyPage() {
         const data = await fetchState();
         setDailyTasks(data.dailyTasks || []);
         setUsers(data.users || []);
+
+        // Get current user from localStorage
+        const storedUser = localStorage.getItem('auth_user');
+        if (storedUser) {
+          setCurrentUser(JSON.parse(storedUser));
+        } else if (data.users && data.users.length > 0) {
+          const fallbackUser = data.users.find(u => u.role === 'manager') || data.users[0];
+          setCurrentUser(fallbackUser);
+          localStorage.setItem('auth_user', JSON.stringify(fallbackUser));
+        }
       } catch (error) {
         console.error('Failed to load data:', error);
       }
@@ -22,5 +33,25 @@ export default function DailyPage() {
     loadData();
   }, []);
 
-  return <DailyTasks dailyTasks={dailyTasks} users={users} onUpdate={() => {}} />;
+  const handleUpdateTasks = (updatedTasks) => {
+    setDailyTasks(updatedTasks);
+    saveState({ dailyTasks: updatedTasks });
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <NotionDailyTasks
+      tasks={dailyTasks}
+      users={users}
+      currentUser={currentUser}
+      onUpdateTasks={handleUpdateTasks}
+    />
+  );
 }

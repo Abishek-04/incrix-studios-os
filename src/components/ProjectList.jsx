@@ -1,22 +1,19 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List } from 'lucide-react';
-import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-
-    channels: Channel[];
-    searchQuery: string;
+import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User } from 'lucide-react';
 
 const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDeleteProject }) => {
     const [filter, setFilter] = useState('all');
     const [selectedMonth, setSelectedMonth] = useState('all');
+    const [selectedCreator, setSelectedCreator] = useState('all');
     const [sortBy, setSortBy] = useState('lastUpdated');
     const [sortOrder, setSortOrder] = useState('desc');
-    const [viewMode, setViewMode] = useState() =>
+    const [viewMode, setViewMode] = useState(() =>
         typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'table'
     );
 
     // Auto-switch to cards on resize
-    useEffect() => {
+    useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 768) setViewMode('cards');
         };
@@ -25,8 +22,8 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
     }, []);
 
     // Extract unique months from projects for the dropdown
-    const availableMonths = useMemo() => {
-        const months = new Set<string>();
+    const availableMonths = useMemo(() => {
+        const months = new Set();
         projects.forEach(p => {
             const date = new Date(p.dueDate);
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -35,7 +32,16 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return Array.from(months).sort().reverse(); // Newest first
     }, [projects]);
 
-    const formatMonth = (key: string) => {
+    // Extract unique creators from projects for the dropdown
+    const availableCreators = useMemo(() => {
+        const creators = new Set();
+        projects.forEach(p => {
+            if (p.creator) creators.add(p.creator);
+        });
+        return Array.from(creators).sort(); // Alphabetical order
+    }, [projects]);
+
+    const formatMonth = (key) => {
         const [year, month] = key.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1);
         return date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -79,11 +85,17 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                 matchesDate = key === selectedMonth;
             }
 
-            return matchesStatus && matchesDate;
+            // Creator Filter
+            let matchesCreator = true;
+            if (selectedCreator !== 'all') {
+                matchesCreator = p.creator === selectedCreator;
+            }
+
+            return matchesStatus && matchesDate && matchesCreator;
         });
 
         // Then, sort the filtered results
-        return filtered.sort(a, b) => {
+        return filtered.sort((a, b) => {
             let comparison = 0;
 
             switch (sortBy) {
@@ -104,7 +116,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
 
             return sortOrder === 'asc' ? comparison : -comparison;
         });
-    }, [projects, filter, selectedMonth, searchQuery, sortBy, sortOrder]);
+    }, [projects, filter, selectedMonth, selectedCreator, searchQuery, sortBy, sortOrder]);
 
     return (
         <div className="p-8 h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -133,7 +145,28 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                             <option value="all">All Dates</option>
                             {availableMonths.map(month => (
                                 <option key={month} value={month}>{formatMonth(month)}</option>
-                            )}
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <svg className="w-3 h-3 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+
+                    {/* Creator Filter */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <User size={14} className="text-[#999]" />
+                        </div>
+                        <select
+                            value={selectedCreator}
+                            onChange={(e) => setSelectedCreator(e.target.value)}
+                            aria-label="Filter by creator"
+                            className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer hover:bg-[#252525] transition-colors"
+                        >
+                            <option value="all">All Creators</option>
+                            {availableCreators.map(creator => (
+                                <option key={creator} value={creator}>{creator}</option>
+                            ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <svg className="w-3 h-3 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -144,7 +177,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                     <div className="relative">
                         <select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
+                            onChange={(e) => setSortBy(e.target.value)}
                             aria-label="Sort by"
                             className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer hover:bg-[#252525] transition-colors"
                         >
@@ -265,16 +298,16 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                     </td>
                                     <td className="p-4 hidden lg:table-cell">
                                         <div className="flex -space-x-2">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#1e1e1e] flex items-center justify-center text-[10px] text-indigo-300 font-bold" title={`Creator: ${project.creator}`}>
-                                                {project.creator.charAt(0)}
+                                            <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#1e1e1e] flex items-center justify-center text-[10px] text-indigo-300 font-bold" title={`Creator: ${project.creator || 'Unassigned'}`}>
+                                                {project.creator?.charAt(0) || '?'}
                                             </div>
-                                            {project.editor !== 'Unassigned' && (
+                                            {project.editor && project.editor !== 'Unassigned' && (
                                                 <div className="w-6 h-6 rounded-full bg-[#333] border border-[#1e1e1e] flex items-center justify-center text-[10px] text-[#999] font-bold" title={`Editor: ${project.editor}`}>
-                                                    {project.editor.charAt(0)}
+                                                    {project.editor?.charAt(0) || '?'}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="text-[10px] text-[#999] mt-1">{project.creator} &bull; {project.editor}</div>
+                                        <div className="text-[10px] text-[#999] mt-1">{project.creator || 'Unassigned'} &bull; {project.editor || 'Unassigned'}</div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center space-x-2">
@@ -316,7 +349,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                         </div>
                                     </td>
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 )}
@@ -364,16 +397,16 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                 <div className="flex items-center justify-between pt-3 border-t border-[#2a2a2a]">
                                     <div className="flex items-center space-x-2">
                                         <div className="flex -space-x-1.5">
-                                            <div className="w-5 h-5 rounded-full bg-indigo-900 border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={project.creator}>
-                                                {project.creator.charAt(0)}
+                                            <div className="w-5 h-5 rounded-full bg-indigo-900 border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={project.creator || 'Unassigned'}>
+                                                {project.creator?.charAt(0) || '?'}
                                             </div>
-                                            {project.editor !== 'Unassigned' && (
+                                            {project.editor && project.editor !== 'Unassigned' && (
                                                 <div className="w-5 h-5 rounded-full bg-[#333] border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={project.editor}>
-                                                    {project.editor.charAt(0)}
+                                                    {project.editor?.charAt(0) || '?'}
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-[10px] text-[#999]">{project.creator}</span>
+                                        <span className="text-[10px] text-[#999]">{project.creator || 'Unassigned'}</span>
                                     </div>
 
                                     <div className="flex items-center space-x-2">
@@ -404,7 +437,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        ))}
                     </div>
                 )}
 

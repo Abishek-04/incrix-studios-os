@@ -10,7 +10,10 @@ const DailyTaskSchema = new Schema(
     userId: { type: String, required: true, index: true },
     userName: { type: String, required: true },
     task: { type: String, required: true },
-    done: { type: Boolean, default: false, index: true }
+    done: { type: Boolean, default: false, index: true },
+    // Project linking fields (optional)
+    sourceProjectId: { type: String, index: true },
+    projectType: { type: String, enum: ['content', 'design', 'dev'] }
   },
   {
     timestamps: true

@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import { logLogin, logLoginFailed } from '@/lib/services/activityLogger';
 
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
+
+    // Get IP address and User Agent for logging
+    const ipAddress = request.headers.get('x-forwarded-for') ||
+                     request.headers.get('x-real-ip') ||
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Validate input
     if (!email || !password) {
@@ -23,6 +30,9 @@ export async function POST(request) {
     const user = await User.findOne({ email, active: true }).select('+password');
 
     if (!user) {
+      // Log failed login attempt
+      await logLoginFailed(email, ipAddress, userAgent);
+
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -32,6 +42,9 @@ export async function POST(request) {
     // Compare password using bcrypt
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      // Log failed login attempt
+      await logLoginFailed(email, ipAddress, userAgent);
+
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -42,6 +55,9 @@ export async function POST(request) {
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.refreshTokens;
+
+    // Log successful login
+    await logLogin(userResponse, ipAddress, userAgent);
 
     return NextResponse.json({
       success: true,

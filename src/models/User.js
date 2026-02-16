@@ -10,17 +10,34 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ['manager', 'creator', 'editor', 'mograph'],
+      enum: ['superadmin', 'manager', 'creator', 'editor', 'designer', 'developer'],
       index: true
     },
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true, select: false },
     phoneNumber: { type: String },
+    whatsappNumber: {
+      type: String,
+      trim: true,
+      default: null
+    },
     notifyViaWhatsapp: { type: Boolean, default: false },
     notifyViaEmail: { type: Boolean, default: true },
+    notificationPreferences: {
+      whatsapp: {
+        enabled: { type: Boolean, default: false },
+        projectAssigned: { type: Boolean, default: true },
+        projectStageChanged: { type: Boolean, default: true },
+        taskAssigned: { type: Boolean, default: true },
+        taskOverdue: { type: Boolean, default: true },
+        deadlineApproaching: { type: Boolean, default: true },
+        projectAtRisk: { type: Boolean, default: true },
+        newComment: { type: Boolean, default: false },
+        quotaMilestone: { type: Boolean, default: false }
+      }
+    },
     avatarColor: { type: String, required: true },
-    niche: { type: String },
-    active: { type: Boolean, default: true, index: true },
+    isActive: { type: Boolean, default: true, index: true },
     quota: {
       youtubeLong: { type: Number, default: 0 },
       youtubeShort: { type: Number, default: 0 },
@@ -62,6 +79,6 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // Create index for common queries
-UserSchema.index({ role: 1, active: 1 });
+UserSchema.index({ role: 1, isActive: 1 });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

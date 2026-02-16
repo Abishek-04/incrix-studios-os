@@ -26,6 +26,47 @@ export const Stage = Object.freeze({
   Done: 'Done'
 });
 
+export const DesignStage = Object.freeze({
+  Briefing: 'Briefing',
+  Concept: 'Concept',
+  Design: 'Design',
+  Review: 'Review',
+  Approved: 'Approved',
+  Delivered: 'Delivered'
+});
+
+export const DevStage = Object.freeze({
+  Planning: 'Planning',
+  Development: 'Development',
+  Testing: 'Testing',
+  CodeReview: 'Code Review',
+  QA: 'QA',
+  Deployed: 'Deployed'
+});
+
+export const DesignType = Object.freeze({
+  Logo: 'logo',
+  Banner: 'banner',
+  Thumbnail: 'thumbnail',
+  UIMockup: 'ui-mockup',
+  Branding: 'branding',
+  SocialMedia: 'social-media'
+});
+
+export const DevType = Object.freeze({
+  Feature: 'feature',
+  Bugfix: 'bugfix',
+  Refactor: 'refactor',
+  Infrastructure: 'infrastructure',
+  Optimization: 'optimization'
+});
+
+export const ProjectType = Object.freeze({
+  Content: 'content',
+  Design: 'design',
+  Dev: 'dev'
+});
+
 export const Status = Object.freeze({
   NotStarted: 'Not Started',
   InProgress: 'In Progress',
@@ -40,7 +81,7 @@ export const Priority = Object.freeze({
 });
 
 // Type unions as constant arrays for validation
-export const VALID_ROLES = ['manager', 'creator', 'editor', 'mograph'];
+export const VALID_ROLES = ['superadmin', 'manager', 'creator', 'editor', 'designer', 'developer'];
 export const CONTENT_FORMATS = ['LongForm', 'ShortForm'];
 export const QUOTA_PERIODS = ['weekly', 'monthly'];
 export const NOTIFICATION_TYPES = ['info', 'success', 'warning', 'error'];
@@ -53,28 +94,17 @@ export const getEnumValues = (enumObj) => Object.values(enumObj);
 export const isValidEnumValue = (enumObj, value) => getEnumValues(enumObj).includes(value);
 
 /**
- * @typedef {Object} UserQuota
- * @property {number} youtubeLong - Target count for YouTube Long Form
- * @property {number} youtubeShort - Target count for YouTube Shorts
- * @property {number} instagramReel - Target count for Instagram Reels
- * @property {number} course - Target count for Course Lectures
- * @property {'weekly'|'monthly'} period - Quota period
- */
-
-/**
  * @typedef {Object} User
  * @property {string} id
  * @property {string} name
- * @property {'manager'|'creator'|'editor'|'mograph'} role
+ * @property {'superadmin'|'manager'|'creator'|'editor'|'designer'|'developer'} role
  * @property {string} email
  * @property {string} [phoneNumber] - For WhatsApp
  * @property {boolean} [notifyViaWhatsapp]
  * @property {boolean} [notifyViaEmail]
  * @property {string} avatarColor
- * @property {string} [niche]
- * @property {boolean} active
+ * @property {boolean} isActive
  * @property {string} [password] - Not sent to frontend usually
- * @property {UserQuota} [quota]
  */
 
 /**
