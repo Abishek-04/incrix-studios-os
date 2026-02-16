@@ -6,8 +6,7 @@ const INSTAGRAM_OAUTH_REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI ||
 
 /**
  * GET /api/instagram/auth
- * Initiate Instagram Business Login OAuth flow
- * Uses Instagram's own OAuth endpoint (not Facebook Login)
+ * Initiate Facebook Login OAuth flow to access Instagram Graph API
  */
 export async function GET(request) {
   try {
@@ -33,24 +32,24 @@ export async function GET(request) {
     const token = generateSecureToken(32);
     const stateData = Buffer.from(JSON.stringify({ userId, token })).toString('base64');
 
-    // Instagram Business Login scopes
+    // Facebook Login scopes for Instagram Graph API
     const scopes = [
-      'instagram_business_basic',
-      'instagram_business_manage_messages',
-      'instagram_business_manage_comments',
+      'instagram_basic',
+      'instagram_manage_comments',
+      'pages_show_list',
+      'pages_read_engagement',
+      'pages_messaging',
     ].join(',');
 
-    // Use Instagram's OAuth endpoint (NOT Facebook's)
-    const oauthUrl = `https://www.instagram.com/oauth/authorize?` +
-      `enable_fb_login=0` +
-      `&force_authentication=1` +
-      `&client_id=${INSTAGRAM_APP_ID}` +
+    // Use Facebook OAuth endpoint
+    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?` +
+      `client_id=${INSTAGRAM_APP_ID}` +
       `&redirect_uri=${encodeURIComponent(INSTAGRAM_OAUTH_REDIRECT_URI)}` +
       `&response_type=code` +
       `&scope=${encodeURIComponent(scopes)}` +
       `&state=${stateData}`;
 
-    // Redirect to Instagram OAuth
+    // Redirect to Facebook OAuth
     return NextResponse.redirect(oauthUrl);
   } catch (error) {
     console.error('[Instagram Auth] Error:', error);
