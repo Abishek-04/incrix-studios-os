@@ -18,3 +18,4 @@ View your app in AI Studio: https://ai.studio/apps/drive/11TNDAGz1_7bDHe0rlc5MJn
 
 3. Run the app:
    `npm run dev`
+# Instagram OAuth configured
