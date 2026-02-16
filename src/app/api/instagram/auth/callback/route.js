@@ -11,7 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 /**
  * GET /api/instagram/auth/callback
- * Handle Facebook Login OAuth callback and discover linked Instagram Business Account
+ * Handle Instagram Business Login OAuth callback
  */
 export async function GET(request) {
   try {
@@ -40,30 +40,32 @@ export async function GET(request) {
       return NextResponse.redirect(`${BASE_URL}/instagram?error=invalid_state`);
     }
 
-    // Step 1: Exchange code for short-lived Facebook token
-    const tokenResponse = await axios.get(
-      'https://graph.facebook.com/v21.0/oauth/access_token',
+    // Step 1: Exchange code for short-lived Instagram token
+    const tokenResponse = await axios.post(
+      'https://api.instagram.com/oauth/access_token',
+      new URLSearchParams({
+        client_id: INSTAGRAM_APP_ID,
+        client_secret: INSTAGRAM_APP_SECRET,
+        grant_type: 'authorization_code',
+        redirect_uri: INSTAGRAM_OAUTH_REDIRECT_URI,
+        code,
+      }),
       {
-        params: {
-          client_id: INSTAGRAM_APP_ID,
-          client_secret: INSTAGRAM_APP_SECRET,
-          redirect_uri: INSTAGRAM_OAUTH_REDIRECT_URI,
-          code,
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
     );
 
     const shortLivedToken = tokenResponse.data.access_token;
+    const igUserId = tokenResponse.data.user_id;
 
     // Step 2: Exchange for long-lived token (60 days)
     const longLivedResponse = await axios.get(
-      'https://graph.facebook.com/v21.0/oauth/access_token',
+      'https://graph.instagram.com/access_token',
       {
         params: {
-          grant_type: 'fb_exchange_token',
-          client_id: INSTAGRAM_APP_ID,
+          grant_type: 'ig_exchange_token',
           client_secret: INSTAGRAM_APP_SECRET,
-          fb_exchange_token: shortLivedToken,
+          access_token: shortLivedToken,
         },
       }
     );
@@ -71,74 +73,23 @@ export async function GET(request) {
     const longLivedToken = longLivedResponse.data.access_token;
     const expiresIn = longLivedResponse.data.expires_in; // ~5184000 seconds (60 days)
 
-    // Step 3: Get user's Facebook Pages
-    const pagesResponse = await axios.get(
-      'https://graph.facebook.com/v21.0/me/accounts',
+    // Step 3: Get Instagram account details
+    const profileResponse = await axios.get(
+      `https://graph.instagram.com/v21.0/me`,
       {
         params: {
+          fields: 'user_id,username,name,account_type,profile_picture_url,followers_count,follows_count,media_count',
           access_token: longLivedToken,
         },
       }
     );
 
-    const pages = pagesResponse.data.data;
-
-    if (!pages || pages.length === 0) {
-      return NextResponse.redirect(
-        `${BASE_URL}/instagram?error=${encodeURIComponent('No Facebook Pages found. Your Instagram Business/Creator account must be linked to a Facebook Page.')}`
-      );
-    }
-
-    // Step 4: Find the Instagram Business Account linked to a page
-    let igAccount = null;
-    let pageAccessToken = null;
-
-    for (const page of pages) {
-      try {
-        const igResponse = await axios.get(
-          `https://graph.facebook.com/v21.0/${page.id}`,
-          {
-            params: {
-              fields: 'instagram_business_account',
-              access_token: page.access_token,
-            },
-          }
-        );
-
-        if (igResponse.data.instagram_business_account) {
-          // Found the linked Instagram account — get its details
-          const igUserId = igResponse.data.instagram_business_account.id;
-          pageAccessToken = page.access_token;
-
-          const profileResponse = await axios.get(
-            `https://graph.facebook.com/v21.0/${igUserId}`,
-            {
-              params: {
-                fields: 'id,name,username,profile_picture_url,followers_count,follows_count,media_count',
-                access_token: page.access_token,
-              },
-            }
-          );
-
-          igAccount = profileResponse.data;
-          break;
-        }
-      } catch (err) {
-        console.error(`[Instagram Callback] Error checking page ${page.id}:`, err.message);
-        continue;
-      }
-    }
-
-    if (!igAccount) {
-      return NextResponse.redirect(
-        `${BASE_URL}/instagram?error=${encodeURIComponent('No Instagram Business/Creator account found linked to your Facebook Pages. Please connect your Instagram account to a Facebook Page first.')}`
-      );
-    }
+    const igAccount = profileResponse.data;
 
     await connectDB();
 
-    // Step 5: Encrypt & store in database
-    const channelId = `ig-${igAccount.id}`;
+    // Create or update channel
+    const channelId = `ig-${igAccount.user_id || igUserId}`;
     const encryptedToken = encrypt(longLivedToken);
 
     await Channel.updateOne(
@@ -151,10 +102,10 @@ export async function GET(request) {
           link: `https://instagram.com/${igAccount.username}`,
           avatarUrl: igAccount.profile_picture_url || null,
           email: userId,
-          igUserId: igAccount.id,
+          igUserId: igAccount.user_id || igUserId,
           igUsername: igAccount.username,
           igProfilePicUrl: igAccount.profile_picture_url || null,
-          accountType: 'BUSINESS',
+          accountType: igAccount.account_type,
           accessToken: encryptedToken,
           tokenExpiry: new Date(Date.now() + expiresIn * 1000),
           tokenRefreshedAt: new Date(),

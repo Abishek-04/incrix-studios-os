@@ -21,7 +21,7 @@ export async function syncMedia(channelId) {
 
     const accessToken = await getAccessToken(channelId);
     let syncedCount = 0;
-    let nextUrl = `https://graph.facebook.com/v21.0/${channel.igUserId}/media`;
+    let nextUrl = `https://graph.instagram.com/v21.0/${channel.igUserId}/media`;
 
     const params = {
       fields: 'id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,like_count,comments_count',
@@ -31,7 +31,7 @@ export async function syncMedia(channelId) {
 
     // Paginate through all media
     while (nextUrl) {
-      const response = await axios.get(nextUrl, { params: nextUrl === `https://graph.facebook.com/v21.0/${channel.igUserId}/media` ? params : {} });
+      const response = await axios.get(nextUrl, { params: nextUrl === `https://graph.instagram.com/v21.0/${channel.igUserId}/media` ? params : {} });
 
       const mediaItems = response.data.data || [];
 
@@ -120,7 +120,7 @@ export async function syncMediaStats(channelId) {
     for (const media of mediaItems) {
       try {
         const response = await axios.get(
-          `https://graph.facebook.com/v21.0/${media.igMediaId}`,
+          `https://graph.instagram.com/v21.0/${media.igMediaId}`,
           {
             params: {
               fields: 'like_count,comments_count',

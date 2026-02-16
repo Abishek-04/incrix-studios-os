@@ -28,15 +28,13 @@ export async function refreshLongLivedToken(channelId) {
     // Decrypt the token
     const currentToken = decrypt(channel.accessToken);
 
-    // Refresh the token
+    // Refresh the long-lived token (Instagram Business Login API)
     const response = await axios.get(
-      `https://graph.facebook.com/v21.0/oauth/access_token`,
+      `https://graph.instagram.com/refresh_access_token`,
       {
         params: {
-          grant_type: 'fb_exchange_token',
-          client_id: process.env.INSTAGRAM_APP_ID,
-          client_secret: INSTAGRAM_APP_SECRET,
-          fb_exchange_token: currentToken,
+          grant_type: 'ig_refresh_token',
+          access_token: currentToken,
         },
       }
     );
