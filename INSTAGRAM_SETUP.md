@@ -53,19 +53,37 @@
 
 ---
 
-## Step 3: Configure Instagram Product
+## Step 3: Configure Instagram Product & Permissions
 
-1. Go to **Products** → **Instagram** → **Basic Display**
-2. Click **"Create New App"**
-3. Fill in:
-   - **Display Name**: Your app name
-   - **Valid OAuth Redirect URIs**:
-     ```
-     http://localhost:3005/api/instagram/auth/callback
-     ```
-   - **Deauthorize Callback URL**: (can leave blank for now)
-   - **Data Deletion Request URL**: (can leave blank for now)
-4. Click **"Save Changes"**
+### Add Instagram Permissions
+
+1. Go to **App Dashboard** → **Use Cases**
+2. Click **"Customize"** or **"Add"**
+3. Select **"Instagram Business Messaging"** use case
+4. Enable these permissions:
+   - ✅ `instagram_business_basic` - Read Instagram business account info
+   - ✅ `instagram_business_manage_messages` - Send and receive DMs
+   - ✅ `instagram_business_manage_comments` - Read and reply to comments
+   - ✅ `pages_show_list` - List connected Facebook Pages
+   - ✅ `pages_read_engagement` - Read Page engagement data
+   - ✅ `business_management` - Manage business assets
+
+### Important Notes:
+
+- **For Development/Testing**: These permissions work immediately for:
+  - App admins
+  - App developers
+  - App testers (add in **Roles** section)
+
+- **For Production**: You'll need to submit for App Review to use these permissions with public users
+
+### Add Test Users (Optional)
+
+1. Go to **Roles** → **Roles**
+2. Add **Instagram Testers**:
+   - Click **"Add Instagram Testers"**
+   - Enter Instagram username
+   - User must accept the invite in their Instagram settings
 
 ---
 

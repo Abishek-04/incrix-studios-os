@@ -35,15 +35,14 @@ export async function GET(request) {
     // For now, we'll encode userId in the state
     const stateData = Buffer.from(JSON.stringify({ userId, token: state })).toString('base64');
 
-    // Build Facebook OAuth URL
+    // Build Facebook OAuth URL (using updated Instagram Business API scopes)
     const scopes = [
-      'instagram_basic',
-      'instagram_manage_comments',
-      'instagram_manage_messages',
+      'instagram_business_basic',
+      'instagram_business_manage_messages',
+      'instagram_business_manage_comments',
       'pages_show_list',
-      'pages_manage_metadata',
-      'pages_messaging',
       'pages_read_engagement',
+      'business_management'
     ].join(',');
 
     const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?` +
