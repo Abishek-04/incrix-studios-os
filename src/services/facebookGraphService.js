@@ -217,6 +217,31 @@ export async function debugToken(inputToken) {
   return response.data.data;
 }
 
+/**
+ * Get the permissions granted for the current token
+ */
+export async function getGrantedPermissions(userAccessToken) {
+  const response = await axios.get(`${GRAPH_API_BASE}/me/permissions`, {
+    params: { access_token: userAccessToken },
+  });
+
+  return response.data.data || [];
+}
+
+/**
+ * Get basic user info to verify token works
+ */
+export async function getMe(userAccessToken) {
+  const response = await axios.get(`${GRAPH_API_BASE}/me`, {
+    params: {
+      access_token: userAccessToken,
+      fields: 'id,name',
+    },
+  });
+
+  return response.data;
+}
+
 export default {
   exchangeCodeForToken,
   exchangeForLongLivedToken,
@@ -229,4 +254,6 @@ export default {
   getInstagramMedia,
   refreshUserToken,
   debugToken,
+  getGrantedPermissions,
+  getMe,
 };

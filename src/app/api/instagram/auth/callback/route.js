@@ -9,6 +9,8 @@ import {
   getInstagramAccountForPage,
   getInstagramProfile,
   subscribePageToWebhooks,
+  getGrantedPermissions,
+  getMe,
 } from '@/services/facebookGraphService';
 
 const REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/instagram/auth/callback';
@@ -63,7 +65,34 @@ export async function GET(request) {
     const longLivedUserToken = longLivedResult.accessToken;
     const userTokenExpiresIn = longLivedResult.expiresIn || 5184000; // ~60 days
 
-    // Step 3: Get user's Facebook Pages (includes Page Access Tokens)
+    // Step 3: Debug — check what permissions were actually granted
+    console.log('[Instagram Callback] Checking granted permissions...');
+    let grantedPerms = [];
+    let meInfo = {};
+    try {
+      [grantedPerms, meInfo] = await Promise.all([
+        getGrantedPermissions(longLivedUserToken),
+        getMe(longLivedUserToken),
+      ]);
+      console.log('[Instagram Callback] User:', meInfo.name, meInfo.id);
+      console.log('[Instagram Callback] Permissions:', JSON.stringify(grantedPerms));
+    } catch (permErr) {
+      console.error('[Instagram Callback] Permission check failed:', permErr.response?.data || permErr.message);
+    }
+
+    const grantedNames = grantedPerms
+      .filter(p => p.status === 'granted')
+      .map(p => p.permission);
+
+    if (!grantedNames.includes('pages_show_list')) {
+      const allPerms = grantedPerms.map(p => `${p.permission}:${p.status}`).join(', ');
+      console.error('[Instagram Callback] pages_show_list not granted. All perms:', allPerms);
+      return NextResponse.redirect(
+        `${BASE_URL}/instagram?error=${encodeURIComponent('permissions_missing: pages_show_list not granted. Granted: ' + (allPerms || 'none'))}`
+      );
+    }
+
+    // Step 4: Get user's Facebook Pages (includes Page Access Tokens)
     console.log('[Instagram Callback] Fetching user pages...');
     let pages;
     try {
@@ -78,9 +107,9 @@ export async function GET(request) {
     }
 
     if (!pages || pages.length === 0) {
-      console.error('[Instagram Callback] No Facebook Pages found');
+      console.error('[Instagram Callback] No Facebook Pages found for user', meInfo.name);
       return NextResponse.redirect(
-        `${BASE_URL}/instagram?error=no_pages_found`
+        `${BASE_URL}/instagram?error=${encodeURIComponent('no_pages_found: Logged in as ' + (meInfo.name || 'unknown') + ' (ID: ' + (meInfo.id || '?') + '). Permissions: ' + grantedNames.join(', '))}`
       );
     }
 
