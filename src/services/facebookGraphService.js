@@ -54,7 +54,7 @@ export async function getUserPages(userAccessToken) {
   const response = await axios.get(`${GRAPH_API_BASE}/me/accounts`, {
     params: {
       access_token: userAccessToken,
-      fields: 'id,name,access_token,category,instagram_business_account',
+      fields: 'id,name,access_token,category',
     },
   });
 

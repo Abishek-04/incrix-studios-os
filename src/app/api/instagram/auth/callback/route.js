@@ -65,7 +65,17 @@ export async function GET(request) {
 
     // Step 3: Get user's Facebook Pages (includes Page Access Tokens)
     console.log('[Instagram Callback] Fetching user pages...');
-    const pages = await getUserPages(longLivedUserToken);
+    let pages;
+    try {
+      pages = await getUserPages(longLivedUserToken);
+      console.log(`[Instagram Callback] Found ${pages?.length || 0} pages:`, pages?.map(p => p.name));
+    } catch (pageErr) {
+      console.error('[Instagram Callback] Failed to fetch pages:', pageErr.response?.data || pageErr.message);
+      const detail = pageErr.response?.data?.error?.message || pageErr.message;
+      return NextResponse.redirect(
+        `${BASE_URL}/instagram?error=${encodeURIComponent('pages_fetch_failed: ' + detail)}`
+      );
+    }
 
     if (!pages || pages.length === 0) {
       console.error('[Instagram Callback] No Facebook Pages found');
@@ -79,29 +89,24 @@ export async function GET(request) {
     let igAccount = null;
 
     for (const page of pages) {
-      // The /me/accounts response may already include instagram_business_account if requested
-      if (page.instagram_business_account) {
-        selectedPage = page;
-        igAccount = page.instagram_business_account;
-        break;
-      }
-
-      // Otherwise, query each page individually
       try {
+        console.log(`[Instagram Callback] Checking page "${page.name}" (${page.id}) for IG account...`);
         const igBizAccount = await getInstagramAccountForPage(page.id, page.access_token);
         if (igBizAccount) {
           selectedPage = page;
           igAccount = igBizAccount;
+          console.log(`[Instagram Callback] Found IG account on page "${page.name}":`, igBizAccount.username || igBizAccount.id);
           break;
         }
       } catch (err) {
-        console.warn(`[Instagram Callback] Could not check page ${page.name} (${page.id}):`, err.message);
+        console.warn(`[Instagram Callback] Could not check page ${page.name} (${page.id}):`, err.response?.data || err.message);
         continue;
       }
     }
 
     if (!selectedPage || !igAccount) {
-      console.error('[Instagram Callback] No Instagram Business Account found on any Page');
+      const pageNames = pages.map(p => p.name).join(', ');
+      console.error(`[Instagram Callback] No IG Business Account found. Pages checked: ${pageNames}`);
       return NextResponse.redirect(
         `${BASE_URL}/instagram?error=no_instagram_account`
       );
