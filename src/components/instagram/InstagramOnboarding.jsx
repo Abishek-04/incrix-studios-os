@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Instagram,
@@ -204,10 +204,10 @@ function Step1ConnectAccount({ connecting, error, onConnect }) {
         <h3 className="text-white font-semibold mb-4">Before you connect:</h3>
         <div className="space-y-3">
           {[
-            'You have an Instagram Business or Creator Account',
-            'Your Instagram account is connected to a Facebook Page',
+            'You have an Instagram Professional (Business or Creator) Account',
+            'Your Instagram account is linked to a Facebook Page',
             'You are an admin of that Facebook Page',
-            'You have permissions to manage Instagram messages'
+            'You can grant permissions for page messaging and Instagram access'
           ].map((req, index) => (
             <div key={index} className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -231,7 +231,7 @@ function Step1ConnectAccount({ connecting, error, onConnect }) {
         ) : (
           <>
             <Instagram className="w-5 h-5" />
-            Connect with Meta
+            Connect with Facebook
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </>
         )}
@@ -249,12 +249,24 @@ function Step2VerifyConnection({ onNext, onBack }) {
   const [checking, setChecking] = useState(true);
   const [connected, setConnected] = useState(false);
 
-  // Simulate checking connection
-  useState(() => {
-    setTimeout(() => {
-      setChecking(false);
-      setConnected(true);
-    }, 2000);
+  // Verify connection by checking if any Instagram channels exist
+  useEffect(() => {
+    async function verifyConnection() {
+      try {
+        const response = await fetch('/api/state');
+        const data = await response.json();
+        const igChannels = (data.channels || []).filter(c => c.platform === 'instagram');
+
+        setChecking(false);
+        setConnected(igChannels.length > 0);
+      } catch (err) {
+        console.error('Failed to verify connection:', err);
+        setChecking(false);
+        setConnected(false);
+      }
+    }
+
+    verifyConnection();
   }, []);
 
   return (

@@ -2,18 +2,18 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 const INSTAGRAM_WEBHOOK_VERIFY_TOKEN = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN;
-const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
+const APP_SECRET = process.env.FACEBOOK_APP_SECRET || process.env.INSTAGRAM_APP_SECRET;
 
 /**
  * Verify webhook signature from Meta
  */
 function verifySignature(body, signature) {
-  if (!INSTAGRAM_APP_SECRET || !signature) {
+  if (!APP_SECRET || !signature) {
     return false;
   }
 
   const expectedSignature = crypto
-    .createHmac('sha256', INSTAGRAM_APP_SECRET)
+    .createHmac('sha256', APP_SECRET)
     .update(body)
     .digest('hex');
 
@@ -48,7 +48,7 @@ export async function GET(request) {
 
 /**
  * POST /api/webhooks/instagram
- * Handle incoming webhook events from Instagram
+ * Handle incoming webhook events from Instagram — processes inline (no Bull/Redis needed)
  */
 export async function POST(request) {
   try {
@@ -70,18 +70,19 @@ export async function POST(request) {
     // Handle Instagram object events
     if (body.object === 'instagram') {
       for (const entry of body.entry || []) {
-        // Handle comment events
+        // Handle comment events — process inline
         if (entry.changes) {
           for (const change of entry.changes) {
             if (change.field === 'comments') {
               console.log('[Instagram Webhook] Comment event:', change.value);
 
-              // Queue comment for automation processing
-              const { queueCommentForAutomation } = await import('@/lib/queues/instagramAutomationQueue.js');
-              await queueCommentForAutomation({
-                igUserId: entry.id,
-                commentData: change.value,
-              });
+              try {
+                const { processCommentEvent } = await import('@/services/instagramAutomationProcessor');
+                await processCommentEvent(entry.id, change.value);
+              } catch (processingError) {
+                console.error('[Instagram Webhook] Comment processing error:', processingError.message);
+                // Don't throw — we still want to return 200 to Meta
+              }
             }
           }
         }
@@ -90,10 +91,8 @@ export async function POST(request) {
         if (entry.messaging) {
           for (const event of entry.messaging) {
             console.log('[Instagram Webhook] Messaging event:', event);
-
-            // Queue messaging event for processing
-            const { queueMessagingEvent } = await import('@/lib/queues/instagramAutomationQueue.js');
-            await queueMessagingEvent({ event });
+            // Messaging events can be processed inline if needed
+            // For now, just log them — delivery receipts don't require action
           }
         }
       }

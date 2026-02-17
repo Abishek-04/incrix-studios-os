@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { generateSecureToken } from '@/utils/encryption';
 
-const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID;
-const INSTAGRAM_OAUTH_REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/instagram/auth/callback';
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID;
+const REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/instagram/auth/callback';
 
 /**
  * GET /api/instagram/auth
- * Initiate Instagram Business Login OAuth flow
+ * Initiate Facebook Login OAuth flow to get Page Access Token for Instagram messaging
  */
 export async function GET(request) {
   try {
-    if (!INSTAGRAM_APP_ID) {
+    if (!FACEBOOK_APP_ID) {
       return NextResponse.json(
-        { success: false, error: 'Instagram API not configured' },
+        { success: false, error: 'Facebook App not configured' },
         { status: 500 }
       );
     }
@@ -32,29 +32,30 @@ export async function GET(request) {
     const token = generateSecureToken(32);
     const stateData = Buffer.from(JSON.stringify({ userId, token })).toString('base64');
 
-    // Instagram Business Login scopes (must match what's in Meta dashboard)
+    // Facebook Login scopes for Instagram messaging + page management
     const scopes = [
-      'instagram_business_basic',
-      'instagram_business_manage_messages',
+      'pages_show_list',
+      'pages_messaging',
+      'pages_read_engagement',
+      'instagram_basic',
       'instagram_manage_comments',
+      'instagram_manage_messages',
     ].join(',');
 
-    // Use Instagram API OAuth endpoint (must use Instagram App ID, not Facebook App ID)
-    const oauthUrl = `https://api.instagram.com/oauth/authorize` +
-      `?force_authentication=1` +
-      `&enable_fb_login=1` +
-      `&app_id=${INSTAGRAM_APP_ID}` +
-      `&redirect_uri=${encodeURIComponent(INSTAGRAM_OAUTH_REDIRECT_URI)}` +
+    // Use Facebook Login OAuth (not Instagram Login) to get Page tokens
+    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth` +
+      `?client_id=${FACEBOOK_APP_ID}` +
+      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&response_type=code` +
       `&scope=${scopes}` +
       `&state=${stateData}`;
 
-    // Redirect to Instagram OAuth
+    // Redirect to Facebook OAuth
     return NextResponse.redirect(oauthUrl);
   } catch (error) {
     console.error('[Instagram Auth] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to initiate Instagram OAuth' },
+      { success: false, error: 'Failed to initiate OAuth' },
       { status: 500 }
     );
   }

@@ -21,7 +21,14 @@ export async function syncMedia(channelId) {
 
     const accessToken = await getAccessToken(channelId);
     let syncedCount = 0;
-    let nextUrl = `https://graph.instagram.com/v21.0/${channel.igUserId}/media`;
+
+    // Use igBusinessAccountId (from Facebook Login) or fall back to igUserId (legacy)
+    const igAccountId = channel.igBusinessAccountId || channel.igUserId;
+    const apiBase = channel.igBusinessAccountId
+      ? `https://graph.facebook.com/v21.0/${igAccountId}/media`
+      : `https://graph.instagram.com/v21.0/${igAccountId}/media`;
+
+    let nextUrl = apiBase;
 
     const params = {
       fields: 'id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,like_count,comments_count',
@@ -30,8 +37,10 @@ export async function syncMedia(channelId) {
     };
 
     // Paginate through all media
+    let isFirstRequest = true;
     while (nextUrl) {
-      const response = await axios.get(nextUrl, { params: nextUrl === `https://graph.instagram.com/v21.0/${channel.igUserId}/media` ? params : {} });
+      const response = await axios.get(nextUrl, { params: isFirstRequest ? params : {} });
+      isFirstRequest = false;
 
       const mediaItems = response.data.data || [];
 
@@ -58,13 +67,8 @@ export async function syncMedia(channelId) {
         syncedCount++;
       }
 
-      // Get next page
+      // Get next page URL (already includes query params from the API)
       nextUrl = response.data.paging?.next || null;
-
-      // Remove params for subsequent requests (next URL includes them)
-      if (nextUrl) {
-        params.access_token = accessToken; // Keep token in params
-      }
     }
 
     // Update channel last synced time
@@ -119,8 +123,11 @@ export async function syncMediaStats(channelId) {
     // Update stats for each media (batch if possible)
     for (const media of mediaItems) {
       try {
+        const apiBase = channel.igBusinessAccountId
+          ? 'https://graph.facebook.com/v21.0'
+          : 'https://graph.instagram.com/v21.0';
         const response = await axios.get(
-          `https://graph.instagram.com/v21.0/${media.igMediaId}`,
+          `${apiBase}/${media.igMediaId}`,
           {
             params: {
               fields: 'like_count,comments_count',

@@ -30,7 +30,21 @@ export default function InstagramPage() {
       // Clean URL
       window.history.replaceState({}, '', '/instagram');
     } else if (params.get('error')) {
-      showMessage(`Error: ${params.get('error')}`, 'error');
+      const errorCode = params.get('error');
+      const errorMessages = {
+        'access_denied': 'You denied access. Please try again and accept all permissions.',
+        'user_denied': 'You denied access. Please try again and accept all permissions.',
+        'missing_parameters': 'OAuth callback was missing required data. Please try again.',
+        'invalid_state': 'Security check failed. Please try again.',
+        'no_pages_found': 'No Facebook Pages found. Please create a Facebook Page and link your Instagram Professional Account to it.',
+        'no_instagram_account': 'No Instagram Professional Account found linked to your Facebook Pages. Please link your Instagram Business/Creator account to a Facebook Page first.',
+        'token_expired': 'Your session expired. Please try connecting again.',
+        'permissions_error': 'Insufficient permissions. Please grant all requested permissions during login.',
+        'invalid_parameter': 'Invalid configuration. Please contact support.',
+        'connection_failed': 'Connection failed. Please check your Instagram account setup and try again.',
+      };
+      const friendlyMessage = errorMessages[errorCode] || `Error: ${errorCode}`;
+      showMessage(friendlyMessage, 'error');
       window.history.replaceState({}, '', '/instagram');
     }
   }, []);
@@ -130,6 +144,7 @@ export default function InstagramPage() {
       connected: { icon: CheckCircle, color: 'green', label: 'Connected' },
       token_expiring: { icon: Clock, color: 'amber', label: 'Token Expiring' },
       token_expired: { icon: AlertCircle, color: 'red', label: 'Token Expired' },
+      requires_reconnect: { icon: AlertCircle, color: 'amber', label: 'Reconnect Required' },
       error: { icon: AlertCircle, color: 'red', label: 'Error' },
     };
 

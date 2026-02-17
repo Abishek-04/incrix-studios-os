@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
 import connectDB from '@/lib/mongodb';
 import Channel from '@/models/Channel';
 import { encrypt } from '@/utils/encryption';
+import {
+  exchangeCodeForToken,
+  exchangeForLongLivedToken,
+  getUserPages,
+  getInstagramAccountForPage,
+  getInstagramProfile,
+  subscribePageToWebhooks,
+} from '@/services/facebookGraphService';
 
-const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID;
-const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
-const INSTAGRAM_OAUTH_REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/instagram/auth/callback';
+const REDIRECT_URI = process.env.INSTAGRAM_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/instagram/auth/callback';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 /**
  * GET /api/instagram/auth/callback
- * Handle Instagram Business Login OAuth callback
+ * Handle Facebook Login OAuth callback — exchange code for tokens, find linked Instagram account
  */
 export async function GET(request) {
   try {
@@ -19,11 +24,14 @@ export async function GET(request) {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
+    const errorReason = searchParams.get('error_reason');
 
     // Check for OAuth errors
     if (error) {
+      const errorMsg = errorReason || error;
+      console.error('[Instagram Callback] OAuth error:', errorMsg);
       return NextResponse.redirect(
-        `${BASE_URL}/instagram?error=${encodeURIComponent(error)}`
+        `${BASE_URL}/instagram?error=${encodeURIComponent(errorMsg)}`
       );
     }
 
@@ -40,57 +48,93 @@ export async function GET(request) {
       return NextResponse.redirect(`${BASE_URL}/instagram?error=invalid_state`);
     }
 
-    // Step 1: Exchange code for short-lived Instagram token
-    const tokenResponse = await axios.post(
-      'https://api.instagram.com/oauth/access_token',
-      new URLSearchParams({
-        client_id: INSTAGRAM_APP_ID,
-        client_secret: INSTAGRAM_APP_SECRET,
-        grant_type: 'authorization_code',
-        redirect_uri: INSTAGRAM_OAUTH_REDIRECT_URI,
-        code,
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    if (!userId) {
+      return NextResponse.redirect(`${BASE_URL}/instagram?error=invalid_state`);
+    }
+
+    // Step 1: Exchange code for short-lived User Token
+    console.log('[Instagram Callback] Exchanging code for token...');
+    const shortLivedResult = await exchangeCodeForToken(code, REDIRECT_URI);
+    const shortLivedToken = shortLivedResult.accessToken;
+
+    // Step 2: Exchange for long-lived User Token (~60 days)
+    console.log('[Instagram Callback] Exchanging for long-lived token...');
+    const longLivedResult = await exchangeForLongLivedToken(shortLivedToken);
+    const longLivedUserToken = longLivedResult.accessToken;
+    const userTokenExpiresIn = longLivedResult.expiresIn || 5184000; // ~60 days
+
+    // Step 3: Get user's Facebook Pages (includes Page Access Tokens)
+    console.log('[Instagram Callback] Fetching user pages...');
+    const pages = await getUserPages(longLivedUserToken);
+
+    if (!pages || pages.length === 0) {
+      console.error('[Instagram Callback] No Facebook Pages found');
+      return NextResponse.redirect(
+        `${BASE_URL}/instagram?error=no_pages_found`
+      );
+    }
+
+    // Step 4: Find a Page with a linked Instagram Business Account
+    let selectedPage = null;
+    let igAccount = null;
+
+    for (const page of pages) {
+      // The /me/accounts response may already include instagram_business_account if requested
+      if (page.instagram_business_account) {
+        selectedPage = page;
+        igAccount = page.instagram_business_account;
+        break;
       }
-    );
 
-    const shortLivedToken = tokenResponse.data.access_token;
-    const igUserId = tokenResponse.data.user_id;
-
-    // Step 2: Exchange for long-lived token (60 days)
-    const longLivedResponse = await axios.get(
-      'https://graph.instagram.com/access_token',
-      {
-        params: {
-          grant_type: 'ig_exchange_token',
-          client_secret: INSTAGRAM_APP_SECRET,
-          access_token: shortLivedToken,
-        },
+      // Otherwise, query each page individually
+      try {
+        const igBizAccount = await getInstagramAccountForPage(page.id, page.access_token);
+        if (igBizAccount) {
+          selectedPage = page;
+          igAccount = igBizAccount;
+          break;
+        }
+      } catch (err) {
+        console.warn(`[Instagram Callback] Could not check page ${page.name} (${page.id}):`, err.message);
+        continue;
       }
-    );
+    }
 
-    const longLivedToken = longLivedResponse.data.access_token;
-    const expiresIn = longLivedResponse.data.expires_in; // ~5184000 seconds (60 days)
+    if (!selectedPage || !igAccount) {
+      console.error('[Instagram Callback] No Instagram Business Account found on any Page');
+      return NextResponse.redirect(
+        `${BASE_URL}/instagram?error=no_instagram_account`
+      );
+    }
 
-    // Step 3: Get Instagram account details
-    const profileResponse = await axios.get(
-      `https://graph.instagram.com/v21.0/me`,
-      {
-        params: {
-          fields: 'user_id,username,name,account_type,profile_picture_url,followers_count,follows_count,media_count',
-          access_token: longLivedToken,
-        },
-      }
-    );
+    const pageAccessToken = selectedPage.access_token;
+    const pageId = selectedPage.id;
+    const pageName = selectedPage.name;
 
-    const igAccount = profileResponse.data;
+    // Step 5: Get full Instagram profile details
+    console.log(`[Instagram Callback] Found IG account ${igAccount.username || igAccount.id} on page ${pageName}`);
+    let igProfile;
+    try {
+      igProfile = await getInstagramProfile(igAccount.id, pageAccessToken);
+    } catch (err) {
+      console.warn('[Instagram Callback] Could not fetch full profile, using partial data:', err.message);
+      igProfile = igAccount;
+    }
 
+    // Step 6: Subscribe Page to webhooks for comment/messaging events
+    try {
+      await subscribePageToWebhooks(pageId, pageAccessToken);
+      console.log(`[Instagram Callback] Page ${pageName} subscribed to webhooks`);
+    } catch (err) {
+      console.warn('[Instagram Callback] Webhook subscription failed (non-fatal):', err.message);
+    }
+
+    // Step 7: Store everything in the Channel document
     await connectDB();
 
-    // Create or update channel
-    const channelId = `ig-${igAccount.user_id || igUserId}`;
-    const encryptedToken = encrypt(longLivedToken);
+    const channelId = `ig-${igProfile.ig_id || igProfile.id}`;
+    const encryptedPageToken = encrypt(pageAccessToken);
+    const encryptedUserToken = encrypt(longLivedUserToken);
 
     await Channel.updateOne(
       { id: channelId },
@@ -98,27 +142,44 @@ export async function GET(request) {
         $set: {
           id: channelId,
           platform: 'instagram',
-          name: igAccount.name || `@${igAccount.username}`,
-          link: `https://instagram.com/${igAccount.username}`,
-          avatarUrl: igAccount.profile_picture_url || null,
+          name: igProfile.name || `@${igProfile.username}`,
+          link: `https://instagram.com/${igProfile.username}`,
+          avatarUrl: igProfile.profile_picture_url || null,
           email: userId,
-          igUserId: igAccount.user_id || igUserId,
-          igUsername: igAccount.username,
-          igProfilePicUrl: igAccount.profile_picture_url || null,
-          accountType: igAccount.account_type,
-          accessToken: encryptedToken,
-          tokenExpiry: new Date(Date.now() + expiresIn * 1000),
+          memberId: userId,
+
+          // Instagram identifiers
+          igUserId: igProfile.ig_id || igProfile.id,
+          igUsername: igProfile.username,
+          igProfilePicUrl: igProfile.profile_picture_url || null,
+          igBusinessAccountId: igProfile.id,
+
+          // Facebook Page
+          fbPageId: pageId,
+          fbPageName: pageName,
+
+          // Tokens (both encrypted)
+          accessToken: encryptedPageToken, // Page Token (backward compat field)
+          fbPageAccessToken: encryptedPageToken, // Page Token (new field)
+          userAccessToken: encryptedUserToken, // User Token for refreshing
+          tokenExpiry: new Date(Date.now() + userTokenExpiresIn * 1000),
+          userTokenExpiry: new Date(Date.now() + userTokenExpiresIn * 1000),
           tokenRefreshedAt: new Date(),
-          followerCount: igAccount.followers_count || 0,
-          followsCount: igAccount.follows_count || 0,
-          mediaCount: igAccount.media_count || 0,
+
+          // Stats
+          followerCount: igProfile.followers_count || 0,
+          followsCount: igProfile.follows_count || 0,
+          mediaCount: igProfile.media_count || 0,
+
+          // Status
           connectionStatus: 'connected',
           lastSynced: null,
-          memberId: userId,
         },
       },
       { upsert: true }
     );
+
+    console.log(`[Instagram Callback] Channel ${channelId} created/updated for @${igProfile.username}`);
 
     // Redirect to Instagram page with success
     return NextResponse.redirect(
@@ -126,7 +187,23 @@ export async function GET(request) {
     );
   } catch (error) {
     console.error('[Instagram Callback] Error:', error.response?.data || error.message);
-    const errorMsg = error.response?.data?.error?.message || error.response?.data?.error_message || error.message || 'connection_failed';
+
+    let errorMsg = 'connection_failed';
+
+    if (error.response?.data?.error) {
+      const fbError = error.response.data.error;
+      errorMsg = fbError.message || fbError.error_user_msg || errorMsg;
+
+      // Map common Facebook API error codes to readable messages
+      if (fbError.code === 190) {
+        errorMsg = 'token_expired';
+      } else if (fbError.code === 10) {
+        errorMsg = 'permissions_error';
+      } else if (fbError.code === 100) {
+        errorMsg = 'invalid_parameter';
+      }
+    }
+
     return NextResponse.redirect(
       `${BASE_URL}/instagram?error=${encodeURIComponent(errorMsg)}`
     );

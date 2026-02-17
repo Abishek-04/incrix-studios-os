@@ -578,18 +578,140 @@ function AutomationBuilderModal({ rule, onSave, onClose }) {
   );
 }
 
-// Logs Viewer Component (simplified)
+// Logs Viewer Component
 function LogsViewer({ rule, onClose }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    fetchLogs();
+  }, [page, statusFilter]);
+
+  async function fetchLogs() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page, limit: 25 });
+      if (statusFilter) params.set('status', statusFilter);
+
+      const response = await fetch(`/api/instagram/automations/${rule.id}/logs?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setLogs(data.logs || []);
+        setPagination(data.pagination);
+      }
+    } catch (err) {
+      console.error('Failed to fetch logs:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const statusColors = {
+    sent: 'text-green-400 bg-green-500/10',
+    failed: 'text-red-400 bg-red-500/10',
+    queued: 'text-blue-400 bg-blue-500/10',
+    deduped: 'text-amber-400 bg-amber-500/10',
+    rate_limited: 'text-orange-400 bg-orange-500/10',
+    keyword_filtered: 'text-gray-400 bg-gray-500/10',
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg max-w-5xl w-full max-h-[90vh] flex flex-col">
         <div className="sticky top-0 bg-[#1e1e1e] border-b border-[#333] p-6 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-white">Activity Logs: {rule.name}</h3>
-          <button onClick={onClose} className="text-[#999] hover:text-white">×</button>
+          <button onClick={onClose} className="text-[#999] hover:text-white text-2xl">×</button>
         </div>
-        <div className="p-6 text-center text-[#999]">
-          Logs will be displayed here (implement with logs API)
+
+        {/* Filters */}
+        <div className="px-6 py-3 border-b border-[#333] flex gap-2">
+          {['', 'sent', 'failed', 'queued', 'deduped', 'rate_limited', 'keyword_filtered'].map(status => (
+            <button
+              key={status}
+              onClick={() => { setStatusFilter(status); setPage(1); }}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                statusFilter === status
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-[#2a2a2a] text-[#999] hover:text-white'
+              }`}
+            >
+              {status || 'All'}
+            </button>
+          ))}
         </div>
+
+        {/* Table */}
+        <div className="overflow-y-auto flex-1">
+          {loading ? (
+            <div className="p-12 text-center text-[#999]">Loading logs...</div>
+          ) : logs.length === 0 ? (
+            <div className="p-12 text-center text-[#999]">No logs found</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-[#151515] sticky top-0">
+                <tr className="text-left text-[#999]">
+                  <th className="px-6 py-3 font-medium">Time</th>
+                  <th className="px-6 py-3 font-medium">User</th>
+                  <th className="px-6 py-3 font-medium">Comment</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Response</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a2a]">
+                {logs.map(log => (
+                  <tr key={log.id || log._id} className="hover:bg-[#222]">
+                    <td className="px-6 py-3 text-[#999] whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-3 text-white">
+                      @{log.igUsername || 'unknown'}
+                    </td>
+                    <td className="px-6 py-3 text-[#ccc] max-w-[200px] truncate">
+                      {log.commentText || '-'}
+                    </td>
+                    <td className="px-6 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[log.dmStatus] || 'text-gray-400 bg-gray-500/10'}`}>
+                        {log.dmStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-[#999] whitespace-nowrap">
+                      {log.responseTimeMs ? `${log.responseTimeMs}ms` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {pagination && pagination.pages > 1 && (
+          <div className="border-t border-[#333] px-6 py-3 flex items-center justify-between">
+            <div className="text-sm text-[#999]">
+              Page {pagination.page} of {pagination.pages} ({pagination.total} total)
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1 bg-[#2a2a2a] text-white rounded text-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+                disabled={page >= pagination.pages}
+                className="px-3 py-1 bg-[#2a2a2a] text-white rounded text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
