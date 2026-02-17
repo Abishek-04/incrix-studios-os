@@ -32,14 +32,10 @@ export async function GET(request) {
     const token = generateSecureToken(32);
     const stateData = Buffer.from(JSON.stringify({ userId, token })).toString('base64');
 
-    // Facebook Login scopes — Page-level permissions only
-    // Instagram data is accessed through the Page's linked IG Business Account
-    // Do NOT include instagram_* scopes as they require the Instagram product on the app
+    // Only request scopes that are configured in your Facebook Login for Business settings
     const scopes = [
       'pages_show_list',
       'pages_messaging',
-      'pages_read_engagement',
-      'pages_manage_metadata',
     ].join(',');
 
     // Use Facebook Login OAuth (not Instagram Login) to get Page tokens
