@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Tv, Eye, EyeOff, Save, X, Globe, Share2, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Mail, User as UserIcon } from 'lucide-react';
 
-const ManageChannels = ({ channels, users, onUpdateChannels }) => {
+const ManageChannels = ({ channels, users, onUpdateChannels, onDeleteChannel }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [isDetecting, setIsDetecting] = useState(false);
     const [showCredentials, setShowCredentials] = useState({});
@@ -101,7 +101,11 @@ const ManageChannels = ({ channels, users, onUpdateChannels }) => {
 
     const deleteChannel = (id) => {
         if (confirm('Delete this channel?')) {
-            onUpdateChannels(channels.filter(c => c.id !== id));
+            if (onDeleteChannel) {
+                onDeleteChannel(id);
+            } else {
+                onUpdateChannels(channels.filter(c => c.id !== id));
+            }
         }
     };
 

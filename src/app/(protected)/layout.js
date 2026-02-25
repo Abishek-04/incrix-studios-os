@@ -22,7 +22,8 @@ import {
   Palette,
   Code,
   Instagram,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 import AccountSwitcher from '@/components/dev/AccountSwitcher';
@@ -96,6 +97,7 @@ export default function ProtectedLayout({ children }) {
               <NavItem href="/calendar" icon={CalendarIcon} label="Calendar" isActive={isActive('/calendar')} collapsed={sidebarCollapsed} />
               <NavItem href="/daily" icon={CheckSquare} label="Daily Tasks" isActive={isActive('/daily')} collapsed={sidebarCollapsed} />
               <NavItem href="/settings/notifications" icon={SettingsIcon} label="Settings" isActive={isActive('/settings/notifications')} collapsed={sidebarCollapsed} />
+              <NavItem href="/recycle-bin" icon={Trash2} label="Recycle Bin" isActive={isActive('/recycle-bin')} collapsed={sidebarCollapsed} />
 
               {['manager', 'creator', 'editor'].includes(currentUser.role) && (
                 <NavItem href="/performance" icon={TrendingUp} label="Performance" isActive={isActive('/performance')} collapsed={sidebarCollapsed} />
@@ -129,18 +131,35 @@ export default function ProtectedLayout({ children }) {
         <div className="p-4 border-t border-[#1f1f1f]">
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${currentUser.avatarColor || 'bg-indigo-600'} cursor-pointer hover:ring-2 hover:ring-indigo-500/50 transition-all`} title={currentUser.name}>
-                {currentUser.name?.charAt(0) || '?'}
-              </div>
+              {currentUser.profilePhoto ? (
+                <img
+                  src={currentUser.profilePhoto}
+                  alt={currentUser.name || 'User profile'}
+                  className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-indigo-500/50 transition-all"
+                  title={currentUser.name}
+                />
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${currentUser.avatarColor || 'bg-indigo-600'} cursor-pointer hover:ring-2 hover:ring-indigo-500/50 transition-all`} title={currentUser.name}>
+                  {currentUser.name?.charAt(0) || '?'}
+                </div>
+              )}
               <button onClick={handleLogout} className="text-[#666] hover:text-rose-500 transition-colors p-2 rounded-lg hover:bg-[#1a1a1a]" title="Logout">
                 <LogOut size={16} />
               </button>
             </div>
           ) : (
             <div className="flex items-center space-x-3 p-3 rounded-xl bg-[#151515] hover:bg-[#1a1a1a] transition-colors">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${currentUser.avatarColor || 'bg-indigo-600'}`}>
-                {currentUser.name?.charAt(0) || '?'}
-              </div>
+              {currentUser.profilePhoto ? (
+                <img
+                  src={currentUser.profilePhoto}
+                  alt={currentUser.name || 'User profile'}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${currentUser.avatarColor || 'bg-indigo-600'}`}>
+                  {currentUser.name?.charAt(0) || '?'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-white truncate">{currentUser.name}</div>
                 <div className="text-xs text-[#666] capitalize">{currentUser.role}</div>
@@ -171,6 +190,7 @@ export default function ProtectedLayout({ children }) {
             {pathname === '/channels' && 'Channel Credentials'}
             {pathname === '/instagram' && 'Instagram DM Automation'}
             {pathname === '/settings/notifications' && 'Notification Settings'}
+            {pathname === '/recycle-bin' && 'Recycle Bin'}
             {pathname === '/admin/notifications' && 'Notification Management'}
           </h2>
 

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import AutomationRule from '@/models/AutomationRule';
 import AutomationLog from '@/models/AutomationLog';
+import DeletedItem from '@/models/DeletedItem';
 
 /**
  * GET /api/instagram/automations/:id
@@ -101,6 +103,16 @@ export async function DELETE(request, { params }) {
         { status: 404 }
       );
     }
+
+    await DeletedItem.create({
+      id: uuidv4(),
+      entityType: 'automation_rule',
+      entityId: rule.id,
+      source: 'instagram_automation_api',
+      deletedBy: 'system',
+      data: rule.toObject(),
+      expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+    });
 
     // Delete associated logs
     await AutomationLog.deleteMany({ automationRuleId: id });

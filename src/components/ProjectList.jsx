@@ -2,6 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User } from 'lucide-react';
 
+const PRODUCTION_DATE_FIELDS = [
+    { key: 'shootDate', short: 'SH', label: 'Shoot' },
+    { key: 'editDate', short: 'ED', label: 'Edit' },
+    { key: 'uploadDoneDate', short: 'UP', label: 'Upload/Done' }
+];
+
 const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDeleteProject }) => {
     const [filter, setFilter] = useState('all');
     const [selectedMonth, setSelectedMonth] = useState('all');
@@ -25,7 +31,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
     const availableMonths = useMemo(() => {
         const months = new Set();
         projects.forEach(p => {
-            const date = new Date(p.dueDate);
+            const date = new Date(p.uploadDoneDate || p.dueDate);
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             months.add(key);
         });
@@ -55,6 +61,24 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return project.platform; // Fallback
     };
 
+    const formatShortDate = (timestamp) => {
+        if (!timestamp) return '--';
+        return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
+
+    const getTimelineBadgeClass = (hasDate) => {
+        return hasDate
+            ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-200'
+            : 'bg-[#222] border-[#333] text-[#777]';
+    };
+
+    const getProductionDateBadges = (project) => {
+        return PRODUCTION_DATE_FIELDS.map((field) => ({
+            ...field,
+            value: project[field.key]
+        }));
+    };
+
     const sortedProjects = useMemo(() => {
         // First, filter the projects
         const filtered = projects.filter(p => {
@@ -80,7 +104,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
             // Date Filter
             let matchesDate = true;
             if (selectedMonth !== 'all') {
-                const date = new Date(p.dueDate);
+                const date = new Date(p.uploadDoneDate || p.dueDate);
                 const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 matchesDate = key === selectedMonth;
             }
@@ -271,7 +295,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                 >
                                     <td className="p-4 text-xs text-[#999] font-mono hidden lg:table-cell">{project.id}</td>
                                     <td className="p-4 text-xs text-[#999] font-mono hidden sm:table-cell">
-                                        {new Date(project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                        {new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                     </td>
                                     <td className="p-4">
                                         <div className="font-medium text-white text-sm flex items-center">
@@ -287,6 +311,25 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                                     <ExternalLink size={10} /> <span className="underline">Published</span>
                                                 </a>
                                             )}
+                                        </div>
+                                        <div className="mt-2 space-y-1.5">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {getProductionDateBadges(project).map((item) => (
+                                                    <span
+                                                        key={item.key}
+                                                        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${getTimelineBadgeClass(!!item.value)}`}
+                                                    >
+                                                        {item.label}: {formatShortDate(item.value)}
+                                                    </span>
+                                                ))}
+                                                {project.reshootDone && (
+                                                    <span
+                                                        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${getTimelineBadgeClass(!!project.reshootDate)}`}
+                                                    >
+                                                        RS: {formatShortDate(project.reshootDate)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="p-4 hidden md:table-cell">
@@ -382,6 +425,25 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                     {project.archived && <Archive size={12} className="inline ml-2 text-[#999]" />}
                                 </h4>
                                 <p className="text-xs text-[#999] mb-3 truncate">{project.topic}</p>
+                                <div className="mb-3 space-y-1.5">
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {getProductionDateBadges(project).map((item) => (
+                                            <span
+                                                key={item.key}
+                                                className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${getTimelineBadgeClass(!!item.value)}`}
+                                            >
+                                                {item.label}: {formatShortDate(item.value)}
+                                            </span>
+                                        ))}
+                                        {project.reshootDone && (
+                                            <span
+                                                className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${getTimelineBadgeClass(!!project.reshootDate)}`}
+                                            >
+                                                RS: {formatShortDate(project.reshootDate)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
 
                                 {/* Stage Progress */}
                                 <div className="flex items-center space-x-2 mb-3">
@@ -420,7 +482,7 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                             </span>
                                         ) : (
                                             <span className="text-[10px] text-[#999]">
-                                                {new Date(project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                {new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                             </span>
                                         )}
                                         <button

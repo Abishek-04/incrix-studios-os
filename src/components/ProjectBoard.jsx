@@ -23,7 +23,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     const availableMonths = useMemo(() => {
         const months = new Set();
         projects.forEach(p => {
-            const date = new Date(p.dueDate);
+            const date = new Date(p.uploadDoneDate || p.dueDate);
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             months.add(key);
         });
@@ -52,6 +52,11 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             priority: Priority.Medium,
             lastUpdated: Date.now(),
             dueDate: Date.now() + 86400000 * 7, // 1 week
+            shootDate: null,
+            editDate: null,
+            uploadDoneDate: null,
+            reshootDone: false,
+            reshootDate: null,
             durationMinutes: 0,
             script: '',
             tasks: [],
@@ -96,7 +101,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 }
 
                 if (selectedMonth !== 'all') {
-                    const date = new Date(p.dueDate);
+                    const date = new Date(p.uploadDoneDate || p.dueDate);
                     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     if (key !== selectedMonth) return false;
                 }
@@ -374,11 +379,16 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                             )}
                                                         </div>
 
-                                                        {/* Due Date */}
-                                                        <div className={`flex items-center space-x-1 text-xs font-medium ${new Date(project.dueDate) < new Date() && project.stage !== Stage.Done ? 'text-rose-400' : 'text-[#999]'}`}>
+                                                        {/* Upload/Done Date */}
+                                                        <div className={`flex items-center space-x-1 text-xs font-medium ${new Date(project.uploadDoneDate || project.dueDate) < new Date() && project.stage !== Stage.Done ? 'text-rose-400' : 'text-[#999]'}`}>
                                                             <Calendar size={12} />
-                                                            <span>{new Date(project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                            <span>{new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                                                         </div>
+                                                        {project.reshootDone && (
+                                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/40">
+                                                                Reshoot
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* Mobile Touch Controls */}

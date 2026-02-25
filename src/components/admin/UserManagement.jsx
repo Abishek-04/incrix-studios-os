@@ -5,16 +5,43 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Filter, Edit2, Trash2, Shield,
   Mail, Phone, Calendar, Activity, Check, X, MoreHorizontal,
-  UserPlus, Lock, Unlock, Archive, RefreshCw
+  UserPlus, Lock, Archive, RefreshCw
 } from 'lucide-react';
 import { ROLES, getRoleInfo } from '@/config/permissions';
 
-const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate}) => {
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const AvatarPreview = ({ user, className }) => {
+  if (user?.profilePhoto) {
+    return (
+      <img
+        src={user.profilePhoto}
+        alt={user.name || 'User avatar'}
+        className={`${className} object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div className={`${className} ${user?.avatarColor || 'bg-indigo-500'} flex items-center justify-center text-white font-bold`}>
+      {user?.name?.charAt(0).toUpperCase() || '?'}
+    </div>
+  );
+};
+
+const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onChangePassword }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showNewUserModal, setShowNewUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [passwordUser, setPasswordUser] = useState(null);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
   // Filter users
@@ -37,13 +64,6 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate}) => 
     count: users.filter(u => u.role === role).length,
     ...getRoleInfo(role)
   }));
-
-  const handleToggleUserStatus = (userId) => {
-    const user = users.find(u => u.id === userId);
-    if (user) {
-      onUpdateUser(userId, { isActive: !user.isActive });
-    }
-  };
 
   const handleChangeRole = (userId, newRole) => {
     onUpdateUser(userId, { role: newRole });
@@ -213,7 +233,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate}) => 
                       }
                     }}
                     onEdit={() => setEditingUser(user)}
-                    onToggleStatus={() => handleToggleUserStatus(user.id)}
+                    onChangePassword={() => setPasswordUser(user)}
                     onChangeRole={(newRole) => handleChangeRole(user.id, newRole)}
                     onDelete={() => onDeleteUser(user.id)}
                   />
@@ -250,12 +270,29 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate}) => 
           />
         )}
       </AnimatePresence>
+
+      {/* Change Password Modal */}
+      <AnimatePresence>
+        {passwordUser && (
+          <ChangePasswordModal
+            user={passwordUser}
+            onClose={() => setPasswordUser(null)}
+            onSubmit={async (passwordData) => {
+              const response = await onChangePassword?.(passwordUser.id, passwordData);
+              if (response?.success) {
+                setPasswordUser(null);
+              }
+              return response || { success: false, error: 'Password update failed' };
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 // User Card Component
-const UserCard = ({ user, isSelected, onSelect, onEdit, onToggleStatus, onChangeRole, onDelete }) => {
+const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChangeRole, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   const roleInfo = getRoleInfo(user.role);
   const isActive = user.isActive !== false;
@@ -278,9 +315,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onToggleStatus, onChange
         />
 
         {/* Avatar */}
-        <div className={`w-12 h-12 rounded-full ${user.avatarColor || 'bg-indigo-500'} flex items-center justify-center text-white text-lg font-bold`}>
-          {user.name?.charAt(0).toUpperCase() || '?'}
-        </div>
+        <AvatarPreview user={user} className="w-12 h-12 rounded-full text-lg" />
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
@@ -325,23 +360,31 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onToggleStatus, onChange
             })}
           </select>
 
-          <button
-            onClick={onToggleStatus}
-            className={`p-2 rounded transition-colors ${
+          <span
+            className={`px-3 py-1.5 rounded text-xs font-medium border ${
               isActive
-                ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                : 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20'
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                : 'bg-gray-500/10 text-gray-300 border-gray-500/30'
             }`}
-            title={isActive ? 'Deactivate User' : 'Activate User'}
+            title="Status"
           >
-            {isActive ? <Unlock size={16} /> : <Lock size={16} />}
-          </button>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
 
           <button
             onClick={onEdit}
             className="p-2 bg-[#1a1a1a] hover:bg-[#252525] text-[#999] hover:text-white rounded transition-colors"
+            title="Edit User"
           >
             <Edit2 size={16} />
+          </button>
+
+          <button
+            onClick={onChangePassword}
+            className="p-2 bg-[#1a1a1a] hover:bg-indigo-500/20 text-[#999] hover:text-indigo-300 rounded transition-colors"
+            title="Change Password"
+          >
+            <Lock size={16} />
           </button>
 
           <button
@@ -356,6 +399,134 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onToggleStatus, onChange
   );
 };
 
+const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const currentUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('auth_user') || 'null')
+      : null;
+  const isSelf = currentUser?.id === user?.id;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (isSelf && !formData.currentPassword) {
+      setError('Current password is required');
+      return;
+    }
+    if (formData.newPassword.length < 8) {
+      setError('New password must be at least 8 characters');
+      return;
+    }
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setSaving(true);
+    const result = await onSubmit({
+      currentPassword: formData.currentPassword,
+      newPassword: formData.newPassword
+    });
+    setSaving(false);
+
+    if (!result?.success) {
+      setError(result?.error || 'Failed to change password');
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md"
+      >
+        <div className="p-6 border-b border-[#2f2f2f]">
+          <h2 className="text-xl font-bold text-white">Change Password</h2>
+          <p className="text-sm text-[#999] mt-1">Update password for {user.name}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {isSelf && (
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">Current Password</label>
+              <input
+                type="password"
+                value={formData.currentPassword}
+                onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+                placeholder="Enter current password"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">New Password</label>
+            <input
+              type="password"
+              value={formData.newPassword}
+              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="Minimum 8 characters"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="Re-enter new password"
+            />
+          </div>
+
+          {error && (
+            <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-lg transition-colors"
+            >
+              {saving ? 'Saving...' : 'Update Password'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // New User Modal Component
 const NewUserModal = ({ onClose, onCreate }) => {
   const [formData, setFormData] = useState({
@@ -364,7 +535,8 @@ const NewUserModal = ({ onClose, onCreate }) => {
     phoneNumber: '',
     role: ROLES.DEVELOPER,
     isActive: true,
-    avatarColor: 'bg-indigo-500'
+    avatarColor: 'bg-indigo-500',
+    profilePhoto: ''
   });
 
   const handleSubmit = (e) => {
@@ -472,6 +644,51 @@ const NewUserModal = ({ onClose, onCreate }) => {
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Profile Photo</label>
+            <input
+              type="url"
+              value={formData.profilePhoto}
+              onChange={(e) => setFormData({ ...formData, profilePhoto: e.target.value })}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="https://example.com/photo.jpg"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <label className="text-xs text-[#999]">or upload</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await readFileAsDataUrl(file);
+                    setFormData((prev) => ({ ...prev, profilePhoto: dataUrl }));
+                  } catch (err) {
+                    console.error('Failed to read image:', err);
+                  }
+                }}
+                className="text-xs text-[#aaa] file:mr-2 file:rounded file:border-0 file:bg-[#252525] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
+              />
+              {formData.profilePhoto && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, profilePhoto: '' })}
+                  className="text-xs text-rose-400 hover:text-rose-300"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {formData.profilePhoto && (
+              <img
+                src={formData.profilePhoto}
+                alt="Profile preview"
+                className="mt-3 w-14 h-14 rounded-full object-cover border border-[#333]"
+              />
+            )}
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -514,7 +731,8 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
     phoneNumber: user.phoneNumber || '',
     role: user.role,
     isActive: user.isActive !== false,
-    avatarColor: user.avatarColor || 'bg-indigo-500'
+    avatarColor: user.avatarColor || 'bg-indigo-500',
+    profilePhoto: user.profilePhoto || ''
   });
 
   const handleSubmit = (e) => {
@@ -613,6 +831,51 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                 />
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Profile Photo</label>
+            <input
+              type="url"
+              value={formData.profilePhoto}
+              onChange={(e) => setFormData({ ...formData, profilePhoto: e.target.value })}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="https://example.com/photo.jpg"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <label className="text-xs text-[#999]">or upload</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await readFileAsDataUrl(file);
+                    setFormData((prev) => ({ ...prev, profilePhoto: dataUrl }));
+                  } catch (err) {
+                    console.error('Failed to read image:', err);
+                  }
+                }}
+                className="text-xs text-[#aaa] file:mr-2 file:rounded file:border-0 file:bg-[#252525] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
+              />
+              {formData.profilePhoto && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, profilePhoto: '' })}
+                  className="text-xs text-rose-400 hover:text-rose-300"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {formData.profilePhoto && (
+              <img
+                src={formData.profilePhoto}
+                alt="Profile preview"
+                className="mt-3 w-14 h-14 rounded-full object-cover border border-[#333]"
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-2">

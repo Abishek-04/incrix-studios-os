@@ -1,5 +1,69 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import { v4 as uuidv4 } from 'uuid';
+
+function toPlainObject(input) {
+  if (!input) return {};
+  if (typeof input.toObject === 'function') return input.toObject();
+  if (input._doc && typeof input._doc === 'object') return { ...input._doc };
+  return { ...input };
+}
+
+function stripMongoInternals(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripMongoInternals(item));
+  }
+
+  if (value && typeof value === 'object') {
+    const result = {};
+    for (const [key, nestedValue] of Object.entries(value)) {
+      if (key === '_id' || key === '__v') continue;
+      result[key] = stripMongoInternals(nestedValue);
+    }
+    return result;
+  }
+
+  return value;
+}
+
+function sanitizeDoc(input) {
+  return stripMongoInternals(toPlainObject(input));
+}
+
+async function addToRecycleBin(items, entityType, source = 'state_api') {
+  if (!items || items.length === 0) return [];
+
+  const DeletedItem = (await import('@/models/DeletedItem')).default;
+  const snapshottedEntityIds = [];
+
+  await Promise.all(
+    items.map(async (item) => {
+      const plain = sanitizeDoc(item);
+      const entityId = String(plain?.id || item?.id || '');
+      if (!entityId) {
+        console.error(`[State API] Skipping ${entityType} recycle snapshot due to missing id`);
+        return;
+      }
+
+      try {
+        await DeletedItem.create({
+          id: uuidv4(),
+          entityType,
+          entityId,
+          source,
+          deletedBy: 'system',
+          data: plain,
+          expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+        });
+        snapshottedEntityIds.push(entityId);
+      } catch (err) {
+        console.error(`[State API] Failed to add ${entityType} ${entityId} to recycle bin:`, err.message);
+      }
+    })
+  );
+
+  return snapshottedEntityIds;
+}
 
 export async function GET(request) {
   try {
@@ -50,7 +114,7 @@ export async function POST(request) {
       for (const userData of body.users) {
         await User.updateOne(
           { id: userData.id },
-          { $set: { ...userData, password: undefined } },
+          { $set: { ...sanitizeDoc(userData), password: undefined } },
           { upsert: true }
         );
       }
@@ -70,7 +134,14 @@ export async function POST(request) {
 
       // Delete projects that are no longer in the array
       if (idsToDelete.length > 0) {
-        await Project.deleteMany({ id: { $in: idsToDelete } });
+        const projectsToDelete = await Project.find({ id: { $in: idsToDelete } });
+        const snapshottedIds = await addToRecycleBin(projectsToDelete, 'project');
+        if (snapshottedIds.length > 0) {
+          await Project.deleteMany({ id: { $in: snapshottedIds } });
+        }
+        if (snapshottedIds.length !== idsToDelete.length) {
+          console.error('[State API] Some projects were not deleted because recycle snapshot failed');
+        }
       }
 
       // Import NotificationEngine for event tracking
@@ -120,7 +191,7 @@ export async function POST(request) {
 
         await Project.updateOne(
           { id: project.id },
-          { $set: project },
+          { $set: sanitizeDoc(project) },
           { upsert: true }
         );
       }
@@ -140,14 +211,21 @@ export async function POST(request) {
 
       // Delete channels that are no longer in the array
       if (idsToDelete.length > 0) {
-        await Channel.deleteMany({ id: { $in: idsToDelete } });
+        const channelsToDelete = await Channel.find({ id: { $in: idsToDelete } });
+        const snapshottedIds = await addToRecycleBin(channelsToDelete, 'channel');
+        if (snapshottedIds.length > 0) {
+          await Channel.deleteMany({ id: { $in: snapshottedIds } });
+        }
+        if (snapshottedIds.length !== idsToDelete.length) {
+          console.error('[State API] Some channels were not deleted because recycle snapshot failed');
+        }
       }
 
       // Update or insert remaining channels
       for (const channel of body.channels) {
         await Channel.updateOne(
           { id: channel.id },
-          { $set: channel },
+          { $set: sanitizeDoc(channel) },
           { upsert: true }
         );
       }
@@ -167,7 +245,14 @@ export async function POST(request) {
 
       // Delete tasks that are no longer in the array
       if (idsToDelete.length > 0) {
-        await DailyTask.deleteMany({ id: { $in: idsToDelete } });
+        const tasksToDelete = await DailyTask.find({ id: { $in: idsToDelete } });
+        const snapshottedIds = await addToRecycleBin(tasksToDelete, 'daily_task');
+        if (snapshottedIds.length > 0) {
+          await DailyTask.deleteMany({ id: { $in: snapshottedIds } });
+        }
+        if (snapshottedIds.length !== idsToDelete.length) {
+          console.error('[State API] Some daily tasks were not deleted because recycle snapshot failed');
+        }
       }
 
       // Import NotificationEngine if not already imported
@@ -190,7 +275,7 @@ export async function POST(request) {
 
         await DailyTask.updateOne(
           { id: task.id },
-          { $set: task },
+          { $set: sanitizeDoc(task) },
           { upsert: true }
         );
       }

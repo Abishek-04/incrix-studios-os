@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import UserManagement from '@/components/admin/UserManagement';
 import { RoleGuard } from '@/components/common/PermissionGuard';
 import { ROLES } from '@/config/permissions';
+import UndoToast from '@/components/ui/UndoToast';
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [undoDelete, setUndoDelete] = useState(null);
 
   // Load current user from localStorage
   useEffect(() => {
@@ -59,6 +61,10 @@ export default function UserManagementPage() {
       const data = await response.json();
       if (data.success) {
         setUsers(users.map(u => u.id === userId ? data.user : u));
+        if (currentUser?.id === userId) {
+          setCurrentUser(data.user);
+          localStorage.setItem('auth_user', JSON.stringify(data.user));
+        }
       } else {
         console.error('Update failed:', data.error);
       }
@@ -68,13 +74,23 @@ export default function UserManagementPage() {
   };
 
   const handleDeleteUser = async (userId) => {
+    const deletedUser = users.find(u => u.id === userId);
     try {
       const response = await fetch(`/api/users/${userId}?role=${currentUser.role}`, {
         method: 'DELETE'
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (response.ok) {
         setUsers(users.filter(u => u.id !== userId));
+        if (data.deletedItemId && deletedUser) {
+          setUndoDelete({
+            deletedItemId: data.deletedItemId,
+            user: deletedUser,
+            message: `Deleted "${deletedUser.name}"`
+          });
+        }
       } else {
         console.error('Delete failed');
       }
@@ -102,6 +118,28 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleChangePassword = async (userId, passwordData) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentUser,
+          updates: {
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword
+          }
+        })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Password update failed:', error);
+      return { success: false, error: 'Failed to update password' };
+    }
+  };
+
   if (!currentUser) return null;
 
   return (
@@ -123,8 +161,32 @@ export default function UserManagementPage() {
           onUpdateUser={handleUpdateUser}
           onDeleteUser={handleDeleteUser}
           onCreate={handleCreateUser}
+          onChangePassword={handleChangePassword}
         />
       )}
+      <UndoToast
+        isVisible={!!undoDelete}
+        message={undoDelete?.message || ''}
+        onUndo={async () => {
+          if (!undoDelete?.deletedItemId) return;
+          try {
+            const response = await fetch('/api/recycle-bin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId })
+            });
+            const data = await response.json();
+            if (data.success) {
+              setUsers(prev => [...prev, undoDelete.user]);
+            }
+          } catch (err) {
+            console.error('Undo restore failed:', err);
+          } finally {
+            setUndoDelete(null);
+          }
+        }}
+        onClose={() => setUndoDelete(null)}
+      />
     </RoleGuard>
   );
 }

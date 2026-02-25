@@ -99,6 +99,7 @@ export async function POST(request) {
       phoneNumber: userData.phoneNumber,
       role: userData.role,
       avatarColor: userData.avatarColor || 'bg-indigo-500',
+      profilePhoto: userData.profilePhoto || '',
       isActive: userData.isActive !== false,
       createdAt: Date.now(),
       lastActive: Date.now()

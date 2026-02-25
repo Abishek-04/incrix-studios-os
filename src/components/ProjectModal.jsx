@@ -7,6 +7,18 @@ import Toast from './ui/Toast';
 import { MentionInput } from './ui/MentionInput';
 import { extractMentions } from '@/utils/mentions';
 
+const formatDateForInput = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const parseDateFromInput = (value) => {
+  if (!value) return null;
+  const parsed = new Date(`${value}T00:00:00`).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [localProject, setLocalProject] = useState(project);
@@ -111,6 +123,18 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
       setLocalProject(updated);
       onUpdate(updated);
     }
+  };
+
+  const updateProjectDateField = (field, value) => {
+    const parsedValue = parseDateFromInput(value);
+    const updated = {
+      ...localProject,
+      [field]: parsedValue,
+      ...(field === 'uploadDoneDate' && parsedValue ? { dueDate: parsedValue } : {}),
+      lastUpdated: Date.now()
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
   };
 
   const handleAddTask = () => {
@@ -361,7 +385,11 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <select
                 value={localProject.stage}
                 onChange={(e) => {
-                  const updated = { ...localProject, stage: e.target.value, lastUpdated: Date.now() };
+                  const updated = {
+                    ...localProject,
+                    stage: e.target.value,
+                    lastUpdated: Date.now()
+                  };
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
@@ -531,6 +559,76 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-white">Production Dates</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-[#666] uppercase">Shoot Date</label>
+                    <input
+                      type="date"
+                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      value={formatDateForInput(localProject.shootDate)}
+                      onChange={(e) => updateProjectDateField('shootDate', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-[#666] uppercase">Edit Date</label>
+                    <input
+                      type="date"
+                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      value={formatDateForInput(localProject.editDate)}
+                      onChange={(e) => updateProjectDateField('editDate', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-[#666] uppercase">Upload / Done Date</label>
+                    <input
+                      type="date"
+                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      value={formatDateForInput(localProject.uploadDoneDate)}
+                      onChange={(e) => updateProjectDateField('uploadDoneDate', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-[#666] uppercase">Reshoot</label>
+                    <label className="flex items-center space-x-2 h-[42px] px-3 bg-[#1e1e1e] border border-[#333] rounded-lg cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!localProject.reshootDone}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const updated = {
+                            ...localProject,
+                            reshootDone: checked,
+                            reshootDate: checked ? localProject.reshootDate || null : null,
+                            lastUpdated: Date.now()
+                          };
+                          setLocalProject(updated);
+                          onUpdate(updated);
+                        }}
+                        className="w-4 h-4 rounded bg-[#333] border-[#444] text-amber-500 focus:ring-amber-500"
+                      />
+                      <span className="text-sm text-[#ddd]">Reshoot Done</span>
+                    </label>
+                  </div>
+                </div>
+
+                {localProject.reshootDone && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-mono text-amber-300 uppercase">Reshoot Date</label>
+                      <input
+                        type="date"
+                        className="w-full bg-[#1e1e1e] border border-amber-500/40 rounded-lg p-2.5 text-sm text-[#eee] focus:border-amber-400 focus:outline-none"
+                        value={formatDateForInput(localProject.reshootDate)}
+                        onChange={(e) => updateProjectDateField('reshootDate', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-mono text-[#666] uppercase">Topic / Brief</label>
                 <textarea

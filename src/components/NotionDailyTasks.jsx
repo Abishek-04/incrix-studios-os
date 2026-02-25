@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Calendar, User, Check, Circle, Trash2, GripVertical, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function NotionDailyTasks({ tasks = [], users = [], currentUser, onUpdateTasks }) {
+export default function NotionDailyTasks({ tasks = [], users = [], currentUser, onUpdateTasks, onDeleteTask }) {
   const [localTasks, setLocalTasks] = useState(tasks);
   const [newTaskText, setNewTaskText] = useState('');
   const [filter, setFilter] = useState('all'); // all, today, pending, completed
@@ -85,6 +85,10 @@ export default function NotionDailyTasks({ tasks = [], users = [], currentUser, 
   };
 
   const handleDeleteTask = (taskId) => {
+    if (onDeleteTask) {
+      onDeleteTask(taskId);
+      return;
+    }
     const updated = localTasks.filter(t => t.id !== taskId);
     setLocalTasks(updated);
     onUpdateTasks(updated);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
+import UndoToast from '@/components/ui/UndoToast';
 import { fetchState, saveState } from '@/services/api';
 
 export default function ProjectsPage() {
@@ -12,6 +13,7 @@ export default function ProjectsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [undoDelete, setUndoDelete] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -39,18 +41,33 @@ export default function ProjectsPage() {
   }, []);
 
   const handleUpdateProject = (updatedProject) => {
-    const updatedProjects = projects.map(p =>
-      p.id === updatedProject.id ? updatedProject : p
-    );
-    setProjects(updatedProjects);
-    saveState({ projects: updatedProjects });
+    setProjects(prevProjects => {
+      const updatedProjects = prevProjects.map(p =>
+        p.id === updatedProject.id ? updatedProject : p
+      );
+      saveState({ projects: updatedProjects });
+      return updatedProjects;
+    });
+    setSelectedProject(updatedProject);
   };
 
   const handleDeleteProject = (projectId) => {
+    const snapshot = projects;
+    const deletedProject = projects.find(p => p.id === projectId);
     const updatedProjects = projects.filter(p => p.id !== projectId);
+
     setProjects(updatedProjects);
     setSelectedProject(null);
     saveState({ projects: updatedProjects });
+
+    setUndoDelete({
+      message: `Deleted "${deletedProject?.title || 'project'}"`,
+      onUndo: () => {
+        setProjects(snapshot);
+        saveState({ projects: snapshot });
+        setUndoDelete(null);
+      }
+    });
   };
 
   return (
@@ -73,13 +90,24 @@ export default function ProjectsPage() {
           onClose={() => setSelectedProject(null)}
           onUpdate={handleUpdateProject}
           onCreate={(newProject) => {
-            setProjects([...projects, newProject]);
-            saveState({ projects: [...projects, newProject] });
+            setProjects(prevProjects => {
+              const updatedProjects = [...prevProjects, newProject];
+              saveState({ projects: updatedProjects });
+              return updatedProjects;
+            });
+            setSelectedProject(newProject);
           }}
           onDelete={handleDeleteProject}
           onNotification={() => {}}
         />
       )}
+
+      <UndoToast
+        isVisible={!!undoDelete}
+        message={undoDelete?.message || ''}
+        onUndo={() => undoDelete?.onUndo?.()}
+        onClose={() => setUndoDelete(null)}
+      />
     </>
   );
 }

@@ -37,6 +37,7 @@ const UserSchema = new Schema(
       }
     },
     avatarColor: { type: String, required: true },
+    profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true, index: true },
     quota: {
       youtubeLong: { type: Number, default: 0 },

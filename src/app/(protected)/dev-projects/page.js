@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchState, saveState } from '@/services/api';
 import { getProjectConfig } from '@/config/projectConfig';
 import { ProjectType, DevStage, Priority, Status } from '@/types';
 import { Plus, Code, Calendar, User, Search, GitBranch, Trash2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import UndoToast from '@/components/ui/UndoToast';
 
 export default function DevProjectsPage() {
   const [allProjects, setAllProjects] = useState([]);
@@ -17,8 +18,17 @@ export default function DevProjectsPage() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [undoDelete, setUndoDelete] = useState(null);
+  const undoTimerRef = useRef(null);
 
   const config = getProjectConfig('dev');
+
+  const clearUndoTimer = () => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -129,12 +139,30 @@ export default function DevProjectsPage() {
 
   const handleDeleteProject = async (projectId) => {
     if (!confirm('Are you sure you want to delete this dev project?')) return;
+    clearUndoTimer();
 
+    const snapshot = allProjects;
+    const deletedProject = allProjects.find(p => p.id === projectId);
     const updatedProjects = allProjects.filter(p => p.id !== projectId);
+
     setAllProjects(updatedProjects);
-    await saveState({ projects: updatedProjects });
     setShowModal(false);
     setSelectedProject(null);
+
+    undoTimerRef.current = setTimeout(async () => {
+      await saveState({ projects: updatedProjects });
+      setUndoDelete(null);
+      undoTimerRef.current = null;
+    }, 5000);
+
+    setUndoDelete({
+      message: `Deleted "${deletedProject?.title || 'dev project'}"`,
+      onUndo: () => {
+        clearUndoTimer();
+        setAllProjects(snapshot);
+        setUndoDelete(null);
+      }
+    });
   };
 
   const developers = users.filter(u => u.role === 'developer' || u.role === 'manager');
@@ -164,6 +192,7 @@ export default function DevProjectsPage() {
   }
 
   return (
+    <>
     <div className="p-8 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -282,6 +311,19 @@ export default function DevProjectsPage() {
         />
       )}
     </div>
+    <UndoToast
+      isVisible={!!undoDelete}
+      message={undoDelete?.message || ''}
+      onUndo={() => undoDelete?.onUndo?.()}
+      onClose={async () => {
+        if (undoDelete) {
+          clearUndoTimer();
+          await saveState({ projects: allProjects });
+          setUndoDelete(null);
+        }
+      }}
+    />
+    </>
   );
 }
 

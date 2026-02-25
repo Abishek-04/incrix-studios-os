@@ -169,6 +169,11 @@ export const isValidEnumValue = (enumObj, value) => getEnumValues(enumObj).inclu
  * @property {string} priority - Priority enum value
  * @property {number} lastUpdated
  * @property {number} dueDate
+ * @property {number} [shootDate]
+ * @property {number} [editDate]
+ * @property {number} [uploadDoneDate]
+ * @property {boolean} [reshootDone]
+ * @property {number} [reshootDate]
  * @property {number} durationMinutes - For analytics
  * @property {string} script
  * @property {Array<{id: string, text: string, done: boolean}>} tasks

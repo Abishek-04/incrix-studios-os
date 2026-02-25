@@ -19,6 +19,11 @@ const ProjectSchema = new Schema(
     priority: { type: String, required: true, index: true },
     lastUpdated: { type: Number, required: true, index: true },
     dueDate: { type: Number, required: true, index: true },
+    shootDate: { type: Number, index: true },
+    editDate: { type: Number, index: true },
+    uploadDoneDate: { type: Number, index: true },
+    reshootDone: { type: Boolean, default: false, index: true },
+    reshootDate: { type: Number, index: true },
     durationMinutes: { type: Number, default: 0 },
     script: { type: String, default: '' },
     tasks: [
