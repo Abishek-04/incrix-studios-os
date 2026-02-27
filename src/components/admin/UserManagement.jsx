@@ -579,21 +579,21 @@ const NewUserModal = ({ onClose, onCreate }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto"
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md"
+        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2rem)] flex flex-col my-auto"
       >
-        <div className="p-6 border-b border-[#2f2f2f]">
+        <div className="p-5 sm:p-6 border-b border-[#2f2f2f] flex-shrink-0">
           <h2 className="text-xl font-bold text-white">Add New User</h2>
           <p className="text-sm text-[#999] mt-1">Create a new team member account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-white mb-2">Full Name *</label>
             <input
