@@ -105,7 +105,9 @@ export const generateProjectReportCSV = (projects) => {
     status: project.status,
     priority: project.priority,
     creator: project.creator,
-    editor: project.editor,
+    editor: (Array.isArray(project.editors) && project.editors.length > 0)
+      ? project.editors.join(', ')
+      : (project.editor || ''),
     platform: project.platform,
     dueDate: project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '',
     lastUpdated: new Date(project.lastUpdated).toLocaleDateString()

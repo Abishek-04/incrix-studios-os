@@ -36,6 +36,16 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         return date.toLocaleString('default', { month: 'long', year: 'numeric' });
     };
 
+    const getProjectEditors = (project) => {
+        if (Array.isArray(project.editors) && project.editors.length > 0) {
+            return project.editors.filter(Boolean);
+        }
+        if (project.editor && project.editor !== 'Unassigned') {
+            return [project.editor];
+        }
+        return [];
+    };
+
     const handleCreateNew = () => {
         // Create a blank project template
         const newProject = {
@@ -47,11 +57,12 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             role: 'manager',
             creator: 'Unassigned',
             editor: 'Unassigned',
+            editors: [],
             stage: Stage.Backlog,
             status: Status.NotStarted,
             priority: Priority.Medium,
             lastUpdated: Date.now(),
-            dueDate: Date.now() + 86400000 * 7, // 1 week
+            dueDate: Date.now(), // Default to today
             shootDate: null,
             editDate: null,
             uploadDoneDate: null,
@@ -372,9 +383,17 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                             <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#333] flex items-center justify-center text-[11px] text-white font-bold" title={project.creator || 'Unassigned'}>
                                                                 {project.creator?.charAt(0) || '?'}
                                                             </div>
-                                                            {project.editor && project.editor !== 'Unassigned' && (
-                                                                <div className="w-6 h-6 rounded-full bg-[#333] border border-[#444] flex items-center justify-center text-[11px] text-white font-bold" title={project.editor}>
-                                                                    {project.editor?.charAt(0) || '?'}
+                                                            {getProjectEditors(project).slice(0, 2).map((editorName) => (
+                                                                <div key={editorName} className="w-6 h-6 rounded-full bg-[#333] border border-[#444] flex items-center justify-center text-[11px] text-white font-bold" title={editorName}>
+                                                                    {editorName?.charAt(0) || '?'}
+                                                                </div>
+                                                            ))}
+                                                            {getProjectEditors(project).length > 2 && (
+                                                                <div
+                                                                    className="w-6 h-6 rounded-full bg-[#2b2b2b] border border-[#444] flex items-center justify-center text-[10px] text-[#bbb] font-bold"
+                                                                    title={getProjectEditors(project).slice(2).join(', ')}
+                                                                >
+                                                                    +{getProjectEditors(project).length - 2}
                                                                 </div>
                                                             )}
                                                         </div>

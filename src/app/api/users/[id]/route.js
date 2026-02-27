@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import mongoose from 'mongoose';
 import User from '@/models/User';
 import DeletedItem from '@/models/DeletedItem';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,6 +14,32 @@ import {
   logPasswordChange
 } from '@/lib/services/activityLogger';
 
+function normalizeRole(role) {
+  if (typeof role !== 'string') return '';
+  const normalized = role.trim().toLowerCase().replace(/[\s_-]+/g, '');
+
+  if (normalized === 'superadmin') return 'superadmin';
+  if (normalized === 'manager') return 'manager';
+  if (normalized === 'creator') return 'creator';
+  if (normalized === 'editor') return 'editor';
+  if (normalized === 'designer') return 'designer';
+  if (normalized === 'developer') return 'developer';
+
+  return role.trim().toLowerCase();
+}
+
+function buildUserLookup(id) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return {
+      $or: [
+        { id },
+        { _id: new mongoose.Types.ObjectId(id) }
+      ]
+    };
+  }
+  return { id };
+}
+
 /**
  * GET /api/users/[id]
  * Get a specific user
@@ -22,7 +49,7 @@ export async function GET(request, { params }) {
     await connectDB();
 
     const { id } = params;
-    const user = await User.findOne({ id }).select('-password');
+    const user = await User.findOne(buildUserLookup(id)).select('-password');
 
     if (!user) {
       return NextResponse.json(
@@ -33,7 +60,10 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      user: user.toObject()
+      user: {
+        ...user.toObject(),
+        id: user.id || String(user._id)
+      }
     });
   } catch (error) {
     console.error('[API] Error fetching user:', error);
@@ -85,7 +115,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Find user
-    const user = await User.findOne({ id }).select('+password');
+    const user = await User.findOne(buildUserLookup(id)).select('+password');
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -170,7 +200,10 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      user: user.toObject()
+      user: {
+        ...user.toObject(),
+        id: user.id || String(user._id)
+      }
     });
   } catch (error) {
     console.error('[API] Error updating user:', error);
@@ -191,36 +224,60 @@ export async function DELETE(request, { params }) {
 
     const { id } = params;
     const { searchParams } = new URL(request.url);
-    const currentUserRole = searchParams.get('role');
+    const body = await request.json().catch(() => ({}));
+    const actor = body?.currentUser || {};
+    const targetUser = body?.targetUser || {};
+    const actorId = actor?.id;
+    let currentUserRole = normalizeRole(actor?.role || searchParams.get('role'));
+
+    // Fallback: derive role from DB when client role is stale or missing
+    if (!currentUserRole && actorId) {
+      const actorUser = await User.findOne(buildUserLookup(actorId)).select('role');
+      currentUserRole = normalizeRole(actorUser?.role);
+    }
 
     // Permission check
     if (!hasPermission(currentUserRole, PERMISSIONS.DELETE_USERS)) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized to delete users' },
         { status: 403 }
       );
     }
 
-    // Find and delete user
-    const user = await User.findOne({ id });
+    // Find and delete user (fallback to unique email for legacy/mismatched client ids)
+    let user = await User.findOne(buildUserLookup(id));
+    if (!user && targetUser?.email) {
+      user = await User.findOne({ email: targetUser.email });
+    }
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'User not found' },
+        {
+          success: false,
+          error: `User not found for id "${id}"${targetUser?.email ? ` or email "${targetUser.email}"` : ''}`
+        },
         { status: 404 }
+      );
+    }
+
+    // Guard: prevent deleting currently logged-in account
+    if (actorId && (actorId === user.id || actorId === String(user._id))) {
+      return NextResponse.json(
+        { success: false, error: 'You cannot delete your own account while logged in.' },
+        { status: 400 }
       );
     }
 
     const deletedItem = await DeletedItem.create({
       id: uuidv4(),
       entityType: 'user',
-      entityId: user.id,
+      entityId: user.id || String(user._id),
       source: 'users_api',
       deletedBy: currentUserRole || 'system',
       data: user.toObject(),
       expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
     });
 
-    await User.deleteOne({ id });
+    await User.deleteOne({ _id: user._id });
 
     // Log activity
     const currentUser = { id: 'system', name: 'System', role: currentUserRole };

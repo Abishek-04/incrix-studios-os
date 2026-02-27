@@ -164,6 +164,7 @@ export const isValidEnumValue = (enumObj, value) => getEnumValues(enumObj).inclu
  * @property {string} role - The primary role currently responsible
  * @property {string} creator - Name or ID
  * @property {string} editor - Name or ID
+ * @property {string[]} [editors] - Multiple editors assigned to the project
  * @property {string} stage - Stage enum value
  * @property {string} status - Status enum value
  * @property {string} priority - Priority enum value

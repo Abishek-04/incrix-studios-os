@@ -14,6 +14,7 @@ const ProjectSchema = new Schema(
     role: { type: String, required: true, index: true },
     creator: { type: String, required: true, index: true },
     editor: { type: String, index: true },
+    editors: [{ type: String, index: true }],
     stage: { type: String, required: true, index: true },
     status: { type: String, required: true, index: true },
     priority: { type: String, required: true, index: true },

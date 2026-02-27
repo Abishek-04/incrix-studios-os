@@ -16,6 +16,9 @@ export async function GET(request) {
     const role = searchParams.get('role');
     const status = searchParams.get('status');
     const search = searchParams.get('search');
+    const all = searchParams.get('all') === '1' || searchParams.get('all') === 'true';
+    const limitParam = parseInt(searchParams.get('limit') || '100', 10);
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 5000) : 100;
 
     // Build query
     let query = {};
@@ -37,14 +40,26 @@ export async function GET(request) {
       ];
     }
 
-    const users = await User.find(query)
+    let userQuery = User.find(query)
       .select('-password') // Exclude password
-      .sort({ createdAt: -1 })
-      .limit(100);
+      .sort({ createdAt: -1 });
+
+    if (!all) {
+      userQuery = userQuery.limit(limit);
+    }
+
+    const users = await userQuery;
 
     return NextResponse.json({
       success: true,
-      users: users.map(u => u.toObject())
+      users: users.map((u) => {
+        const plain = u.toObject();
+        return {
+          ...plain,
+          // Backward compatibility for legacy rows that don't have custom `id`
+          id: plain.id || String(plain._id)
+        };
+      })
     });
   } catch (error) {
     console.error('[API] Error fetching users:', error);
@@ -75,9 +90,16 @@ export async function POST(request) {
     }
 
     // Validate required fields
-    if (!userData.name || !userData.email || !userData.role) {
+    if (!userData.name || !userData.email || !userData.role || !userData.password) {
       return NextResponse.json(
-        { success: false, error: 'Name, email, and role are required' },
+        { success: false, error: 'Name, email, role, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (userData.password.length < 8) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 8 characters long' },
         { status: 400 }
       );
     }
@@ -96,6 +118,7 @@ export async function POST(request) {
       id: userData.id || `user-${Date.now()}`,
       name: userData.name,
       email: userData.email,
+      password: userData.password,
       phoneNumber: userData.phoneNumber,
       role: userData.role,
       avatarColor: userData.avatarColor || 'bg-indigo-500',

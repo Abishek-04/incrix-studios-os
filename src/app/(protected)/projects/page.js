@@ -70,12 +70,22 @@ export default function ProjectsPage() {
     });
   };
 
+  const handleCreateProject = (newProject) => {
+    setProjects(prevProjects => {
+      const updatedProjects = [...prevProjects, newProject];
+      saveState({ projects: updatedProjects });
+      return updatedProjects;
+    });
+    setSelectedProject(newProject);
+  };
+
   return (
     <>
       <ProjectList
         projects={projects}
         channels={channels}
         onSelectProject={setSelectedProject}
+        onCreateProject={handleCreateProject}
         searchQuery={searchQuery}
         onDeleteProject={handleDeleteProject}
       />
@@ -89,14 +99,7 @@ export default function ProjectsPage() {
           users={users}
           onClose={() => setSelectedProject(null)}
           onUpdate={handleUpdateProject}
-          onCreate={(newProject) => {
-            setProjects(prevProjects => {
-              const updatedProjects = [...prevProjects, newProject];
-              saveState({ projects: updatedProjects });
-              return updatedProjects;
-            });
-            setSelectedProject(newProject);
-          }}
+          onCreate={handleCreateProject}
           onDelete={handleDeleteProject}
           onNotification={() => {}}
         />

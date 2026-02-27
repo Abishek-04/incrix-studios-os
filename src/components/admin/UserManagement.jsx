@@ -235,7 +235,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
                     onEdit={() => setEditingUser(user)}
                     onChangePassword={() => setPasswordUser(user)}
                     onChangeRole={(newRole) => handleChangeRole(user.id, newRole)}
-                    onDelete={() => onDeleteUser(user.id)}
+                    onDelete={() => onDeleteUser(user)}
                   />
                 ))}
               </div>
@@ -249,9 +249,12 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
         {showNewUserModal && (
           <NewUserModal
             onClose={() => setShowNewUserModal(false)}
-            onCreate={(userData) => {
-              onCreate(userData);
-              setShowNewUserModal(false);
+            onCreate={async (userData) => {
+              const result = await onCreate(userData);
+              if (result?.success) {
+                setShowNewUserModal(false);
+              }
+              return result;
             }}
           />
         )}
@@ -449,7 +452,6 @@ const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
@@ -533,19 +535,37 @@ const NewUserModal = ({ onClose, onCreate }) => {
     name: '',
     email: '',
     phoneNumber: '',
+    password: '',
     role: ROLES.DEVELOPER,
     isActive: true,
     avatarColor: 'bg-indigo-500',
     profilePhoto: ''
   });
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formError, setFormError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onCreate({
+    setFormError('');
+
+    if (formData.password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
+      return;
+    }
+    if (formData.password !== confirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+
+    const result = await onCreate({
       ...formData,
       id: `user-${Date.now()}`,
       createdAt: Date.now()
     });
+
+    if (!result?.success) {
+      setFormError(result?.error || 'Failed to create user.');
+    }
   };
 
   const avatarColors = [
@@ -560,7 +580,6 @@ const NewUserModal = ({ onClose, onCreate }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
@@ -607,6 +626,32 @@ const NewUserModal = ({ onClose, onCreate }) => {
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
               className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="+1 234 567 8900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Password *</label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="Minimum 8 characters"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Confirm Password *</label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              placeholder="Re-enter password"
             />
           </div>
 
@@ -702,6 +747,12 @@ const NewUserModal = ({ onClose, onCreate }) => {
             </label>
           </div>
 
+          {formError && (
+            <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+              {formError}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-4">
             <button
               type="submit"
@@ -752,7 +803,9 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}

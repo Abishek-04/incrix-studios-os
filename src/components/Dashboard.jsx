@@ -90,6 +90,11 @@ const calculateProgress = (user, allProjects) => {
 
 const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
     const isManager = currentUser.role === 'manager';
+    const isAssignedToUser = (project, userName) => {
+        if (project.creator === userName) return true;
+        if (Array.isArray(project.editors) && project.editors.includes(userName)) return true;
+        return project.editor === userName;
+    };
 
     // --- Manager Stats ---
     const managerKpis = useMemo(() => {
@@ -117,7 +122,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
 
     // --- Personal Stats (Creator/Editor) ---
     const personalStats = useMemo(() => {
-        const myProjects = projects.filter(p => p.creator === currentUser.name || p.editor === currentUser.name);
+        const myProjects = projects.filter(p => isAssignedToUser(p, currentUser.name));
         const pending = myProjects.filter(p => p.stage !== Stage.Done).length;
         const completed = myProjects.filter(p => p.stage === Stage.Done).length;
         const nextDeadline = myProjects
@@ -317,7 +322,7 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                     <h3 className="text-white font-semibold mb-4">My Priority Queue</h3>
                     <div className="space-y-3">
                         {projects
-                            .filter(p => (p.creator === currentUser.name || p.editor === currentUser.name) && p.stage !== Stage.Done)
+                            .filter(p => isAssignedToUser(p, currentUser.name) && p.stage !== Stage.Done)
                             .slice(0, 5)
                             .map(p => (
                                 <div

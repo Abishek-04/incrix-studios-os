@@ -28,7 +28,7 @@ export default function UserManagementPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/users?all=1');
         const data = await response.json();
 
         if (data.success) {
@@ -73,11 +73,18 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    const deletedUser = users.find(u => u.id === userId);
+  const handleDeleteUser = async (userOrId) => {
+    const targetUser =
+      typeof userOrId === 'string'
+        ? users.find((u) => (u.id || u._id) === userOrId)
+        : userOrId;
+    const userId = targetUser?.id || targetUser?._id || userOrId;
+    const deletedUser = targetUser || users.find((u) => (u.id || u._id) === userId);
     try {
-      const response = await fetch(`/api/users/${userId}?role=${currentUser.role}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/users/${encodeURIComponent(userId)}?role=${currentUser.role}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentUser, targetUser: deletedUser })
       });
 
       const data = await response.json().catch(() => ({}));
@@ -92,7 +99,9 @@ export default function UserManagementPage() {
           });
         }
       } else {
-        console.error('Delete failed');
+        const message = data.error || `Delete failed (HTTP ${response.status})`;
+        console.error('Delete failed:', message);
+        window.alert(message);
       }
     } catch (error) {
       console.error('Delete failed:', error);
@@ -109,12 +118,30 @@ export default function UserManagementPage() {
 
       const data = await response.json();
       if (data.success) {
-        setUsers([...users, data.user]);
+        const createdUser = {
+          ...data.user,
+          id: data.user?.id || String(data.user?._id || '')
+        };
+        setUsers((prevUsers) => {
+          const existingIndex = prevUsers.findIndex(
+            (u) => (u.id || u._id) === (createdUser.id || createdUser._id)
+          );
+          if (existingIndex >= 0) {
+            const updated = [...prevUsers];
+            updated[existingIndex] = createdUser;
+            return updated;
+          }
+          // Prepend so user is visible immediately, matching API sort (newest first).
+          return [createdUser, ...prevUsers];
+        });
+        return { success: true, user: createdUser };
       } else {
         console.error('Create failed:', data.error);
+        return { success: false, error: data.error || 'Create failed' };
       }
     } catch (error) {
       console.error('Create failed:', error);
+      return { success: false, error: 'Create failed' };
     }
   };
 

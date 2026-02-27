@@ -19,9 +19,24 @@ const parseDateFromInput = (value) => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+const normalizeEditors = (projectData) => {
+  const list = [];
+  if (Array.isArray(projectData?.editors)) {
+    list.push(...projectData.editors);
+  }
+  if (projectData?.editor && projectData.editor !== 'Unassigned') {
+    list.push(projectData.editor);
+  }
+  return Array.from(new Set(list.filter(Boolean)));
+};
+
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [localProject, setLocalProject] = useState(project);
+  const [localProject, setLocalProject] = useState({
+    ...project,
+    editors: normalizeEditors(project),
+    editor: normalizeEditors(project)[0] || 'Unassigned'
+  });
   const [isFetchingMetrics, setIsFetchingMetrics] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [newTaskText, setNewTaskText] = useState('');
@@ -41,7 +56,12 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
   // Sync prop changes
   useEffect(() => {
-    setLocalProject(project);
+    const normalizedEditors = normalizeEditors(project);
+    setLocalProject({
+      ...project,
+      editors: normalizedEditors,
+      editor: normalizedEditors[0] || 'Unassigned'
+    });
   }, [project]);
 
   // ESC key to close modal
@@ -125,6 +145,18 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     }
   };
 
+  const updateProjectEditors = (nextEditors) => {
+    const sanitizedEditors = Array.from(new Set((nextEditors || []).filter(Boolean)));
+    const updated = {
+      ...localProject,
+      editors: sanitizedEditors,
+      editor: sanitizedEditors[0] || 'Unassigned',
+      lastUpdated: Date.now()
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
   const updateProjectDateField = (field, value) => {
     const parsedValue = parseDateFromInput(value);
     const updated = {
@@ -202,7 +234,8 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
       // Notify project team (excluding self and already-mentioned)
       const mentionNames = mentions.map(m => m.toLowerCase());
-      [localProject.creator, localProject.editor].forEach(teamMember => {
+      const projectEditors = normalizeEditors(localProject);
+      [localProject.creator, ...projectEditors].forEach(teamMember => {
         const user = users.find(u => u.name === teamMember);
         if (user && user.id !== currentUser.id && !mentionNames.includes(user.name.toLowerCase())) {
           onNotification({
@@ -344,20 +377,46 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 {creators.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
               </select>
 
-              {/* Editor Assessment */}
-              <select
-                value={localProject.editor}
-                onChange={(e) => {
-                  const updated = { ...localProject, editor: e.target.value };
-                  setLocalProject(updated);
-                  onUpdate(updated);
-                }}
-                aria-label="Assign editor"
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="Unassigned">No Editor</option>
-                {editors.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-              </select>
+              {/* Editors Assignment (Multi) */}
+              <div className="flex items-center gap-2 bg-[#252525] border border-[#333] rounded-lg px-2 py-1.5 min-w-[220px]">
+                <span className="text-[10px] uppercase tracking-wider text-[#888]">Editors</span>
+                <div className="flex flex-wrap gap-1 max-w-[180px]">
+                  {normalizeEditors(localProject).length === 0 && (
+                    <span className="text-[10px] text-[#777]">None</span>
+                  )}
+                  {normalizeEditors(localProject).map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => updateProjectEditors(normalizeEditors(localProject).filter((editorName) => editorName !== name))}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/40 text-[10px] text-indigo-300 hover:bg-indigo-500/30"
+                      title={`Remove ${name}`}
+                    >
+                      {name}
+                      <X size={10} />
+                    </button>
+                  ))}
+                </div>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selectedEditor = e.target.value;
+                    if (!selectedEditor) return;
+                    updateProjectEditors([...normalizeEditors(localProject), selectedEditor]);
+                  }}
+                  aria-label="Add editor"
+                  className="ml-auto bg-[#1f1f1f] border border-[#333] text-white text-[10px] rounded px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">+ Add</option>
+                  {editors
+                    .filter((u) => !normalizeEditors(localProject).includes(u.name))
+                    .map((u) => (
+                      <option key={u.id} value={u.name}>
+                        {u.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
 
               {/* Priority Selector */}
               <select

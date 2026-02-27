@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User } from 'lucide-react';
+import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User, Plus } from 'lucide-react';
 
 const PRODUCTION_DATE_FIELDS = [
     { key: 'shootDate', short: 'SH', label: 'Shoot' },
@@ -8,7 +8,7 @@ const PRODUCTION_DATE_FIELDS = [
     { key: 'uploadDoneDate', short: 'UP', label: 'Upload/Done' }
 ];
 
-const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDeleteProject }) => {
+const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, searchQuery, onDeleteProject }) => {
     const [filter, setFilter] = useState('all');
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [selectedCreator, setSelectedCreator] = useState('all');
@@ -53,6 +53,16 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
         return date.toLocaleString('default', { month: 'long', year: 'numeric' });
     };
 
+    const getProjectEditors = (project) => {
+        if (Array.isArray(project.editors) && project.editors.length > 0) {
+            return project.editors.filter(Boolean);
+        }
+        if (project.editor && project.editor !== 'Unassigned') {
+            return [project.editor];
+        }
+        return [];
+    };
+
     const getChannelName = (project) => {
         if (project.channelId) {
             const channel = channels.find(c => c.id === project.channelId);
@@ -77,6 +87,40 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
             ...field,
             value: project[field.key]
         }));
+    };
+
+    const handleCreateNew = () => {
+        if (!onCreateProject) return;
+        const newProject = {
+            id: `PRJ-${Date.now().toString().slice(-4)}`,
+            title: 'New Untitled Project',
+            topic: 'To be decided',
+            vertical: Vertical.Software,
+            platform: Platform.YouTube,
+            role: 'manager',
+            creator: 'Unassigned',
+            editor: 'Unassigned',
+            editors: [],
+            stage: Stage.Backlog,
+            status: Status.NotStarted,
+            priority: Priority.Medium,
+            lastUpdated: Date.now(),
+            dueDate: Date.now(),
+            shootDate: null,
+            editDate: null,
+            uploadDoneDate: null,
+            reshootDone: false,
+            reshootDate: null,
+            durationMinutes: 0,
+            script: '',
+            tasks: [],
+            technicalNotes: '',
+            comments: [],
+            hasMographNeeds: false,
+            archived: false
+        };
+        onCreateProject(newProject);
+        onSelectProject(newProject);
     };
 
     const sortedProjects = useMemo(() => {
@@ -268,6 +312,14 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                             <LayoutGrid size={16} />
                         </button>
                     </div>
+
+                    <button
+                        onClick={handleCreateNew}
+                        className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20"
+                    >
+                        <Plus size={15} />
+                        <span>New Project</span>
+                    </button>
                 </div>
             </div>
 
@@ -344,13 +396,18 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                             <div className="w-6 h-6 rounded-full bg-indigo-900 border border-[#1e1e1e] flex items-center justify-center text-[10px] text-indigo-300 font-bold" title={`Creator: ${project.creator || 'Unassigned'}`}>
                                                 {project.creator?.charAt(0) || '?'}
                                             </div>
-                                            {project.editor && project.editor !== 'Unassigned' && (
-                                                <div className="w-6 h-6 rounded-full bg-[#333] border border-[#1e1e1e] flex items-center justify-center text-[10px] text-[#999] font-bold" title={`Editor: ${project.editor}`}>
-                                                    {project.editor?.charAt(0) || '?'}
+                                            {getProjectEditors(project).slice(0, 2).map((editorName) => (
+                                                <div key={editorName} className="w-6 h-6 rounded-full bg-[#333] border border-[#1e1e1e] flex items-center justify-center text-[10px] text-[#999] font-bold" title={`Editor: ${editorName}`}>
+                                                    {editorName?.charAt(0) || '?'}
+                                                </div>
+                                            ))}
+                                            {getProjectEditors(project).length > 2 && (
+                                                <div className="w-6 h-6 rounded-full bg-[#2b2b2b] border border-[#1e1e1e] flex items-center justify-center text-[10px] text-[#bbb] font-bold" title={getProjectEditors(project).slice(2).join(', ')}>
+                                                    +{getProjectEditors(project).length - 2}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="text-[10px] text-[#999] mt-1">{project.creator || 'Unassigned'} &bull; {project.editor || 'Unassigned'}</div>
+                                        <div className="text-[10px] text-[#999] mt-1">{project.creator || 'Unassigned'} &bull; {getProjectEditors(project).join(', ') || 'Unassigned'}</div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center space-x-2">
@@ -462,9 +519,14 @@ const ProjectList = ({ projects, channels, onSelectProject, searchQuery, onDelet
                                             <div className="w-5 h-5 rounded-full bg-indigo-900 border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={project.creator || 'Unassigned'}>
                                                 {project.creator?.charAt(0) || '?'}
                                             </div>
-                                            {project.editor && project.editor !== 'Unassigned' && (
-                                                <div className="w-5 h-5 rounded-full bg-[#333] border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={project.editor}>
-                                                    {project.editor?.charAt(0) || '?'}
+                                            {getProjectEditors(project).slice(0, 2).map((editorName) => (
+                                                <div key={editorName} className="w-5 h-5 rounded-full bg-[#333] border border-[#191919] flex items-center justify-center text-[9px] text-white font-bold" title={editorName}>
+                                                    {editorName?.charAt(0) || '?'}
+                                                </div>
+                                            ))}
+                                            {getProjectEditors(project).length > 2 && (
+                                                <div className="w-5 h-5 rounded-full bg-[#2b2b2b] border border-[#191919] flex items-center justify-center text-[8px] text-white font-bold" title={getProjectEditors(project).slice(2).join(', ')}>
+                                                    +{getProjectEditors(project).length - 2}
                                                 </div>
                                             )}
                                         </div>

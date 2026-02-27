@@ -213,7 +213,8 @@ export const logProjectAction = (action, project, user) => {
       stage: project.stage,
       status: project.status,
       creator: project.creator,
-      editor: project.editor
+      editor: project.editor,
+      editors: Array.isArray(project.editors) ? project.editors : []
     }
   });
 };
