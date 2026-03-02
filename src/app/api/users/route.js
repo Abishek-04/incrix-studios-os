@@ -4,6 +4,25 @@ import User from '@/models/User';
 import { hasPermission, PERMISSIONS, ROLES } from '@/config/permissions';
 import { logUserAction } from '@/utils/activityLogger';
 
+function normalizeRole(role) {
+  if (typeof role !== 'string') return '';
+  return role.trim().toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function serializeUser(user) {
+  const plain = user?.toObject ? user.toObject() : { ...user };
+  delete plain.password;
+  delete plain.refreshTokens;
+  return {
+    ...plain,
+    id: plain.id || String(plain._id)
+  };
+}
+
 /**
  * GET /api/users
  * Get all users (with role-based filtering)
@@ -52,14 +71,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      users: users.map((u) => {
-        const plain = u.toObject();
-        return {
-          ...plain,
-          // Backward compatibility for legacy rows that don't have custom `id`
-          id: plain.id || String(plain._id)
-        };
-      })
+      users: users.map((u) => serializeUser(u))
     });
   } catch (error) {
     console.error('[API] Error fetching users:', error);
@@ -82,7 +94,7 @@ export async function POST(request) {
     const { currentUser, userData } = body;
 
     // Permission check
-    if (!currentUser || !hasPermission(currentUser.role, PERMISSIONS.CREATE_USERS)) {
+    if (!currentUser || !hasPermission(normalizeRole(currentUser.role), PERMISSIONS.CREATE_USERS)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 403 }
@@ -90,7 +102,9 @@ export async function POST(request) {
     }
 
     // Validate required fields
-    if (!userData.name || !userData.email || !userData.role || !userData.password) {
+    const normalizedEmail = normalizeEmail(userData.email);
+
+    if (!userData.name || !normalizedEmail || !userData.role || !userData.password) {
       return NextResponse.json(
         { success: false, error: 'Name, email, role, and password are required' },
         { status: 400 }
@@ -105,7 +119,7 @@ export async function POST(request) {
     }
 
     // Check if email already exists
-    const existingUser = await User.findOne({ email: userData.email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return NextResponse.json(
         { success: false, error: 'Email already exists' },
@@ -117,7 +131,7 @@ export async function POST(request) {
     const newUser = await User.create({
       id: userData.id || `user-${Date.now()}`,
       name: userData.name,
-      email: userData.email,
+      email: normalizedEmail,
       password: userData.password,
       phoneNumber: userData.phoneNumber,
       role: userData.role,
@@ -129,11 +143,11 @@ export async function POST(request) {
     });
 
     // Log activity
-    logUserAction('created', newUser.toObject(), currentUser);
+    logUserAction('created', serializeUser(newUser), currentUser);
 
     return NextResponse.json({
       success: true,
-      user: newUser.toObject()
+      user: serializeUser(newUser)
     });
   } catch (error) {
     console.error('[API] Error creating user:', error);

@@ -28,6 +28,10 @@ function normalizeRole(role) {
   return role.trim().toLowerCase();
 }
 
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
 function buildUserLookup(id) {
   if (mongoose.Types.ObjectId.isValid(id)) {
     return {
@@ -40,6 +44,31 @@ function buildUserLookup(id) {
   return { id };
 }
 
+function isSameUserIdentifier(user, candidateId) {
+  if (!user || !candidateId) return false;
+  const normalizedCandidate = String(candidateId);
+  return normalizedCandidate === String(user.id || '') || normalizedCandidate === String(user._id || '');
+}
+
+function serializeUser(user) {
+  const plain = user?.toObject ? user.toObject() : { ...user };
+  delete plain.password;
+  delete plain.refreshTokens;
+  return {
+    ...plain,
+    id: plain.id || String(plain._id)
+  };
+}
+
+function serializeUserForRecycle(user) {
+  const plain = user?.toObject ? user.toObject() : { ...user };
+  delete plain.refreshTokens;
+  if (!plain.id && plain._id) {
+    plain.id = String(plain._id);
+  }
+  return plain;
+}
+
 /**
  * GET /api/users/[id]
  * Get a specific user
@@ -48,7 +77,7 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const user = await User.findOne(buildUserLookup(id)).select('-password');
 
     if (!user) {
@@ -60,10 +89,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      user: {
-        ...user.toObject(),
-        id: user.id || String(user._id)
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('[API] Error fetching user:', error);
@@ -82,7 +108,7 @@ export async function PATCH(request, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { currentUser, updates: rawUpdates } = body;
     const updates = rawUpdates || {};
@@ -91,8 +117,8 @@ export async function PATCH(request, { params }) {
     delete safeUpdatesForLogs.newPassword;
 
     // Permission check: Users can edit themselves, or need EDIT_USERS permission to edit others
-    const isEditingSelf = currentUser && currentUser.id === id;
-    const hasEditPermission = currentUser && hasPermission(currentUser.role, PERMISSIONS.EDIT_USERS);
+    const isEditingSelf = currentUser && (currentUser.id === id || currentUser._id === id);
+    const hasEditPermission = currentUser && hasPermission(normalizeRole(currentUser.role), PERMISSIONS.EDIT_USERS);
 
     if (!currentUser || (!isEditingSelf && !hasEditPermission)) {
       return NextResponse.json(
@@ -155,6 +181,25 @@ export async function PATCH(request, { params }) {
       user.password = updates.newPassword;
     }
 
+    // Normalize and validate email updates
+    if (typeof updates.email === 'string') {
+      const normalizedEmail = normalizeEmail(updates.email);
+      if (!normalizedEmail) {
+        return NextResponse.json(
+          { success: false, error: 'Email cannot be empty' },
+          { status: 400 }
+        );
+      }
+      const existingWithEmail = await User.findOne({ email: normalizedEmail }).select('_id');
+      if (existingWithEmail && String(existingWithEmail._id) !== String(user._id)) {
+        return NextResponse.json(
+          { success: false, error: 'Email already exists' },
+          { status: 400 }
+        );
+      }
+      updates.email = normalizedEmail;
+    }
+
     // Update fields
     const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
     Object.keys(updates).forEach(key => {
@@ -170,7 +215,7 @@ export async function PATCH(request, { params }) {
     const actionType = updates.role ? 'role_changed' :
                        updates.isActive !== undefined ? (updates.isActive ? 'activated' : 'deactivated') :
                        'updated';
-    logUserAction(actionType, user.toObject(), currentUser);
+    logUserAction(actionType, serializeUser(user), currentUser);
 
     // Enhanced activity logging
     if (isEditingSelf) {
@@ -190,7 +235,7 @@ export async function PATCH(request, { params }) {
     } else {
       // Admin updating another user
       await logUserUpdated(
-        user.toObject(),
+        serializeUser(user),
         currentUser,
         requestedPasswordChange
           ? { ...safeUpdatesForLogs, passwordChanged: true }
@@ -200,10 +245,7 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      user: {
-        ...user.toObject(),
-        id: user.id || String(user._id)
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('[API] Error updating user:', error);
@@ -222,7 +264,7 @@ export async function DELETE(request, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const body = await request.json().catch(() => ({}));
     const actor = body?.currentUser || {};
@@ -245,9 +287,9 @@ export async function DELETE(request, { params }) {
     }
 
     // Find and delete user (fallback to unique email for legacy/mismatched client ids)
-    let user = await User.findOne(buildUserLookup(id));
+    let user = await User.findOne(buildUserLookup(id)).select('+password');
     if (!user && targetUser?.email) {
-      user = await User.findOne({ email: targetUser.email });
+      user = await User.findOne({ email: targetUser.email }).select('+password');
     }
     if (!user) {
       return NextResponse.json(
@@ -260,7 +302,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Guard: prevent deleting currently logged-in account
-    if (actorId && (actorId === user.id || actorId === String(user._id))) {
+    if (actorId && isSameUserIdentifier(user, actorId)) {
       return NextResponse.json(
         { success: false, error: 'You cannot delete your own account while logged in.' },
         { status: 400 }
@@ -273,7 +315,7 @@ export async function DELETE(request, { params }) {
       entityId: user.id || String(user._id),
       source: 'users_api',
       deletedBy: currentUserRole || 'system',
-      data: user.toObject(),
+      data: serializeUserForRecycle(user),
       expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
     });
 
@@ -281,7 +323,7 @@ export async function DELETE(request, { params }) {
 
     // Log activity
     const currentUser = { id: 'system', name: 'System', role: currentUserRole };
-    logUserAction('deleted', user.toObject(), currentUser);
+    logUserAction('deleted', serializeUser(user), currentUser);
 
     return NextResponse.json({
       success: true,

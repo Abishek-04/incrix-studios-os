@@ -7,6 +7,21 @@ import Channel from '@/models/Channel';
 import DailyTask from '@/models/DailyTask';
 import User from '@/models/User';
 import AutomationRule from '@/models/AutomationRule';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+function buildUserLookup(id) {
+  if (!id) return null;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return {
+      $or: [
+        { id },
+        { _id: new mongoose.Types.ObjectId(id) }
+      ]
+    };
+  }
+  return { id };
+}
 
 const RESTORE_HANDLERS = {
   project: async (item) => {
@@ -31,7 +46,15 @@ const RESTORE_HANDLERS = {
     const data = { ...item.data };
     delete data._id;
     delete data.__v;
-    await User.updateOne({ id: item.entityId }, { $set: data }, { upsert: true });
+    if (!data.id) {
+      data.id = item.entityId;
+    }
+    if (!data.password) {
+      // Legacy snapshots may not include password; generate a secure temporary hash.
+      const tempPassword = `Tmp#${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+      data.password = await bcrypt.hash(tempPassword, 12);
+    }
+    await User.updateOne(buildUserLookup(item.entityId), { $set: data }, { upsert: true });
   },
   automation_rule: async (item) => {
     const data = { ...item.data };

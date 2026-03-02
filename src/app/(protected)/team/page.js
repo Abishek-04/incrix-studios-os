@@ -60,8 +60,12 @@ export default function UserManagementPage() {
 
       const data = await response.json();
       if (data.success) {
-        setUsers(users.map(u => u.id === userId ? data.user : u));
-        if (currentUser?.id === userId) {
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            (u.id || u._id) === userId ? data.user : u
+          )
+        );
+        if ((currentUser?.id || currentUser?._id) === userId) {
           setCurrentUser(data.user);
           localStorage.setItem('auth_user', JSON.stringify(data.user));
         }
@@ -90,7 +94,9 @@ export default function UserManagementPage() {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        setUsers(users.filter(u => u.id !== userId));
+        setUsers((prevUsers) =>
+          prevUsers.filter((u) => (u.id || u._id) !== userId)
+        );
         if (data.deletedItemId && deletedUser) {
           setUndoDelete({
             deletedItemId: data.deletedItemId,
