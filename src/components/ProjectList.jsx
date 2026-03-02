@@ -187,7 +187,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     }, [projects, filter, selectedMonth, selectedCreator, searchQuery, sortBy, sortOrder]);
 
     return (
-        <div className="p-8 h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-4 md:p-8 md:h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">
@@ -323,7 +323,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#1e1e1e] border border-[#2f2f2f] rounded-2xl overflow-hidden overflow-y-auto">
+            <div className="md:flex-1 md:bg-[#1e1e1e] md:border md:border-[#2f2f2f] md:rounded-2xl md:overflow-hidden md:overflow-y-auto">
                 {/* Table View */}
                 {viewMode === 'table' && (
                     <table className="w-full text-left border-collapse">
@@ -456,7 +456,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
 
                 {/* Card View (mobile-friendly) */}
                 {viewMode === 'cards' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:p-4">
                         {sortedProjects.map(project => (
                             <div
                                 key={project.id}
