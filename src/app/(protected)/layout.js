@@ -23,7 +23,9 @@ import {
   Code,
   Instagram,
   BarChart3,
-  Trash2
+  Trash2,
+  MoreHorizontal,
+  X
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 import AccountSwitcher from '@/components/dev/AccountSwitcher';
@@ -36,6 +38,7 @@ export default function ProtectedLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Check authentication
   useEffect(() => {
@@ -46,6 +49,10 @@ export default function ProtectedLayout({ children }) {
       setCurrentUser(JSON.parse(user));
     }
   }, [router]);
+
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [pathname]);
 
   if (!currentUser) return null;
 
@@ -60,10 +67,67 @@ export default function ProtectedLayout({ children }) {
   };
 
   const isActive = (path) => pathname === path;
+  const isRouteActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
   const userRoles = Array.isArray(currentUser.roles) && currentUser.roles.length > 0
     ? currentUser.roles
     : [currentUser.role].filter(Boolean);
   const hasAnyRole = (roles) => roles.some((role) => userRoles.includes(role));
+  const roleLabel = userRoles.length > 1 ? `${currentUser.role} +${userRoles.length - 1}` : currentUser.role;
+  const headerTitleMap = {
+    '/dashboard': 'Dashboard',
+    '/projects': 'Projects Registry',
+    '/board': 'Production Board',
+    '/calendar': 'Content Calendar',
+    '/daily': 'Daily Tasks',
+    '/performance': 'Team Performance',
+    '/analytics': 'Platform Analytics',
+    '/design-projects': 'Design Projects',
+    '/dev-projects': 'Development Projects',
+    '/team': 'User Management',
+    '/channels': 'Channel Credentials',
+    '/instagram': 'Instagram DM Automation',
+    '/settings/notifications': 'Notification Settings',
+    '/recycle-bin': 'Recycle Bin',
+    '/admin/notifications': 'Notification Management'
+  };
+  const pageTitle = headerTitleMap[pathname] || 'Incrix Studios';
+  const mobileQuickNav = [
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+    { href: '/projects', icon: ListChecks, label: 'Projects' },
+    { href: '/board', icon: FolderKanban, label: 'Board' },
+    { href: '/daily', icon: CheckSquare, label: 'Tasks' }
+  ];
+
+  const mobileMenuSections = [
+    {
+      title: 'Planning',
+      items: [
+        { href: '/calendar', icon: CalendarIcon, label: 'Calendar' },
+        { href: '/settings/notifications', icon: SettingsIcon, label: 'Settings' }
+      ]
+    },
+    {
+      title: 'Production',
+      items: [
+        ...(hasAnyRole(['manager', 'creator', 'editor']) ? [{ href: '/performance', icon: TrendingUp, label: 'Performance' }] : []),
+        ...(hasAnyRole(['manager', 'designer']) ? [{ href: '/design-projects', icon: Palette, label: 'Design Projects' }] : []),
+        ...(hasAnyRole(['manager', 'developer']) ? [{ href: '/dev-projects', icon: Code, label: 'Dev Projects' }] : [])
+      ]
+    },
+    {
+      title: 'Admin',
+      items: [
+        ...(hasAnyRole(['superadmin']) ? [{ href: '/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+        ...(hasAnyRole(['superadmin', 'manager']) ? [
+          { href: '/team', icon: Users, label: 'Users' },
+          { href: '/channels', icon: Radio, label: 'Channels' },
+          { href: '/instagram', icon: Instagram, label: 'Instagram' },
+          { href: '/admin/notifications', icon: Bell, label: 'Notifications' }
+        ] : []),
+        { href: '/recycle-bin', icon: Trash2, label: 'Recycle Bin' }
+      ]
+    }
+  ].filter((section) => section.items.length > 0);
 
   return (
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
@@ -179,24 +243,11 @@ export default function ProtectedLayout({ children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-[#0d0d0d] border-b border-[#1f1f1f] flex items-center justify-between px-8 flex-shrink-0">
-          <h2 className="text-lg font-bold text-white truncate">
-            {pathname === '/dashboard' && 'Dashboard'}
-            {pathname === '/projects' && 'Projects Registry'}
-            {pathname === '/board' && 'Production Board'}
-            {pathname === '/calendar' && 'Content Calendar'}
-            {pathname === '/daily' && 'Daily Tasks'}
-            {pathname === '/performance' && 'Team Performance'}
-            {pathname === '/analytics' && 'Platform Analytics'}
-            {pathname === '/design-projects' && 'Design Projects'}
-            {pathname === '/dev-projects' && 'Development Projects'}
-            {pathname === '/team' && 'User Management'}
-            {pathname === '/channels' && 'Channel Credentials'}
-            {pathname === '/instagram' && 'Instagram DM Automation'}
-            {pathname === '/settings/notifications' && 'Notification Settings'}
-            {pathname === '/recycle-bin' && 'Recycle Bin'}
-            {pathname === '/admin/notifications' && 'Notification Management'}
-          </h2>
+        <header className="h-16 bg-[#0d0d0d] border-b border-[#1f1f1f] flex items-center justify-between px-4 sm:px-6 md:px-8 flex-shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-base md:text-lg font-bold text-white truncate">{pageTitle}</h2>
+            <div className="md:hidden text-[11px] text-[#666] capitalize truncate">{roleLabel}</div>
+          </div>
 
           {/* Search */}
           <div className="hidden lg:flex items-center bg-[#151515] border border-[#222] rounded-xl px-3 py-1.5 w-64 mx-8">
@@ -211,8 +262,8 @@ export default function ProtectedLayout({ children }) {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-4">
-            <button className="p-2 text-[#666] hover:text-white rounded-lg hover:bg-[#1f1f1f] transition-colors">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
+            <button className="hidden md:inline-flex p-2 text-[#666] hover:text-white rounded-lg hover:bg-[#1f1f1f] transition-colors">
               <SettingsIcon size={20} />
             </button>
 
@@ -235,8 +286,8 @@ export default function ProtectedLayout({ children }) {
               )}
             </div>
 
-            <div className="h-4 w-[1px] bg-[#333]"></div>
-            <div className="flex items-center space-x-2 text-sm text-[#666]">
+            <div className="hidden md:block h-4 w-[1px] bg-[#333]"></div>
+            <div className="hidden md:flex items-center space-x-2 text-sm text-[#666]">
               <Clock size={14} />
               <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
@@ -244,10 +295,100 @@ export default function ProtectedLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-[88px] md:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[#2a2a2a] bg-[#0e0e0e]/95 backdrop-blur-xl">
+        <div className="grid grid-cols-5 px-2 py-2">
+          {mobileQuickNav.map((item) => {
+            const Icon = item.icon;
+            const active = isRouteActive(item.href);
+            return (
+              <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center">
+                <div className={`w-full max-w-[72px] rounded-xl py-1.5 flex flex-col items-center gap-1 transition-colors ${
+                  active ? 'bg-indigo-500/15 text-indigo-300' : 'text-[#888] hover:text-white'
+                }`}>
+                  <Icon size={17} />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setShowMobileMenu((prev) => !prev)}
+            className="flex flex-col items-center justify-center"
+            aria-label="Open more navigation options"
+          >
+            <div className={`w-full max-w-[72px] rounded-xl py-1.5 flex flex-col items-center gap-1 transition-colors ${
+              showMobileMenu ? 'bg-indigo-500/15 text-indigo-300' : 'text-[#888] hover:text-white'
+            }`}>
+              <MoreHorizontal size={17} />
+              <span className="text-[10px] font-medium">More</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Grouped Menu Sheet */}
+      {showMobileMenu && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" onClick={() => setShowMobileMenu(false)}>
+          <div className="absolute bottom-0 left-0 right-0 bg-[#121212] border-t border-[#2a2a2a] rounded-t-2xl max-h-[78vh] overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Quick Menu</h3>
+                <p className="text-xs text-[#777]">Paired sections for mobile navigation</p>
+              </div>
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="p-2 rounded-lg text-[#888] hover:text-white hover:bg-[#222]"
+                aria-label="Close menu"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {mobileMenuSections.map((section) => (
+                <div key={section.title}>
+                  <div className="text-[11px] font-semibold text-[#777] uppercase tracking-wider mb-2">{section.title}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = isRouteActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-colors ${
+                            active
+                              ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300'
+                              : 'bg-[#181818] border-[#2a2a2a] text-[#bbb] hover:text-white'
+                          }`}
+                        >
+                          <Icon size={16} />
+                          <span className="text-xs font-medium">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 text-rose-300 py-2.5 text-sm font-medium"
+            >
+              <LogOut size={15} />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Development Account Switcher */}
       <AccountSwitcher />

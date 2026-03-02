@@ -86,10 +86,15 @@ const AccountSwitcher = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isVisible, setIsVisible] = useState(true);
   const [isLocalhost, setIsLocalhost] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   useEffect(() => {
     const host = window.location.hostname;
     setIsLocalhost(host === 'localhost' || host === '127.0.0.1' || host === '::1');
+    setIsMobileViewport(window.innerWidth < 768);
+
+    const onResize = () => setIsMobileViewport(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
 
     // Load current user from localStorage
     const savedUser = localStorage.getItem('auth_user');
@@ -103,6 +108,8 @@ const AccountSwitcher = () => {
       // Default to Super Admin for testing
       switchToAccount(TEST_ACCOUNTS[0]);
     }
+
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const switchToAccount = (account) => {
@@ -118,6 +125,8 @@ const AccountSwitcher = () => {
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
   };
+
+  if (isMobileViewport) return null;
 
   if (!isLocalhost || !isVisible) {
     // Show a small toggle button to bring it back if hidden
