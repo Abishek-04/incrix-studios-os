@@ -85,12 +85,12 @@ const AccountSwitcher = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isVisible, setIsVisible] = useState(true);
-
-  // Only show in development
-  const isDevelopment = process.env.NODE_ENV === 'development' ||
-                        process.env.NEXT_PUBLIC_ENV === 'development';
+  const [isLocalhost, setIsLocalhost] = useState(false);
 
   useEffect(() => {
+    const host = window.location.hostname;
+    setIsLocalhost(host === 'localhost' || host === '127.0.0.1' || host === '::1');
+
     // Load current user from localStorage
     const savedUser = localStorage.getItem('auth_user');
     if (savedUser) {
@@ -119,9 +119,9 @@ const AccountSwitcher = () => {
     setIsVisible(!isVisible);
   };
 
-  if (!isDevelopment || !isVisible) {
+  if (!isLocalhost || !isVisible) {
     // Show a small toggle button to bring it back if hidden
-    if (!isDevelopment) return null;
+    if (!isLocalhost) return null;
 
     return (
       <button
@@ -181,9 +181,9 @@ const AccountSwitcher = () => {
             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users size={20} className="text-white" />
-                <div>
+                  <div>
                   <div className="text-white font-bold">Account Switcher</div>
-                  <div className="text-xs text-purple-200">Development Only</div>
+                  <div className="text-xs text-purple-200">Localhost Only</div>
                 </div>
               </div>
               <button
