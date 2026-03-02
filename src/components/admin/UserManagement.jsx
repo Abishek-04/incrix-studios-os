@@ -96,11 +96,11 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
   return (
     <div className="h-full flex flex-col bg-[#0d0d0d]">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-[#1f1f1f] bg-[#151515] p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex-shrink-0 border-b border-[#1f1f1f] bg-[#151515] p-4 sm:p-6">
+        <div className="flex items-start sm:items-center justify-between mb-4 gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-              <Shield className="text-indigo-400" size={28} />
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 flex items-center gap-2">
+              <Shield className="text-indigo-400" size={24} />
               User Management
             </h1>
             <p className="text-sm text-[#999]">Manage team members, roles & permissions</p>
@@ -108,15 +108,15 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
 
           <button
             onClick={() => setShowNewUserModal(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
           >
             <UserPlus size={18} />
-            Add User
+            <span className="hidden sm:inline">Add User</span>
           </button>
         </div>
 
         {/* Filters Bar */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Search */}
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
@@ -129,29 +129,31 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             />
           </div>
 
-          {/* Role Filter */}
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
-          >
-            <option value="all">All Roles</option>
-            {Object.values(ROLES).map(role => {
-              const roleInfo = getRoleInfo(role);
-              return <option key={role} value={role}>{roleInfo.label}</option>;
-            })}
-          </select>
+          <div className="grid grid-cols-2 sm:flex gap-3">
+            {/* Role Filter */}
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
+            >
+              <option value="all">All Roles</option>
+              {Object.values(ROLES).map(role => {
+                const roleInfo = getRoleInfo(role);
+                return <option key={role} value={role}>{roleInfo.label}</option>;
+              })}
+            </select>
 
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
         </div>
 
         {/* Bulk Actions */}
@@ -195,7 +197,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
       {/* Content */}
       <div className="flex-1 overflow-hidden flex">
         {/* Role Stats Sidebar */}
-        <div className="w-64 border-r border-[#1f1f1f] bg-[#151515] p-4 overflow-y-auto">
+        <div className="hidden lg:block w-64 border-r border-[#1f1f1f] bg-[#151515] p-4 overflow-y-auto">
           <h3 className="text-sm font-semibold text-white mb-3">Team by Role</h3>
           <div className="space-y-2">
             {roleStats.map(stat => (
@@ -223,7 +225,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
         </div>
 
         {/* User List */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           <div className="max-w-5xl mx-auto">
             {filteredUsers.length === 0 ? (
               <div className="text-center py-12 text-[#666]">
@@ -322,63 +324,65 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
       exit={{ opacity: 0, y: 20 }}
       className={`bg-[#151515] border ${isSelected ? 'border-indigo-500' : 'border-[#1f1f1f]'} rounded-lg p-4 hover:border-[#2f2f2f] transition-all ${!isActive ? 'opacity-60' : ''}`}
     >
-      <div className="flex items-center gap-4">
-        {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={(e) => onSelect(e.target.checked)}
-          className="w-4 h-4 rounded bg-[#1a1a1a] border-[#333] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
-        />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start gap-3">
+          {/* Checkbox */}
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onSelect(e.target.checked)}
+            className="w-4 h-4 mt-1 rounded bg-[#1a1a1a] border-[#333] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+          />
 
-        {/* Avatar */}
-        <AvatarPreview user={user} className="w-12 h-12 rounded-full text-lg" />
+          {/* Avatar */}
+          <AvatarPreview user={user} className="w-11 h-11 sm:w-12 sm:h-12 rounded-full text-base sm:text-lg" />
 
-        {/* User Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-white">{user.name}</h3>
-            <span className={`px-2 py-0.5 text-xs rounded ${roleInfo.bgColor} ${roleInfo.color}`}>
-              {roleInfo.label} (Primary)
-            </span>
-            {!isActive && (
-              <span className="px-2 py-0.5 text-xs rounded bg-gray-500/20 text-gray-400">
-                Inactive
+          {/* User Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-white">{user.name}</h3>
+              <span className={`px-2 py-0.5 text-xs rounded ${roleInfo.bgColor} ${roleInfo.color}`}>
+                {roleInfo.label} (Primary)
               </span>
-            )}
-          </div>
-          {userRoles.length > 1 && (
-            <div className="flex flex-wrap gap-1 mb-1.5">
-              {userRoles
-                .filter((r) => r !== user.role)
-                .map((r) => {
-                  const info = getRoleInfo(r);
-                  return (
-                    <span key={r} className={`px-2 py-0.5 text-[10px] rounded ${info.bgColor} ${info.color}`}>
-                      {info.label}
-                    </span>
-                  );
-                })}
+              {!isActive && (
+                <span className="px-2 py-0.5 text-xs rounded bg-gray-500/20 text-gray-400">
+                  Inactive
+                </span>
+              )}
             </div>
-          )}
-          <div className="flex items-center gap-4 text-xs text-[#999]">
-            {user.email && (
-              <div className="flex items-center gap-1">
-                <Mail size={12} />
-                {user.email}
+            {userRoles.length > 1 && (
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                {userRoles
+                  .filter((r) => r !== user.role)
+                  .map((r) => {
+                    const info = getRoleInfo(r);
+                    return (
+                      <span key={r} className={`px-2 py-0.5 text-[10px] rounded ${info.bgColor} ${info.color}`}>
+                        {info.label}
+                      </span>
+                    );
+                  })}
               </div>
             )}
-            {user.phoneNumber && (
-              <div className="flex items-center gap-1">
-                <Phone size={12} />
-                {user.phoneNumber}
-              </div>
-            )}
+            <div className="space-y-1 text-xs text-[#999]">
+              {user.email && (
+                <div className="flex items-center gap-1 min-w-0">
+                  <Mail size={12} className="flex-shrink-0" />
+                  <span className="truncate">{user.email}</span>
+                </div>
+              )}
+              {user.phoneNumber && (
+                <div className="flex items-center gap-1">
+                  <Phone size={12} />
+                  {user.phoneNumber}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pl-0 sm:pl-7">
           <select
             value={user.role}
             onChange={(e) => onChangeRole(e.target.value)}
