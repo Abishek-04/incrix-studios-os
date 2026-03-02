@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import User from '@/models/User';
 import DeletedItem from '@/models/DeletedItem';
 import { v4 as uuidv4 } from 'uuid';
-import { hasPermission, PERMISSIONS } from '@/config/permissions';
+import { hasPermission, PERMISSIONS, ROLES } from '@/config/permissions';
 import { logUserAction } from '@/utils/activityLogger';
 import {
   logUserUpdated,
@@ -32,6 +32,19 @@ function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
+function normalizeRoles(roles, fallbackRole = '') {
+  const list = Array.isArray(roles) ? roles : [];
+  const normalized = list.map(normalizeRole).filter(Boolean);
+  if (normalized.length > 0) return Array.from(new Set(normalized));
+  const fallback = normalizeRole(fallbackRole);
+  return fallback ? [fallback] : [];
+}
+
+function validateRoles(roles) {
+  const allowedRoles = new Set(Object.values(ROLES));
+  return Array.isArray(roles) && roles.length > 0 && roles.every((role) => allowedRoles.has(role));
+}
+
 function buildUserLookup(id) {
   if (mongoose.Types.ObjectId.isValid(id)) {
     return {
@@ -56,7 +69,8 @@ function serializeUser(user) {
   delete plain.refreshTokens;
   return {
     ...plain,
-    id: plain.id || String(plain._id)
+    id: plain.id || String(plain._id),
+    roles: normalizeRoles(plain.roles, plain.role)
   };
 }
 
@@ -181,6 +195,28 @@ export async function PATCH(request, { params }) {
       user.password = updates.newPassword;
     }
 
+    // Normalize roles update (multi-role support)
+    if (updates.roles !== undefined || updates.role !== undefined) {
+      const nextRoles = normalizeRoles(
+        updates.roles,
+        updates.role || user.role
+      );
+      if (!nextRoles.length) {
+        return NextResponse.json(
+          { success: false, error: 'At least one role is required' },
+          { status: 400 }
+        );
+      }
+      if (!validateRoles(nextRoles)) {
+        return NextResponse.json(
+          { success: false, error: 'One or more selected roles are invalid' },
+          { status: 400 }
+        );
+      }
+      updates.roles = nextRoles;
+      updates.role = nextRoles[0];
+    }
+
     // Normalize and validate email updates
     if (typeof updates.email === 'string') {
       const normalizedEmail = normalizeEmail(updates.email);
@@ -201,7 +237,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Update fields
-    const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
+    const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
     Object.keys(updates).forEach(key => {
       if (allowedUpdates.includes(key)) {
         user[key] = updates[key];

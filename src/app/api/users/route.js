@@ -9,6 +9,14 @@ function normalizeRole(role) {
   return role.trim().toLowerCase().replace(/[\s_-]+/g, '');
 }
 
+function normalizeRoles(roles, fallbackRole = '') {
+  const list = Array.isArray(roles) ? roles : [];
+  const normalized = list.map(normalizeRole).filter(Boolean);
+  if (normalized.length > 0) return Array.from(new Set(normalized));
+  const fallback = normalizeRole(fallbackRole);
+  return fallback ? [fallback] : [];
+}
+
 function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
@@ -19,8 +27,14 @@ function serializeUser(user) {
   delete plain.refreshTokens;
   return {
     ...plain,
-    id: plain.id || String(plain._id)
+    id: plain.id || String(plain._id),
+    roles: normalizeRoles(plain.roles, plain.role)
   };
+}
+
+function validateRoles(roles) {
+  const allowedRoles = new Set(Object.values(ROLES));
+  return Array.isArray(roles) && roles.length > 0 && roles.every((role) => allowedRoles.has(role));
 }
 
 /**
@@ -40,24 +54,26 @@ export async function GET(request) {
     const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 5000) : 100;
 
     // Build query
-    let query = {};
+    const andConditions = [];
 
     if (role && role !== 'all') {
-      query.role = role;
+      andConditions.push({ $or: [{ role }, { roles: role }] });
     }
 
     if (status === 'active') {
-      query.isActive = { $ne: false };
+      andConditions.push({ isActive: { $ne: false } });
     } else if (status === 'inactive') {
-      query.isActive = false;
+      andConditions.push({ isActive: false });
     }
 
     if (search) {
-      query.$or = [
+      andConditions.push({ $or: [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } }
-      ];
+      ] });
     }
+
+    const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
     let userQuery = User.find(query)
       .select('-password') // Exclude password
@@ -104,9 +120,19 @@ export async function POST(request) {
     // Validate required fields
     const normalizedEmail = normalizeEmail(userData.email);
 
-    if (!userData.name || !normalizedEmail || !userData.role || !userData.password) {
+    const normalizedRoles = normalizeRoles(userData.roles, userData.role);
+    const primaryRole = normalizedRoles[0];
+
+    if (!userData.name || !normalizedEmail || !primaryRole || !userData.password) {
       return NextResponse.json(
-        { success: false, error: 'Name, email, role, and password are required' },
+        { success: false, error: 'Name, email, at least one role, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!validateRoles(normalizedRoles)) {
+      return NextResponse.json(
+        { success: false, error: 'One or more selected roles are invalid' },
         { status: 400 }
       );
     }
@@ -134,7 +160,8 @@ export async function POST(request) {
       email: normalizedEmail,
       password: userData.password,
       phoneNumber: userData.phoneNumber,
-      role: userData.role,
+      role: primaryRole,
+      roles: normalizedRoles,
       avatarColor: userData.avatarColor || 'bg-indigo-500',
       profilePhoto: userData.profilePhoto || '',
       isActive: userData.isActive !== false,

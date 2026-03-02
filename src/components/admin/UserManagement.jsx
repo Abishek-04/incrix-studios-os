@@ -35,6 +35,15 @@ const AvatarPreview = ({ user, className }) => {
   );
 };
 
+const getUserRoles = (user) => {
+  if (Array.isArray(user?.roles) && user.roles.length > 0) {
+    return Array.from(new Set(user.roles.filter(Boolean)));
+  }
+  return user?.role ? [user.role] : [];
+};
+
+const ALL_ROLES = Object.values(ROLES);
+
 const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onChangePassword }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -50,7 +59,8 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    const userRoles = getUserRoles(user);
+    const matchesRole = filterRole === 'all' || userRoles.includes(filterRole);
     const matchesStatus = filterStatus === 'all' ||
       (filterStatus === 'active' && user.isActive !== false) ||
       (filterStatus === 'inactive' && user.isActive === false);
@@ -61,12 +71,13 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
   // Get role statistics
   const roleStats = Object.values(ROLES).map(role => ({
     role,
-    count: users.filter(u => u.role === role).length,
+    count: users.filter(u => getUserRoles(u).includes(role)).length,
     ...getRoleInfo(role)
   }));
 
-  const handleChangeRole = (userId, newRole) => {
-    onUpdateUser(userId, { role: newRole });
+  const handleChangeRole = (user, newRole) => {
+    const existingRoles = getUserRoles(user).filter((r) => r !== newRole);
+    onUpdateUser(user.id || user._id, { role: newRole, roles: [newRole, ...existingRoles] });
   };
 
   const handleBulkAction = (action) => {
@@ -220,24 +231,27 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredUsers.map(user => (
-                  <UserCard
-                    key={user.id}
-                    user={user}
-                    isSelected={selectedUsers.includes(user.id)}
-                    onSelect={(selected) => {
-                      if (selected) {
-                        setSelectedUsers([...selectedUsers, user.id]);
-                      } else {
-                        setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                      }
-                    }}
-                    onEdit={() => setEditingUser(user)}
-                    onChangePassword={() => setPasswordUser(user)}
-                    onChangeRole={(newRole) => handleChangeRole(user.id, newRole)}
-                    onDelete={() => onDeleteUser(user)}
-                  />
-                ))}
+                {filteredUsers.map(user => {
+                  const userId = user.id || user._id;
+                  return (
+                    <UserCard
+                      key={userId}
+                      user={user}
+                      isSelected={selectedUsers.includes(userId)}
+                      onSelect={(selected) => {
+                        if (selected) {
+                          setSelectedUsers([...selectedUsers, userId]);
+                        } else {
+                          setSelectedUsers(selectedUsers.filter(id => id !== userId));
+                        }
+                      }}
+                      onEdit={() => setEditingUser(user)}
+                      onChangePassword={() => setPasswordUser(user)}
+                      onChangeRole={(newRole) => handleChangeRole(user, newRole)}
+                      onDelete={() => onDeleteUser(user)}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -267,7 +281,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             user={editingUser}
             onClose={() => setEditingUser(null)}
             onUpdate={(updates) => {
-              onUpdateUser(editingUser.id, updates);
+              onUpdateUser(editingUser.id || editingUser._id, updates);
               setEditingUser(null);
             }}
           />
@@ -281,7 +295,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             user={passwordUser}
             onClose={() => setPasswordUser(null)}
             onSubmit={async (passwordData) => {
-              const response = await onChangePassword?.(passwordUser.id, passwordData);
+              const response = await onChangePassword?.(passwordUser.id || passwordUser._id, passwordData);
               if (response?.success) {
                 setPasswordUser(null);
               }
@@ -296,9 +310,9 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
 
 // User Card Component
 const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChangeRole, onDelete }) => {
-  const [showMenu, setShowMenu] = useState(false);
   const roleInfo = getRoleInfo(user.role);
   const isActive = user.isActive !== false;
+  const userRoles = getUserRoles(user);
 
   return (
     <motion.div
@@ -325,7 +339,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-white">{user.name}</h3>
             <span className={`px-2 py-0.5 text-xs rounded ${roleInfo.bgColor} ${roleInfo.color}`}>
-              {roleInfo.label}
+              {roleInfo.label} (Primary)
             </span>
             {!isActive && (
               <span className="px-2 py-0.5 text-xs rounded bg-gray-500/20 text-gray-400">
@@ -333,6 +347,20 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
               </span>
             )}
           </div>
+          {userRoles.length > 1 && (
+            <div className="flex flex-wrap gap-1 mb-1.5">
+              {userRoles
+                .filter((r) => r !== user.role)
+                .map((r) => {
+                  const info = getRoleInfo(r);
+                  return (
+                    <span key={r} className={`px-2 py-0.5 text-[10px] rounded ${info.bgColor} ${info.color}`}>
+                      {info.label}
+                    </span>
+                  );
+                })}
+            </div>
+          )}
           <div className="flex items-center gap-4 text-xs text-[#999]">
             {user.email && (
               <div className="flex items-center gap-1">
@@ -415,7 +443,7 @@ const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
     typeof window !== 'undefined'
       ? JSON.parse(localStorage.getItem('auth_user') || 'null')
       : null;
-  const isSelf = currentUser?.id === user?.id;
+  const isSelf = (currentUser?.id || currentUser?._id) === (user?.id || user?._id);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -537,6 +565,7 @@ const NewUserModal = ({ onClose, onCreate }) => {
     phoneNumber: '',
     password: '',
     role: ROLES.DEVELOPER,
+    roles: [ROLES.DEVELOPER],
     isActive: true,
     avatarColor: 'bg-indigo-500',
     profilePhoto: ''
@@ -556,9 +585,14 @@ const NewUserModal = ({ onClose, onCreate }) => {
       setFormError('Passwords do not match.');
       return;
     }
+    if (!Array.isArray(formData.roles) || formData.roles.length === 0) {
+      setFormError('Select at least one role.');
+      return;
+    }
 
     const result = await onCreate({
       ...formData,
+      role: formData.roles[0],
       id: `user-${Date.now()}`,
       createdAt: Date.now()
     });
@@ -659,10 +693,17 @@ const NewUserModal = ({ onClose, onCreate }) => {
             <label className="block text-sm font-medium text-white mb-2">Role *</label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) => {
+                const nextRole = e.target.value;
+                setFormData({
+                  ...formData,
+                  role: nextRole,
+                  roles: Array.from(new Set([nextRole, ...formData.roles]))
+                });
+              }}
               className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             >
-              {Object.values(ROLES).map(role => {
+              {ALL_ROLES.map(role => {
                 const info = getRoleInfo(role);
                 return (
                   <option key={role} value={role}>
@@ -671,6 +712,36 @@ const NewUserModal = ({ onClose, onCreate }) => {
                 );
               })}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Additional Roles</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ALL_ROLES.map((role) => {
+                const info = getRoleInfo(role);
+                const checked = formData.roles.includes(role);
+                return (
+                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[#111] border border-[#2f2f2f] rounded px-2 py-1.5">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? Array.from(new Set([formData.role, ...formData.roles, role]))
+                          : formData.roles.filter((r) => r !== role);
+                        setFormData((prev) => ({
+                          ...prev,
+                          roles: next,
+                          role: next.includes(prev.role) ? prev.role : (next[0] || prev.role)
+                        }));
+                      }}
+                      className="w-3.5 h-3.5"
+                    />
+                    <span className={info.color}>{info.label}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div>
@@ -781,13 +852,20 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
     email: user.email || '',
     phoneNumber: user.phoneNumber || '',
     role: user.role,
+    roles: getUserRoles(user),
     isActive: user.isActive !== false,
     avatarColor: user.avatarColor || 'bg-indigo-500',
     profilePhoto: user.profilePhoto || ''
   });
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!Array.isArray(formData.roles) || formData.roles.length === 0) {
+      setFormError('Select at least one role.');
+      return;
+    }
+    setFormError('');
     onUpdate(formData);
   };
 
@@ -856,10 +934,17 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
             <label className="block text-sm font-medium text-white mb-2">Role *</label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) => {
+                const nextRole = e.target.value;
+                setFormData({
+                  ...formData,
+                  role: nextRole,
+                  roles: Array.from(new Set([nextRole, ...formData.roles]))
+                });
+              }}
               className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             >
-              {Object.values(ROLES).map(role => {
+              {ALL_ROLES.map(role => {
                 const info = getRoleInfo(role);
                 return (
                   <option key={role} value={role}>
@@ -868,6 +953,36 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                 );
               })}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Additional Roles</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ALL_ROLES.map((role) => {
+                const info = getRoleInfo(role);
+                const checked = formData.roles.includes(role);
+                return (
+                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[#111] border border-[#2f2f2f] rounded px-2 py-1.5">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? Array.from(new Set([formData.role, ...formData.roles, role]))
+                          : formData.roles.filter((r) => r !== role);
+                        setFormData((prev) => ({
+                          ...prev,
+                          roles: next,
+                          role: next.includes(prev.role) ? prev.role : (next[0] || prev.role)
+                        }));
+                      }}
+                      className="w-3.5 h-3.5"
+                    />
+                    <span className={info.color}>{info.label}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div>
@@ -943,6 +1058,12 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
               Active user
             </label>
           </div>
+
+          {formError && (
+            <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+              {formError}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 pt-4">
             <button

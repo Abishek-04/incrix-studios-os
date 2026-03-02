@@ -13,6 +13,12 @@ const UserSchema = new Schema(
       enum: ['superadmin', 'manager', 'creator', 'editor', 'designer', 'developer'],
       index: true
     },
+    roles: [
+      {
+        type: String,
+        enum: ['superadmin', 'manager', 'creator', 'editor', 'designer', 'developer']
+      }
+    ],
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true, select: false },
     phoneNumber: { type: String },
@@ -64,6 +70,16 @@ const UserSchema = new Schema(
 
 // Pre-save hook to hash password
 UserSchema.pre('save', async function() {
+  // Keep `role` (primary) and `roles` (all assigned roles) synchronized.
+  if (Array.isArray(this.roles) && this.roles.length > 0) {
+    this.roles = Array.from(new Set(this.roles.filter(Boolean)));
+    if (!this.role || !this.roles.includes(this.role)) {
+      this.role = this.roles[0];
+    }
+  } else if (this.role) {
+    this.roles = [this.role];
+  }
+
   if (!this.isModified('password')) return;
 
   const salt = await bcrypt.genSalt(12);
@@ -81,5 +97,10 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Create index for common queries
 UserSchema.index({ role: 1, isActive: 1 });
+
+// In development, the model can stay cached with an older schema after hot reload.
+if (mongoose.models.User && !mongoose.models.User.schema.path('roles')) {
+  delete mongoose.models.User;
+}
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

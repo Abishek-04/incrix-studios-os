@@ -102,8 +102,10 @@ export const HideIfNoPermission = ({ children, permission, permissions, requireA
 
 // Role-based Guard
 export const RoleGuard = ({ children, roles, currentUser, fallback, showFallback = true }) => {
-  const userRole = currentUser?.role;
-  const hasAccess = roles.includes(userRole);
+  const userRoles = Array.isArray(currentUser?.roles) && currentUser.roles.length > 0
+    ? currentUser.roles
+    : [currentUser?.role].filter(Boolean);
+  const hasAccess = roles.some((role) => userRoles.includes(role));
 
   if (!hasAccess) {
     if (fallback) return fallback;

@@ -60,6 +60,10 @@ export default function ProtectedLayout({ children }) {
   };
 
   const isActive = (path) => pathname === path;
+  const userRoles = Array.isArray(currentUser.roles) && currentUser.roles.length > 0
+    ? currentUser.roles
+    : [currentUser.role].filter(Boolean);
+  const hasAnyRole = (roles) => roles.some((role) => userRoles.includes(role));
 
   return (
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
@@ -99,22 +103,22 @@ export default function ProtectedLayout({ children }) {
               <NavItem href="/settings/notifications" icon={SettingsIcon} label="Settings" isActive={isActive('/settings/notifications')} collapsed={sidebarCollapsed} />
               <NavItem href="/recycle-bin" icon={Trash2} label="Recycle Bin" isActive={isActive('/recycle-bin')} collapsed={sidebarCollapsed} />
 
-              {['manager', 'creator', 'editor'].includes(currentUser.role) && (
+              {hasAnyRole(['manager', 'creator', 'editor']) && (
                 <NavItem href="/performance" icon={TrendingUp} label="Performance" isActive={isActive('/performance')} collapsed={sidebarCollapsed} />
               )}
 
-              {['manager', 'designer'].includes(currentUser.role) && (
+              {hasAnyRole(['manager', 'designer']) && (
                 <NavItem href="/design-projects" icon={Palette} label="Design Projects" isActive={isActive('/design-projects')} collapsed={sidebarCollapsed} />
               )}
 
-              {['manager', 'developer'].includes(currentUser.role) && (
+              {hasAnyRole(['manager', 'developer']) && (
                 <NavItem href="/dev-projects" icon={Code} label="Dev Projects" isActive={isActive('/dev-projects')} collapsed={sidebarCollapsed} />
               )}
 
-              {(currentUser.role === 'superadmin' || currentUser.role === 'manager') && (
+              {hasAnyRole(['superadmin', 'manager']) && (
                 <>
                   {!sidebarCollapsed && <div className="text-xs font-bold text-[#999] uppercase tracking-wider mt-6 mb-3 px-4">Admin</div>}
-                  {currentUser.role === 'superadmin' && (
+                  {hasAnyRole(['superadmin']) && (
                     <NavItem href="/analytics" icon={BarChart3} label="Analytics" isActive={isActive('/analytics')} collapsed={sidebarCollapsed} />
                   )}
                   <NavItem href="/team" icon={Users} label="Users" isActive={isActive('/team')} collapsed={sidebarCollapsed} />

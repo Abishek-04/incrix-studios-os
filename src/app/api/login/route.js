@@ -10,6 +10,13 @@ function isBcryptHash(value) {
   return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
+function normalizeRoles(roles, fallbackRole = '') {
+  if (Array.isArray(roles) && roles.length > 0) {
+    return Array.from(new Set(roles.filter(Boolean)));
+  }
+  return fallbackRole ? [fallbackRole] : [];
+}
+
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
@@ -84,6 +91,7 @@ export async function POST(request) {
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.refreshTokens;
+    userResponse.roles = normalizeRoles(userResponse.roles, userResponse.role);
 
     // Log successful login
     await logLogin(userResponse, ipAddress, userAgent);

@@ -190,10 +190,20 @@ export const FEATURE_ACCESS = {
 };
 
 // Permission Check Functions
+const normalizeRolesInput = (userRole) => {
+  if (Array.isArray(userRole)) {
+    return userRole.filter(Boolean);
+  }
+  return userRole ? [userRole] : [];
+};
+
 export const hasPermission = (userRole, permission) => {
   if (!userRole || !permission) return false;
-  const permissions = ROLE_PERMISSIONS[userRole] || [];
-  return permissions.includes(permission);
+  const roles = normalizeRolesInput(userRole);
+  return roles.some((role) => {
+    const permissions = ROLE_PERMISSIONS[role] || [];
+    return permissions.includes(permission);
+  });
 };
 
 export const hasAnyPermission = (userRole, permissions) => {
@@ -209,23 +219,28 @@ export const hasAllPermissions = (userRole, permissions) => {
 export const canAccessFeature = (userRole, feature) => {
   if (!userRole || !feature) return false;
   const allowedRoles = FEATURE_ACCESS[feature] || [];
-  return allowedRoles.includes(userRole);
+  const roles = normalizeRolesInput(userRole);
+  return roles.some((role) => allowedRoles.includes(role));
 };
 
 export const isSuperAdmin = (userRole) => {
-  return userRole === ROLES.SUPER_ADMIN;
+  const roles = normalizeRolesInput(userRole);
+  return roles.includes(ROLES.SUPER_ADMIN);
 };
 
 export const isManager = (userRole) => {
-  return userRole === ROLES.MANAGER || isSuperAdmin(userRole);
+  const roles = normalizeRolesInput(userRole);
+  return roles.includes(ROLES.MANAGER) || isSuperAdmin(userRole);
 };
 
 export const isContentRole = (userRole) => {
-  return [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.CREATOR, ROLES.EDITOR].includes(userRole);
+  const roles = normalizeRolesInput(userRole);
+  return roles.some((role) => [ROLES.SUPER_ADMIN, ROLES.MANAGER, ROLES.CREATOR, ROLES.EDITOR].includes(role));
 };
 
 export const isTaskOnlyRole = (userRole) => {
-  return [ROLES.DESIGNER, ROLES.DEVELOPER].includes(userRole);
+  const roles = normalizeRolesInput(userRole);
+  return roles.some((role) => [ROLES.DESIGNER, ROLES.DEVELOPER].includes(role));
 };
 
 // Get role display info
