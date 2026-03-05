@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
 import { logLogin, logLoginFailed } from '@/lib/services/activityLogger';
 
 function normalizeEmail(email) {
@@ -70,7 +71,9 @@ export async function POST(request) {
     let isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid && user.password && !isBcryptHash(user.password) && user.password === password) {
       isPasswordValid = true;
-      user.password = password;
+      // Hash the plaintext password before saving
+      const bcrypt = (await import('bcryptjs')).default;
+      user.password = await bcrypt.hash(password, 12);
       await user.save();
     }
 
@@ -82,6 +85,18 @@ export async function POST(request) {
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
       );
+    }
+
+    // Generate JWT tokens
+    const jwtAccessToken = generateAccessToken(user.id);
+    const jwtRefreshToken = generateRefreshToken(user.id);
+
+    // Store refresh token in user's token list
+    if (!user.refreshTokens) user.refreshTokens = [];
+    user.refreshTokens.push(jwtRefreshToken);
+    // Keep only last 5 refresh tokens to prevent unbounded growth
+    if (user.refreshTokens.length > 5) {
+      user.refreshTokens = user.refreshTokens.slice(-5);
     }
 
     user.lastActive = new Date();
@@ -98,7 +113,9 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      user: userResponse
+      user: userResponse,
+      accessToken: jwtAccessToken,
+      refreshToken: jwtRefreshToken,
     });
 
   } catch (error) {

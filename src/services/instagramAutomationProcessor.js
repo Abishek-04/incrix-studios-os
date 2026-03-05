@@ -50,13 +50,13 @@ export async function processCommentEvent(igUserId, commentData) {
   try {
     await connectDB();
 
-    // Find the channel by Instagram user ID
+    // Find the channel by Instagram user ID (include token fields for DM sending)
     const channel = await Channel.findOne({
       $or: [
         { igUserId },
         { igBusinessAccountId: igUserId },
       ]
-    });
+    }).select('+accessToken +fbPageAccessToken');
 
     if (!channel) {
       console.log(`[AutomationProcessor] Channel not found for IG user ${igUserId}`);
@@ -138,6 +138,11 @@ export async function processCommentEvent(igUserId, commentData) {
             dmStatus: 'keyword_filtered',
           });
 
+          await AutomationRule.updateOne(
+            { id: rule.id },
+            { $inc: { 'stats.totalTriggered': 1 } }
+          );
+
           results.push({ ruleId: rule.id, status: 'excluded_keyword' });
           continue;
         }
@@ -204,6 +209,11 @@ export async function processCommentEvent(igUserId, commentData) {
             commentText,
             dmStatus: 'rate_limited',
           });
+
+          await AutomationRule.updateOne(
+            { id: rule.id },
+            { $inc: { 'stats.totalTriggered': 1 } }
+          );
 
           results.push({ ruleId: rule.id, status: 'rate_limited' });
           continue;

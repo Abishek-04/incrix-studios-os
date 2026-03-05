@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 import AccountSwitcher from '@/components/dev/AccountSwitcher';
+import { UIProvider } from '@/contexts/UIContext';
 
 export default function ProtectedLayout({ children }) {
   const router = useRouter();
@@ -130,6 +131,7 @@ export default function ProtectedLayout({ children }) {
   ].filter((section) => section.items.length > 0);
 
   return (
+    <UIProvider>
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
       {/* Sidebar - Desktop */}
       <div className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col justify-between hidden md:flex transition-all duration-300`}>
@@ -393,6 +395,7 @@ export default function ProtectedLayout({ children }) {
       {/* Development Account Switcher */}
       <AccountSwitcher />
     </div>
+    </UIProvider>
   );
 }
 

@@ -66,12 +66,18 @@ async function processPendingDMs(results) {
 
   for (const job of pendingJobs) {
     try {
-      // Mark as processing to prevent duplicate execution
-      await PendingJob.updateOne(
+      // Atomically claim the job — prevents duplicate execution if cron runs concurrently
+      const claimed = await PendingJob.updateOne(
         { id: job.id, status: 'pending' },
         { $set: { status: 'processing' }, $inc: { attempts: 1 } }
       );
 
+      if (claimed.modifiedCount === 0) {
+        // Already claimed by another instance
+        continue;
+      }
+
+      const currentAttempt = (job.attempts || 0) + 1;
       const { recipientId, message, automationRuleId, logId, includeFiles } = job.payload;
 
       await executeDMSend(job.channelId, recipientId, message, {
@@ -90,7 +96,8 @@ async function processPendingDMs(results) {
     } catch (error) {
       console.error(`[Instagram Cron] Failed to send DM job ${job.id}:`, error.message);
 
-      const shouldRetry = job.attempts < job.maxAttempts;
+      const currentAttempt = (job.attempts || 0) + 1;
+      const shouldRetry = currentAttempt < (job.maxAttempts || 3);
 
       await PendingJob.updateOne(
         { id: job.id },
@@ -98,9 +105,8 @@ async function processPendingDMs(results) {
           $set: {
             status: shouldRetry ? 'pending' : 'failed',
             lastError: error.message,
-            // If retrying, delay by 30 seconds * attempt number
             ...(shouldRetry && {
-              executeAfter: new Date(Date.now() + 30000 * (job.attempts + 1)),
+              executeAfter: new Date(Date.now() + 30000 * currentAttempt),
             }),
           },
         }

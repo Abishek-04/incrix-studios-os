@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Instagram, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { fetchState } from '@/services/api';
+import { useConfirm } from '@/contexts/UIContext';
 import MediaBrowser from '@/components/instagram/MediaBrowser';
 import AutomationBuilder from '@/components/instagram/AutomationBuilder';
 import AnalyticsDashboard from '@/components/instagram/AnalyticsDashboard';
@@ -18,6 +19,7 @@ export default function InstagramPage() {
   const [activeTab, setActiveTab] = useState('automation');
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const confirmAction = useConfirm();
 
   useEffect(() => {
     loadData();
@@ -104,9 +106,8 @@ export default function InstagramPage() {
   }
 
   async function handleDisconnect(channelId) {
-    if (!confirm('Are you sure you want to disconnect this Instagram account?')) {
-      return;
-    }
+    const confirmed = await confirmAction('Disconnect Account?', 'Are you sure you want to disconnect this Instagram account?');
+    if (!confirmed) return;
 
     try {
       // Remove channel from state

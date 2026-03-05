@@ -55,30 +55,39 @@ export async function POST(request) {
     const signature = request.headers.get('x-hub-signature-256');
     const bodyText = await request.text();
 
-    // Verify signature in production
-    if (process.env.NODE_ENV === 'production') {
+    // Verify signature whenever secret and signature are available
+    if (APP_SECRET && signature) {
       if (!verifySignature(bodyText, signature)) {
         console.warn('[Instagram Webhook] Invalid signature');
         return new Response('Forbidden', { status: 403 });
       }
+    } else if (!signature && process.env.NODE_ENV === 'production') {
+      console.warn('[Instagram Webhook] Missing signature in production');
+      return new Response('Forbidden', { status: 403 });
     }
 
     const body = JSON.parse(bodyText);
 
-    console.log('[Instagram Webhook] Received event:', JSON.stringify(body, null, 2));
+    console.log('[Instagram Webhook] Received event:', body.object);
 
     // Handle Instagram object events
     if (body.object === 'instagram') {
       for (const entry of body.entry || []) {
-        // Handle comment events — process inline
+        // Handle comment events — process with timeout protection
         if (entry.changes) {
           for (const change of entry.changes) {
             if (change.field === 'comments') {
-              console.log('[Instagram Webhook] Comment event:', change.value);
+              console.log('[Instagram Webhook] Comment event from', entry.id);
 
               try {
                 const { processCommentEvent } = await import('@/services/instagramAutomationProcessor');
-                await processCommentEvent(entry.id, change.value);
+                // Timeout protection for Vercel serverless (8s limit to stay safe)
+                await Promise.race([
+                  processCommentEvent(entry.id, change.value),
+                  new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Processing timeout')), 8000)
+                  ),
+                ]);
               } catch (processingError) {
                 console.error('[Instagram Webhook] Comment processing error:', processingError.message);
                 // Don't throw — we still want to return 200 to Meta
@@ -90,9 +99,7 @@ export async function POST(request) {
         // Handle messaging events (DM delivery, read receipts)
         if (entry.messaging) {
           for (const event of entry.messaging) {
-            console.log('[Instagram Webhook] Messaging event:', event);
-            // Messaging events can be processed inline if needed
-            // For now, just log them — delivery receipts don't require action
+            console.log('[Instagram Webhook] Messaging event type:', Object.keys(event).join(','));
           }
         }
       }

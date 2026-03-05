@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Tv, Eye, EyeOff, Save, X, Globe, Share2, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Mail, User as UserIcon } from 'lucide-react';
+import { useConfirm } from '@/contexts/UIContext';
 
 const ManageChannels = ({ channels, users, onUpdateChannels, onDeleteChannel }) => {
+    const confirmAction = useConfirm();
     const [isAdding, setIsAdding] = useState(false);
     const [isDetecting, setIsDetecting] = useState(false);
     const [showCredentials, setShowCredentials] = useState({});
@@ -99,8 +101,9 @@ const ManageChannels = ({ channels, users, onUpdateChannels, onDeleteChannel }) 
         onUpdateChannels(updatedChannels);
     };
 
-    const deleteChannel = (id) => {
-        if (confirm('Delete this channel?')) {
+    const deleteChannel = async (id) => {
+        const confirmed = await confirmAction('Delete Channel?', 'Are you sure you want to delete this channel?');
+        if (confirmed) {
             if (onDeleteChannel) {
                 onDeleteChannel(id);
             } else {

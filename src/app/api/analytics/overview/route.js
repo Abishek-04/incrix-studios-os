@@ -7,6 +7,7 @@ import AutomationRule from '@/models/AutomationRule';
 import AutomationLog from '@/models/AutomationLog';
 import Channel from '@/models/Channel';
 import { hasPermission, PERMISSIONS } from '@/config/permissions';
+import { authenticate } from '@/lib/auth';
 
 /**
  * GET /api/analytics/overview
@@ -16,9 +17,16 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    // Get current user from query params
-    const { searchParams } = new URL(request.url);
-    const currentUserRole = searchParams.get('role');
+    // Authenticate via JWT, fall back to query param role for backward compat
+    let currentUserRole;
+    try {
+      const decoded = await authenticate(request);
+      const user = await User.findOne({ id: decoded.userId }).select('role').lean();
+      currentUserRole = user?.role;
+    } catch {
+      const { searchParams } = new URL(request.url);
+      currentUserRole = searchParams.get('role');
+    }
 
     // Permission check - Super Admin only
     if (!hasPermission(currentUserRole, PERMISSIONS.VIEW_ANALYTICS)) {

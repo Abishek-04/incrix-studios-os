@@ -6,6 +6,7 @@ import ConfirmationModal from './ui/ConfirmationModal';
 import Toast from './ui/Toast';
 import { MentionInput } from './ui/MentionInput';
 import { extractMentions } from '@/utils/mentions';
+import { useConfirm } from '@/contexts/UIContext';
 
 const formatDateForInput = (timestamp) => {
   if (!timestamp) return '';
@@ -60,6 +61,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   });
   const textSaveTimerRef = useRef(null);
   const latestProjectRef = useRef(localProject);
+  const confirmAction = useConfirm();
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -164,8 +166,9 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     }, 500);
   };
 
-  const handleDuplicate = () => {
-    if (confirm("Save this as a new project?")) {
+  const handleDuplicate = async () => {
+    const confirmed = await confirmAction('Duplicate Project?', 'Save this as a new project?');
+    if (confirmed) {
       const newProject = {
         ...localProject,
         id: `PRJ-${Date.now()}`,
@@ -392,7 +395,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   const isManagerUser = normalizedRole === 'manager' || isSuperAdmin;
   const isProjectCreator = normalizeName(currentUser?.name) === normalizeName(localProject.creator);
   const canReassignCreator = isManagerUser;
-  const canAssignEditors = isProjectCreator || isSuperAdmin;
+  const canAssignEditors = isManagerUser || isProjectCreator;
 
   // Helper for comment avatar colors
   const getUserAvatarColor = (userId) => {

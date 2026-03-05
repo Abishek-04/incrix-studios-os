@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import ActivityLog from '@/models/ActivityLog';
 import { hasPermission, PERMISSIONS } from '@/config/permissions';
+import { authenticate } from '@/lib/auth';
 
 /**
  * GET /api/analytics/activity
@@ -11,9 +12,17 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    // Get current user from query params
-    const { searchParams } = new URL(request.url);
-    const currentUserRole = searchParams.get('role');
+    // Authenticate via JWT, fall back to query param role for backward compat
+    let currentUserRole;
+    try {
+      const decoded = await authenticate(request);
+      const User = (await import('@/models/User')).default;
+      const user = await User.findOne({ id: decoded.userId }).select('role').lean();
+      currentUserRole = user?.role;
+    } catch {
+      const { searchParams } = new URL(request.url);
+      currentUserRole = searchParams.get('role');
+    }
 
     // Permission check - Super Admin only
     if (!hasPermission(currentUserRole, PERMISSIONS.VIEW_ANALYTICS)) {

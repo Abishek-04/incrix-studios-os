@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import connectDB from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+const WHATSAPP_APP_SECRET = process.env.WHATSAPP_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
 
 /**
  * GET handler for webhook verification (Meta requirement)
@@ -30,10 +32,24 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
-    const body = await request.json();
+    // Verify webhook signature
+    const signature = request.headers.get('x-hub-signature-256');
+    const bodyText = await request.text();
 
-    // Log all webhook events for debugging
-    console.log('[WhatsApp Webhook] Received:', JSON.stringify(body, null, 2));
+    if (WHATSAPP_APP_SECRET && signature) {
+      const expectedSig = 'sha256=' + crypto
+        .createHmac('sha256', WHATSAPP_APP_SECRET)
+        .update(bodyText)
+        .digest('hex');
+      if (expectedSig !== signature) {
+        console.warn('[WhatsApp Webhook] Invalid signature');
+        return new Response('Forbidden', { status: 403 });
+      }
+    }
+
+    const body = JSON.parse(bodyText);
+
+    console.log('[WhatsApp Webhook] Received event');
 
     // Handle status updates and incoming messages
     if (body.entry && body.entry[0]?.changes) {

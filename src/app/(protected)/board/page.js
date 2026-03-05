@@ -5,6 +5,7 @@ import ProjectBoard from '@/components/ProjectBoard';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
 import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
+import { useToast } from '@/contexts/UIContext';
 
 export default function BoardPage() {
   const [projects, setProjects] = useState([]);
@@ -13,6 +14,7 @@ export default function BoardPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const showToast = useToast();
 
   useEffect(() => {
     const loadData = async () => {
@@ -43,7 +45,7 @@ export default function BoardPage() {
     setProjects((prevProjects) =>
       prevProjects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
     );
-    setSelectedProject(updatedProject);
+    setSelectedProject((prev) => prev?.id === updatedProject.id ? updatedProject : prev);
 
     const response = await updateProject(updatedProject.id, updatedProject);
     if (!response?.success) {
@@ -70,7 +72,7 @@ export default function BoardPage() {
       }
 
       console.error('Project update failed:', response?.error);
-      window.alert(response?.error || 'Failed to save project changes');
+      showToast(response?.error || 'Failed to save project changes');
       return { success: false, error: response?.error || 'Update failed' };
     }
 
@@ -94,7 +96,7 @@ export default function BoardPage() {
 
     if (!response?.success) {
       console.error('Project delete failed:', response?.error);
-      window.alert(response?.error || 'Failed to delete project');
+      showToast(response?.error || 'Failed to delete project');
       if (deletedProject) {
         setProjects((prevProjects) => {
           const exists = prevProjects.some((p) => p.id === deletedProject.id);
@@ -126,7 +128,7 @@ export default function BoardPage() {
           const response = await createProject(newProject);
           if (!response?.success) {
             console.error('Project create failed:', response?.error);
-            window.alert(response?.error || 'Failed to create project');
+            showToast(response?.error || 'Failed to create project');
             setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
             setSelectedProject(null);
             return { success: false, error: response?.error || 'Create failed' };
@@ -157,7 +159,7 @@ export default function BoardPage() {
           onCreate={(newProject) => {
             return createProject(newProject).then((response) => {
               if (!response?.success) {
-                window.alert(response?.error || 'Failed to create project');
+                showToast(response?.error || 'Failed to create project');
                 return { success: false, error: response?.error || 'Create failed' };
               }
               const createdProject = response.project || newProject;

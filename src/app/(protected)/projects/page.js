@@ -5,6 +5,7 @@ import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
 import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
+import { useToast } from '@/contexts/UIContext';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -14,6 +15,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const showToast = useToast();
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,7 +73,7 @@ export default function ProjectsPage() {
       }
 
       console.error('Project update failed:', response?.error);
-      window.alert(response?.error || 'Failed to save project changes');
+      showToast(response?.error || 'Failed to save project changes');
       return { success: false, error: response?.error || 'Update failed' };
     }
 
@@ -95,7 +97,7 @@ export default function ProjectsPage() {
 
     if (!response?.success) {
       console.error('Project delete failed:', response?.error);
-      window.alert(response?.error || 'Failed to delete project');
+      showToast(response?.error || 'Failed to delete project');
       if (deletedProject) {
         setProjects((prevProjects) => {
           const exists = prevProjects.some((p) => p.id === deletedProject.id);
@@ -118,7 +120,7 @@ export default function ProjectsPage() {
     const response = await createProject(newProject);
     if (!response?.success) {
       console.error('Project create failed:', response?.error);
-      window.alert(response?.error || 'Failed to create project');
+      showToast(response?.error || 'Failed to create project');
       setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
       setSelectedProject(null);
       return { success: false, error: response?.error || 'Create failed' };

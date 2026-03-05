@@ -8,8 +8,10 @@ import {
   ArrowUp, ArrowDown, Minus, Filter, ChevronDown
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useToast } from '@/contexts/UIContext';
 
 const SuperAdminDashboard = ({ projects = [], tasks = [], users = [], activityLogs = [] }) => {
+  const showToast = useToast();
   const [timeRange, setTimeRange] = useState('week'); // week, month, year
   const [selectedMetric, setSelectedMetric] = useState('overview');
 
@@ -129,7 +131,7 @@ const SuperAdminDashboard = ({ projects = [], tasks = [], users = [], activityLo
   const handleExportReport = (format) => {
     // TODO: Implement export functionality
     console.log(`Exporting ${timeRange} report as ${format}`);
-    alert(`Report export as ${format} - Feature coming soon!`);
+    showToast(`Report export as ${format} - Feature coming soon!`, 'info');
   };
 
   return (

@@ -6,6 +6,7 @@ import UserManagement from '@/components/admin/UserManagement';
 import { RoleGuard } from '@/components/common/PermissionGuard';
 import { ROLES } from '@/config/permissions';
 import UndoToast from '@/components/ui/UndoToast';
+import { useToast } from '@/contexts/UIContext';
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const showToast = useToast();
 
   // Load current user from localStorage
   useEffect(() => {
@@ -107,7 +109,7 @@ export default function UserManagementPage() {
       } else {
         const message = data.error || `Delete failed (HTTP ${response.status})`;
         console.error('Delete failed:', message);
-        window.alert(message);
+        showToast(message);
       }
     } catch (error) {
       console.error('Delete failed:', error);

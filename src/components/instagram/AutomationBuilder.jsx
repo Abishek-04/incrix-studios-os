@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Play, Pause, Trash2, Edit, BarChart3, Zap, MessageSquare, Filter, Send } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useConfirm } from '@/contexts/UIContext';
 
 export default function AutomationBuilder({ channel, selectedMedia, currentUser }) {
   const [rules, setRules] = useState([]);
@@ -10,6 +11,7 @@ export default function AutomationBuilder({ channel, selectedMedia, currentUser 
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [viewingLogs, setViewingLogs] = useState(null);
+  const confirmAction = useConfirm();
 
   useEffect(() => {
     if (channel) {
@@ -95,9 +97,8 @@ export default function AutomationBuilder({ channel, selectedMedia, currentUser 
   }
 
   async function handleDelete(ruleId) {
-    if (!confirm('Are you sure you want to delete this automation rule?')) {
-      return;
-    }
+    const confirmed = await confirmAction('Delete Automation?', 'Are you sure you want to delete this automation rule?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`/api/instagram/automations/${ruleId}`, {

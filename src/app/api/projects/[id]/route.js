@@ -253,15 +253,14 @@ export async function PATCH(request, { params }) {
       updates.creator = currentProject.creator;
     }
 
-    // Editors and managers cannot assign/reassign editors unless they are the project creator.
-    // Superadmin can always override.
+    // Only the project creator or managers can assign/reassign editors.
     const wantsEditorUpdate =
       Object.prototype.hasOwnProperty.call(updates, 'editors') ||
       Object.prototype.hasOwnProperty.call(updates, 'editor');
-    const canAssignEditors = isProjectCreator || isSuperAdmin;
+    const canAssignEditors = isManager || isProjectCreator;
     if (wantsEditorUpdate && !canAssignEditors) {
       return NextResponse.json(
-        { success: false, error: 'Only the project creator can assign editors' },
+        { success: false, error: 'Only managers or the project creator can assign editors' },
         { status: 403 }
       );
     }

@@ -7,6 +7,7 @@ import { ProjectType, DevStage, Priority, Status } from '@/types';
 import { Plus, Code, Calendar, User, Search, GitBranch, Trash2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UndoToast from '@/components/ui/UndoToast';
+import { useConfirm } from '@/contexts/UIContext';
 
 export default function DevProjectsPage() {
   const [allProjects, setAllProjects] = useState([]);
@@ -22,6 +23,7 @@ export default function DevProjectsPage() {
   const undoTimerRef = useRef(null);
 
   const config = getProjectConfig('dev');
+  const confirmAction = useConfirm();
 
   const clearUndoTimer = () => {
     if (undoTimerRef.current) {
@@ -138,7 +140,8 @@ export default function DevProjectsPage() {
   };
 
   const handleDeleteProject = async (projectId) => {
-    if (!confirm('Are you sure you want to delete this dev project?')) return;
+    const confirmed = await confirmAction('Delete Dev Project?', 'Are you sure you want to delete this dev project?');
+    if (!confirmed) return;
     clearUndoTimer();
 
     const snapshot = allProjects;

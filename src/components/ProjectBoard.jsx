@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2, CheckCircle } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
 import { getProjectStageDate, getProjectStageMonthKey } from '@/utils/projectDates';
+import { useToast } from '@/contexts/UIContext';
 
 const MISSING_DATE_LABEL = 'No date given';
 
@@ -13,6 +14,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     const [selectedCreator, setSelectedCreator] = useState('all');
     const [selectedEditor, setSelectedEditor] = useState('all');
     const [projectToDelete, setProjectToDelete] = useState(null);
+    const showToast = useToast();
     const activeRole = String(currentUser?.role || '').trim().toLowerCase();
     const canUseTeamFilters = activeRole === 'manager' || activeRole === 'superadmin';
     const canCreateProject = activeRole === 'manager' || activeRole === 'superadmin' || activeRole === 'creator';
@@ -77,7 +79,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
 
     const handleCreateNew = async () => {
         if (!canCreateProject) {
-            window.alert('Only manager and creator accounts can create projects');
+            showToast('Only manager and creator accounts can create projects');
             return;
         }
 

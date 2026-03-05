@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User, Plus } from 'lucide-react';
 import { getProjectStageDate, getProjectStageMonthKey } from '@/utils/projectDates';
+import { useToast } from '@/contexts/UIContext';
 
 const PRODUCTION_DATE_FIELDS = [
     { key: 'shootDate', short: 'SH', label: 'Shoot' },
@@ -19,6 +20,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     const [viewMode, setViewMode] = useState(() =>
         typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'table'
     );
+    const showToast = useToast();
     const activeRole = String(currentUser?.role || '').trim().toLowerCase();
     const canCreateProject = activeRole === 'manager' || activeRole === 'superadmin' || activeRole === 'creator';
 
@@ -95,7 +97,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     const handleCreateNew = async () => {
         if (!onCreateProject) return;
         if (!canCreateProject) {
-            window.alert('Only manager and creator accounts can create projects');
+            showToast('Only manager and creator accounts can create projects');
             return;
         }
 
