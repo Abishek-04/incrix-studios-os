@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Offline | Incrix Studios OS',
+  title: 'Offline | #teamincrix',
 };
 
 export default function OfflinePage() {

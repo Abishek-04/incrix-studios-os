@@ -91,7 +91,7 @@ export default function ProtectedLayout({ children }) {
     '/recycle-bin': 'Recycle Bin',
     '/admin/notifications': 'Notification Management'
   };
-  const pageTitle = headerTitleMap[pathname] || 'Incrix Studios';
+  const pageTitle = headerTitleMap[pathname] || '#teamincrix';
   const mobileQuickNav = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { href: '/projects', icon: ListChecks, label: 'Projects' },
@@ -140,12 +140,12 @@ export default function ProtectedLayout({ children }) {
           <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f] relative">
             {!sidebarCollapsed && (
               <>
-                <div className="w-6 h-6 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-lg mr-3"></div>
-                <span className="font-bold text-white tracking-tight">Incrix Studios</span>
+                <img src="/icons/icon-192.png" alt="#teamincrix" className="w-7 h-7 rounded-lg mr-3" />
+                <span className="font-smooch text-2xl text-white">#teamincrix</span>
               </>
             )}
             {sidebarCollapsed && (
-              <div className="w-6 h-6 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-lg mx-auto"></div>
+              <img src="/icons/icon-192.png" alt="#teamincrix" className="w-7 h-7 rounded-lg mx-auto" />
             )}
             {/* Toggle Button */}
             <button

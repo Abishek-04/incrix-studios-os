@@ -46,7 +46,7 @@ const Login = ({ onLogin }) => {
                     <div className="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl mx-auto mb-4 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
                         <span className="text-white font-bold text-xl">I</span>
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-1">Incrix Studios</h1>
+                    <h1 className="font-smooch text-4xl text-white mb-1">#teamincrix</h1>
                     <p className="text-[#666] text-sm">Sign in to access your workspace</p>
                 </div>
 

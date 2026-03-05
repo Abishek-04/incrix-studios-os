@@ -1,4 +1,4 @@
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Smooch } from 'next/font/google';
 import './globals.css';
 import PWARegister from '@/components/pwa/PWARegister';
 
@@ -14,14 +14,21 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+const smooch = Smooch({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-smooch',
+  display: 'swap',
+});
+
 export const metadata = {
-  title: 'Incrix Studios OS',
+  title: '#teamincrix',
   description: 'Content management system for creative studios',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Incrix Studios OS',
+    title: '#teamincrix',
   },
   icons: {
     icon: [
@@ -38,7 +45,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${smooch.variable}`}>
       <body className="antialiased font-sans bg-[#0d0d0d] text-white">
         <PWARegister />
         {children}

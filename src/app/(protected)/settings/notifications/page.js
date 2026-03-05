@@ -126,7 +126,7 @@ export default function NotificationSettingsPage() {
         },
         body: JSON.stringify({
           to: whatsappNumber,
-          message: `🔔 Test notification from Incrix Studios OS\n\nHello ${currentUser?.name}! Your WhatsApp notifications are working correctly. You will now receive updates about projects, tasks, and deadlines.`,
+          message: `🔔 Test notification from #teamincrix\n\nHello ${currentUser?.name}! Your WhatsApp notifications are working correctly. You will now receive updates about projects, tasks, and deadlines.`,
         }),
       });
 
@@ -174,7 +174,7 @@ export default function NotificationSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Notification Settings</h1>
           <p className="text-[#999] text-sm">
-            Manage how you receive notifications from Incrix Studios OS
+            Manage how you receive notifications from #teamincrix
           </p>
         </div>
       </div>

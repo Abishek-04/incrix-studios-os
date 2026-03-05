@@ -1,7 +1,7 @@
 export default function manifest() {
   return {
-    name: 'Incrix Studios OS',
-    short_name: 'Incrix OS',
+    name: '#teamincrix',
+    short_name: '#teamincrix',
     description: 'Content management system for creative studios',
     start_url: '/',
     display: 'standalone',

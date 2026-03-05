@@ -31,6 +31,10 @@
 }
 
 @layer utilities {
+  .font-smooch {
+    font-family: var(--font-smooch), cursive;
+  }
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;

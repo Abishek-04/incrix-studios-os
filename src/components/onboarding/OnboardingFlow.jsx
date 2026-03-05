@@ -26,7 +26,7 @@ const OnboardingFlow = ({ user, onComplete, onSkip }) => {
   const steps = [
     {
       id: 'welcome',
-      title: 'Welcome to Incrix Studios OS! 🎉',
+      title: 'Welcome to #teamincrix! 🎉',
       description: 'Let\'s get you set up in just a few steps',
       icon: <Sparkles size={48} className="text-indigo-400" />
     },
