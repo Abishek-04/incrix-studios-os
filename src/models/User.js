@@ -52,6 +52,13 @@ const UserSchema = new Schema(
       course: { type: Number, default: 0 },
       period: { type: String, enum: ['weekly', 'monthly'], default: 'weekly' }
     },
+    pushSubscriptions: [{
+      endpoint: { type: String, required: true },
+      keys: {
+        p256dh: { type: String, required: true },
+        auth: { type: String, required: true }
+      }
+    }],
     refreshTokens: [{ type: String }],
     lastActive: { type: Date, default: Date.now, index: true }
   },
@@ -61,6 +68,7 @@ const UserSchema = new Schema(
       transform: function(doc, ret) {
         delete ret.password;
         delete ret.refreshTokens;
+        delete ret.pushSubscriptions;
         delete ret.__v;
         return ret;
       }

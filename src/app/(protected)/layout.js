@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -55,6 +55,26 @@ export default function ProtectedLayout({ children }) {
     setShowMobileMenu(false);
   }, [pathname]);
 
+  // Fetch notifications from DB
+  const fetchNotifications = useCallback(async (userId) => {
+    try {
+      const res = await fetch(`/api/notifications?userId=${userId}&limit=50`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetchNotifications(currentUser.id);
+    const interval = setInterval(() => fetchNotifications(currentUser.id), 30000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id, fetchNotifications]);
+
   if (!currentUser) return null;
 
   const handleLogout = () => {
@@ -63,8 +83,30 @@ export default function ProtectedLayout({ children }) {
     router.push('/');
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAllRead: true, userId: currentUser.id }),
+      });
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
+  };
+
+  const handleMarkAsRead = async (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationIds: [notifId], userId: currentUser.id }),
+      });
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
+    }
   };
 
   const isActive = (path) => pathname === path;
@@ -284,6 +326,7 @@ export default function ProtectedLayout({ children }) {
                   notifications={notifications}
                   onClose={() => setShowNotifications(false)}
                   onMarkAllRead={handleMarkAllRead}
+                  onMarkAsRead={handleMarkAsRead}
                 />
               )}
             </div>

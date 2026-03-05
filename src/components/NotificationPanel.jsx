@@ -2,7 +2,7 @@ import React from 'react';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 
-const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificationClick }) => {
+const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onMarkAsRead }) => {
     const getIcon = (type) => {
         switch (type) {
             case 'success': return <CheckCircle size={16} className="text-emerald-500" />;
@@ -12,14 +12,24 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
         }
     };
 
-    const getTimeAgo = (timestamp) => {
-        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    const getTimeAgo = (dateStr) => {
+        const date = typeof dateStr === 'string' ? new Date(dateStr) : new Date(dateStr);
+        const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
         if (seconds < 60) return 'Just now';
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes}m ago`;
         const hours = Math.floor(minutes / 60);
         if (hours < 24) return `${hours}h ago`;
-        return 'Yesterday';
+        const days = Math.floor(hours / 24);
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days}d ago`;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const handleClick = (notif) => {
+        if (!notif.read && onMarkAsRead) {
+            onMarkAsRead(notif.id);
+        }
     };
 
     return (
@@ -48,7 +58,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
                     notifications.map((notif) => (
                         <div
                             key={notif.id}
-                            onClick={() => onNotificationClick?.(notif)}
+                            onClick={() => handleClick(notif)}
                             className={`p-4 border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors cursor-pointer ${!notif.read ? 'bg-[#1a1a1a]/50' : ''}`}
                             role="button"
                             tabIndex={0}
@@ -61,7 +71,7 @@ const NotificationPanel = ({ notifications, onClose, onMarkAllRead, onNotificati
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white mb-0.5">{notif.title}</p>
                                     <p className="text-xs text-[#888] leading-relaxed mb-2">{notif.message}</p>
-                                    <span className="text-[10px] text-[#999]">{getTimeAgo(notif.timestamp)}</span>
+                                    <span className="text-[10px] text-[#999]">{getTimeAgo(notif.createdAt || notif.timestamp)}</span>
                                 </div>
                                 {!notif.read && (
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div>
