@@ -9,6 +9,17 @@ if (typeof window !== 'undefined') {
   refreshToken = localStorage.getItem('refresh_token');
 }
 
+function getStoredCurrentUser() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('auth_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error('Failed to parse auth_user:', error);
+    return null;
+  }
+}
+
 async function refreshAccessToken() {
   if (!refreshToken) {
     throw new Error('No refresh token available');
@@ -118,7 +129,26 @@ export async function logout() {
 }
 
 export async function fetchState() {
-  const response = await fetch(`${API_BASE_URL}/api/state`);
+  const params = new URLSearchParams();
+  const currentUser = getStoredCurrentUser();
+  if (currentUser) {
+    if (currentUser?.id || currentUser?._id) {
+      params.set('userId', currentUser.id || currentUser._id);
+    }
+    if (currentUser?.name) {
+      params.set('userName', currentUser.name);
+    }
+    if (currentUser?.role) {
+      params.set('userRole', currentUser.role);
+    }
+    const roles = Array.isArray(currentUser?.roles) ? currentUser.roles.filter(Boolean) : [];
+    if (roles.length > 0) {
+      params.set('userRoles', roles.join(','));
+    }
+  }
+
+  const query = params.toString();
+  const response = await fetch(`${API_BASE_URL}/api/state${query ? `?${query}` : ''}`);
   const data = await response.json();
   return data;
 }
@@ -128,6 +158,36 @@ export async function saveState(data) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
+  });
+  return response.json();
+}
+
+export async function createProject(projectData) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, project: projectData })
+  });
+  return response.json();
+}
+
+export async function updateProject(projectId, projectData) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, project: projectData })
+  });
+  return response.json();
+}
+
+export async function deleteProject(projectId) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser })
   });
   return response.json();
 }

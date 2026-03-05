@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
-import { fetchState, saveState } from '@/services/api';
+import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
@@ -40,43 +40,99 @@ export default function ProjectsPage() {
     loadData();
   }, []);
 
-  const handleUpdateProject = (updatedProject) => {
-    setProjects(prevProjects => {
-      const updatedProjects = prevProjects.map(p =>
-        p.id === updatedProject.id ? updatedProject : p
-      );
-      saveState({ projects: updatedProjects });
-      return updatedProjects;
-    });
+  const handleUpdateProject = async (updatedProject) => {
+    setProjects((prevProjects) =>
+      prevProjects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    );
     setSelectedProject(updatedProject);
+
+    const response = await updateProject(updatedProject.id, updatedProject);
+    if (!response?.success) {
+      if (response?.error === 'Project not found') {
+        const isDraftProject = !updatedProject?.createdAt;
+        if (isDraftProject) {
+          const createResponse = await createProject(updatedProject);
+          if (createResponse?.success) {
+            const persistedProject = createResponse.project || updatedProject;
+            setProjects((prevProjects) => {
+              const exists = prevProjects.some((p) => p.id === persistedProject.id);
+              if (exists) {
+                return prevProjects.map((p) => (p.id === persistedProject.id ? persistedProject : p));
+              }
+              return [...prevProjects, persistedProject];
+            });
+            setSelectedProject(persistedProject);
+            return { success: true, project: persistedProject };
+          }
+        }
+
+        setProjects((prevProjects) => prevProjects.filter((p) => p.id !== updatedProject.id));
+        setSelectedProject((prevSelected) => (prevSelected?.id === updatedProject.id ? null : prevSelected));
+      }
+
+      console.error('Project update failed:', response?.error);
+      window.alert(response?.error || 'Failed to save project changes');
+      return { success: false, error: response?.error || 'Update failed' };
+    }
+
+    if (response.project) {
+      setProjects((prevProjects) =>
+        prevProjects.map((p) => (p.id === response.project.id ? response.project : p))
+      );
+      setSelectedProject((prevSelected) =>
+        prevSelected?.id === response.project.id ? response.project : prevSelected
+      );
+    }
+
+    return { success: true };
   };
 
-  const handleDeleteProject = (projectId) => {
-    const snapshot = projects;
+  const handleDeleteProject = async (projectId) => {
     const deletedProject = projects.find(p => p.id === projectId);
-    const updatedProjects = projects.filter(p => p.id !== projectId);
-
-    setProjects(updatedProjects);
+    setProjects((prevProjects) => prevProjects.filter((p) => p.id !== projectId));
     setSelectedProject(null);
-    saveState({ projects: updatedProjects });
+    const response = await deleteProject(projectId);
+
+    if (!response?.success) {
+      console.error('Project delete failed:', response?.error);
+      window.alert(response?.error || 'Failed to delete project');
+      if (deletedProject) {
+        setProjects((prevProjects) => {
+          const exists = prevProjects.some((p) => p.id === deletedProject.id);
+          return exists ? prevProjects : [...prevProjects, deletedProject];
+        });
+      }
+      return;
+    }
 
     setUndoDelete({
-      message: `Deleted "${deletedProject?.title || 'project'}"`,
-      onUndo: () => {
-        setProjects(snapshot);
-        saveState({ projects: snapshot });
-        setUndoDelete(null);
-      }
+      deletedItemId: response.deletedItemId,
+      project: deletedProject,
+      message: `Deleted "${deletedProject?.title || 'project'}"`
     });
   };
 
-  const handleCreateProject = (newProject) => {
-    setProjects(prevProjects => {
-      const updatedProjects = [...prevProjects, newProject];
-      saveState({ projects: updatedProjects });
-      return updatedProjects;
-    });
-    setSelectedProject(newProject);
+  const handleCreateProject = async (newProject) => {
+    setProjects((prevProjects) => [...prevProjects, newProject]);
+
+    const response = await createProject(newProject);
+    if (!response?.success) {
+      console.error('Project create failed:', response?.error);
+      window.alert(response?.error || 'Failed to create project');
+      setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
+      setSelectedProject(null);
+      return { success: false, error: response?.error || 'Create failed' };
+    }
+
+    if (response.project) {
+      const createdProject = response.project;
+      setProjects((prevProjects) =>
+        prevProjects.map((p) => (p.id === newProject.id ? createdProject : p))
+      );
+      setSelectedProject(createdProject);
+    }
+
+    return { success: true, project: response.project || newProject };
   };
 
   return (
@@ -86,6 +142,7 @@ export default function ProjectsPage() {
         channels={channels}
         onSelectProject={setSelectedProject}
         onCreateProject={handleCreateProject}
+        currentUser={currentUser}
         searchQuery={searchQuery}
         onDeleteProject={handleDeleteProject}
       />
@@ -108,7 +165,27 @@ export default function ProjectsPage() {
       <UndoToast
         isVisible={!!undoDelete}
         message={undoDelete?.message || ''}
-        onUndo={() => undoDelete?.onUndo?.()}
+        onUndo={async () => {
+          if (!undoDelete?.deletedItemId) return;
+          try {
+            const response = await fetch('/api/recycle-bin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId })
+            });
+            const data = await response.json();
+            if (data.success && undoDelete.project) {
+              setProjects(prevProjects => {
+                const exists = prevProjects.some(p => p.id === undoDelete.project.id);
+                return exists ? prevProjects : [undoDelete.project, ...prevProjects];
+              });
+            }
+          } catch (error) {
+            console.error('Undo project restore failed:', error);
+          } finally {
+            setUndoDelete(null);
+          }
+        }}
         onClose={() => setUndoDelete(null)}
       />
     </>

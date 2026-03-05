@@ -3,11 +3,19 @@ import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MoreHorizontal, Calendar, User, Clock, ChevronLeft, ChevronRight, Plus, Search, Filter, Trash2, CheckCircle } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
+import { getProjectStageDate, getProjectStageMonthKey } from '@/utils/projectDates';
 
-const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject }) => {
+const MISSING_DATE_LABEL = 'No date given';
+
+const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject, currentUser }) => {
     // Local search state removed in favor of global props
     const [selectedMonth, setSelectedMonth] = useState('all');
+    const [selectedCreator, setSelectedCreator] = useState('all');
+    const [selectedEditor, setSelectedEditor] = useState('all');
     const [projectToDelete, setProjectToDelete] = useState(null);
+    const activeRole = String(currentUser?.role || '').trim().toLowerCase();
+    const canUseTeamFilters = activeRole === 'manager' || activeRole === 'superadmin';
+    const canCreateProject = activeRole === 'manager' || activeRole === 'superadmin' || activeRole === 'creator';
 
     // Define the columns based on the Stage enum order
     const columns = [
@@ -23,9 +31,8 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     const availableMonths = useMemo(() => {
         const months = new Set();
         projects.forEach(p => {
-            const date = new Date(p.uploadDoneDate || p.dueDate);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            months.add(key);
+            const key = getProjectStageMonthKey(p);
+            if (key) months.add(key);
         });
         return Array.from(months).sort().reverse();
     }, [projects]);
@@ -46,7 +53,34 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
         return [];
     };
 
-    const handleCreateNew = () => {
+    const normalizePerson = (value) => String(value || '').trim().toLowerCase();
+
+    const availableCreators = useMemo(() => {
+        const creators = new Set();
+        projects.forEach((project) => {
+            const creator = String(project?.creator || '').trim();
+            if (creator) creators.add(creator);
+        });
+        return Array.from(creators).sort((a, b) => a.localeCompare(b));
+    }, [projects]);
+
+    const availableEditors = useMemo(() => {
+        const editors = new Set();
+        projects.forEach((project) => {
+            getProjectEditors(project).forEach((name) => {
+                const editor = String(name || '').trim();
+                if (editor) editors.add(editor);
+            });
+        });
+        return Array.from(editors).sort((a, b) => a.localeCompare(b));
+    }, [projects]);
+
+    const handleCreateNew = async () => {
+        if (!canCreateProject) {
+            window.alert('Only manager and creator accounts can create projects');
+            return;
+        }
+
         // Create a blank project template
         const newProject = {
             id: `PRJ-${Date.now().toString().slice(-4)}`,
@@ -76,8 +110,10 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             hasMographNeeds: false,
             archived: false
         };
-        onCreateProject(newProject);
-        onSelectProject(newProject); // Open it immediately
+        const result = await onCreateProject(newProject);
+        if (result?.success) {
+            onSelectProject(result.project || newProject);
+        }
     };
 
     const handleMoveProject = async (e, project, direction) => {
@@ -101,7 +137,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
     // Memoize filtered projects for performance
     const getProjectsForStage = useMemo(() => {
         return (stage) => {
-            return projects.filter(p => {
+            const filtered = projects.filter(p => {
                 if (p.archived) return false;
                 if (p.stage !== stage) return false;
 
@@ -112,15 +148,25 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                 }
 
                 if (selectedMonth !== 'all') {
-                    const date = new Date(p.uploadDoneDate || p.dueDate);
-                    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const key = getProjectStageMonthKey(p);
                     if (key !== selectedMonth) return false;
+                }
+
+                if (canUseTeamFilters && selectedCreator !== 'all') {
+                    if (normalizePerson(p.creator) !== normalizePerson(selectedCreator)) return false;
+                }
+
+                if (canUseTeamFilters && selectedEditor !== 'all') {
+                    const editorNames = getProjectEditors(p).map(normalizePerson);
+                    if (!editorNames.includes(normalizePerson(selectedEditor))) return false;
                 }
 
                 return true;
             });
+
+            return filtered;
         };
-    }, [projects, searchQuery, selectedMonth]);
+    }, [projects, searchQuery, selectedMonth, selectedCreator, selectedEditor, canUseTeamFilters]);
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -158,15 +204,65 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                             <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                     </div>
+
+                    {canUseTeamFilters && (
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Filter size={14} className="text-[#666]" />
+                            </div>
+                            <select
+                                value={selectedCreator}
+                                onChange={(e) => setSelectedCreator(e.target.value)}
+                                className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:border-[#444] appearance-none cursor-pointer hover:bg-[#252525] transition-colors"
+                                aria-label="Filter projects by creator"
+                            >
+                                <option value="all">Creator: All</option>
+                                {availableCreators.map((creatorName) => (
+                                    <option key={creatorName} value={creatorName}>
+                                        {creatorName}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    )}
+
+                    {canUseTeamFilters && (
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User size={14} className="text-[#666]" />
+                            </div>
+                            <select
+                                value={selectedEditor}
+                                onChange={(e) => setSelectedEditor(e.target.value)}
+                                className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:border-[#444] appearance-none cursor-pointer hover:bg-[#252525] transition-colors"
+                                aria-label="Filter projects by editor"
+                            >
+                                <option value="all">Editor: All</option>
+                                {availableEditors.map((editorName) => (
+                                    <option key={editorName} value={editorName}>
+                                        {editorName}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <button
-                    onClick={handleCreateNew}
-                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-900/20"
-                >
-                    <Plus size={16} />
-                    <span>New Project</span>
-                </button>
+                {canCreateProject && (
+                    <button
+                        onClick={handleCreateNew}
+                        className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-900/20"
+                    >
+                        <Plus size={16} />
+                        <span>New Project</span>
+                    </button>
+                )}
             </div>
 
             {/* Board */}
@@ -180,13 +276,15 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                         <p className="text-[#999] text-base max-w-md text-center mb-8">
                             Your board is empty. Create a new project to start tracking your video production workflow from concept to completion.
                         </p>
-                        <button
-                            onClick={handleCreateNew}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-indigo-500/20 flex items-center space-x-2"
-                        >
-                            <Plus size={20} />
-                            <span>Create Project</span>
-                        </button>
+                        {canCreateProject && (
+                            <button
+                                onClick={handleCreateNew}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-indigo-500/20 flex items-center space-x-2"
+                            >
+                                <Plus size={20} />
+                                <span>Create Project</span>
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="flex flex-row h-full gap-4 overflow-x-auto snap-x snap-mandatory pb-4 sm:gap-6 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -251,7 +349,14 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                     {/* Cards Container */}
                                     <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent">
                                         <AnimatePresence mode="popLayout">
-                                            {stageProjects.map((project, index) => (
+                                            {stageProjects.map((project, index) => {
+                                                const stageDate = getProjectStageDate(project);
+                                                const stageDateLabel = stageDate
+                                                    ? new Date(stageDate).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                                                    : MISSING_DATE_LABEL;
+                                                const isOverdue = stageDate && stageDate < Date.now() && project.stage !== Stage.Done;
+
+                                                return (
                                                 <motion.div
                                                     key={project.id}
                                                     layout
@@ -398,10 +503,10 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                             )}
                                                         </div>
 
-                                                        {/* Upload/Done Date */}
-                                                        <div className={`flex items-center space-x-1 text-xs font-medium ${new Date(project.uploadDoneDate || project.dueDate) < new Date() && project.stage !== Stage.Done ? 'text-rose-400' : 'text-[#999]'}`}>
+                                                        {/* Stage Date */}
+                                                        <div className={`flex items-center space-x-1 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-[#999]'}`}>
                                                             <Calendar size={12} />
-                                                            <span>{new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                            <span>{stageDateLabel}</span>
                                                         </div>
                                                         {project.reshootDone && (
                                                             <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/40">
@@ -432,7 +537,8 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                                                         )}
                                                     </div>
                                                 </motion.div>
-                                            ))}
+                                                );
+                                            })}
                                         </AnimatePresence>
 
                                         {stageProjects.length === 0 && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { fetchSocialMetrics } from '@/services/socialService';
 import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save, Check, AlertCircle } from 'lucide-react';
@@ -27,8 +27,17 @@ const normalizeEditors = (projectData) => {
   if (projectData?.editor && projectData.editor !== 'Unassigned') {
     list.push(projectData.editor);
   }
-  return Array.from(new Set(list.filter(Boolean)));
+  return Array.from(
+    new Set(
+      list
+        .map((value) => (typeof value === 'string' ? value.trim() : value))
+        .filter(Boolean)
+    )
+  );
 };
+
+const normalizeName = (value) => String(value || '').trim().toLowerCase();
+const getChannelValue = (channel) => String(channel?.id || channel?._id || '').trim();
 
 const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -49,6 +58,8 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     message: '',
     type: 'success'
   });
+  const textSaveTimerRef = useRef(null);
+  const latestProjectRef = useRef(localProject);
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -57,12 +68,26 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   // Sync prop changes
   useEffect(() => {
     const normalizedEditors = normalizeEditors(project);
-    setLocalProject({
+    const normalizedProject = {
       ...project,
       editors: normalizedEditors,
       editor: normalizedEditors[0] || 'Unassigned'
-    });
+    };
+    latestProjectRef.current = normalizedProject;
+    setLocalProject(normalizedProject);
   }, [project]);
+
+  useEffect(() => {
+    latestProjectRef.current = localProject;
+  }, [localProject]);
+
+  useEffect(() => {
+    return () => {
+      if (textSaveTimerRef.current) {
+        clearTimeout(textSaveTimerRef.current);
+      }
+    };
+  }, []);
 
   // ESC key to close modal
   useEffect(() => {
@@ -75,33 +100,68 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, showDeleteConfirm]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!localProject.title.trim()) {
       setTitleError('Project title is required');
-      return;
+      return { success: false, error: 'Project title is required' };
     }
     setTitleError('');
     setSaveState('saving');
     try {
-      onUpdate({
+      const response = await onUpdate({
         ...localProject,
         lastUpdated: Date.now()
       });
+      if (response && response.success === false) {
+        setSaveState('error');
+        setTimeout(() => setSaveState('idle'), 3000);
+        return response;
+      }
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2000);
+      return { success: true };
     } catch {
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 3000);
+      return { success: false, error: 'Failed to save project' };
     }
   }, [localProject, onUpdate]);
 
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
     if (!localProject.title.trim()) {
       setTitleError('Project title is required');
       return;
     }
-    handleSave();
+    if (textSaveTimerRef.current) {
+      clearTimeout(textSaveTimerRef.current);
+      textSaveTimerRef.current = null;
+    }
+    await handleSave();
     onClose();
+  };
+
+  const handleTextFieldChange = (field, value) => {
+    setLocalProject((prevProject) => {
+      const updated = {
+        ...prevProject,
+        [field]: value
+      };
+      latestProjectRef.current = updated;
+      return updated;
+    });
+
+    if (textSaveTimerRef.current) {
+      clearTimeout(textSaveTimerRef.current);
+    }
+
+    textSaveTimerRef.current = setTimeout(() => {
+      const snapshot = latestProjectRef.current;
+      onUpdate({
+        ...snapshot,
+        lastUpdated: Date.now()
+      });
+      textSaveTimerRef.current = null;
+    }, 500);
   };
 
   const handleDuplicate = () => {
@@ -132,21 +192,33 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
   };
 
   const handleChannelChange = (channelId) => {
-    const selectedChannel = channels.find(c => c.id === channelId);
+    const selectedChannel = channels.find(c => getChannelValue(c) === String(channelId || '').trim());
     if (selectedChannel) {
+      if (textSaveTimerRef.current) {
+        clearTimeout(textSaveTimerRef.current);
+        textSaveTimerRef.current = null;
+      }
+
       const updated = {
         ...localProject,
-        channelId: selectedChannel.id,
+        channelId: getChannelValue(selectedChannel),
         platform: selectedChannel.platform,
         lastUpdated: Date.now()
       };
+      latestProjectRef.current = updated;
       setLocalProject(updated);
       onUpdate(updated);
     }
   };
 
   const updateProjectEditors = (nextEditors) => {
-    const sanitizedEditors = Array.from(new Set((nextEditors || []).filter(Boolean)));
+    const sanitizedEditors = Array.from(
+      new Set(
+        (nextEditors || [])
+          .map((value) => (typeof value === 'string' ? value.trim() : value))
+          .filter(Boolean)
+      )
+    );
     const updated = {
       ...localProject,
       editors: sanitizedEditors,
@@ -270,7 +342,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
       updatedMetrics = { ...currentMetrics, [field]: parseInt(value) || 0, lastUpdated: Date.now() };
     }
 
-    const updated = { ...localProject, metrics: updatedMetrics };
+    const updated = { ...localProject, metrics: updatedMetrics, lastUpdated: Date.now() };
     setLocalProject(updated);
     onUpdate(updated);
   };
@@ -292,7 +364,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
         sources: data.sources, // Store grounding sources
         lastUpdated: Date.now()
       };
-      const updated = { ...localProject, metrics: updatedMetrics };
+      const updated = { ...localProject, metrics: updatedMetrics, lastUpdated: Date.now() };
       setLocalProject(updated);
       onUpdate(updated);
     } catch (e) {
@@ -307,8 +379,20 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     showToast("Repurposing Started! Added to Backlog.", 'success');
   };
 
-  const creators = users.filter(u => u.role === 'creator');
-  const editors = users.filter(u => u.role === 'editor' || u.role === 'mograph');
+  const hasRole = useCallback((user, role) => {
+    if (!user || !role) return false;
+    if (Array.isArray(user.roles) && user.roles.includes(role)) return true;
+    return user.role === role;
+  }, []);
+
+  const creators = users.filter((u) => hasRole(u, 'creator'));
+  const editors = users.filter((u) => hasRole(u, 'editor') || hasRole(u, 'mograph'));
+  const normalizedRole = normalizeName(currentUserRole || currentUser?.role);
+  const isSuperAdmin = normalizedRole === 'superadmin';
+  const isManagerUser = normalizedRole === 'manager' || isSuperAdmin;
+  const isProjectCreator = normalizeName(currentUser?.name) === normalizeName(localProject.creator);
+  const canReassignCreator = isManagerUser;
+  const canAssignEditors = isProjectCreator || isSuperAdmin;
 
   // Helper for comment avatar colors
   const getUserAvatarColor = (userId) => {
@@ -352,7 +436,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 >
                   <option value="" disabled>Select Channel</option>
                   {channels.map(c => (
-                    <option key={c.id} value={c.id}>
+                    <option key={getChannelValue(c) || c.name} value={getChannelValue(c)}>
                       {c.name} ({c.platform})
                     </option>
                   ))}
@@ -366,15 +450,17 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <select
                 value={localProject.creator}
                 onChange={(e) => {
-                  const updated = { ...localProject, creator: e.target.value };
+                  if (!canReassignCreator) return;
+                  const updated = { ...localProject, creator: e.target.value, lastUpdated: Date.now() };
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
                 aria-label="Assign creator"
+                disabled={!canReassignCreator}
                 className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="Unassigned">No Creator</option>
-                {creators.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                {creators.map(u => <option key={u.id || u._id} value={(u.name || '').trim()}>{(u.name || '').trim()}</option>)}
               </select>
 
               {/* Editors Assignment (Multi) */}
@@ -388,8 +474,13 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     <button
                       key={name}
                       type="button"
+                      disabled={!canAssignEditors}
                       onClick={() => updateProjectEditors(normalizeEditors(localProject).filter((editorName) => editorName !== name))}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/40 text-[10px] text-indigo-300 hover:bg-indigo-500/30"
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${
+                        canAssignEditors
+                          ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/30'
+                          : 'bg-[#333] border-[#444] text-[#777] cursor-not-allowed'
+                      }`}
                       title={`Remove ${name}`}
                     >
                       {name}
@@ -400,19 +491,24 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 <select
                   value=""
                   onChange={(e) => {
+                    if (!canAssignEditors) return;
                     const selectedEditor = e.target.value;
                     if (!selectedEditor) return;
-                    updateProjectEditors([...normalizeEditors(localProject), selectedEditor]);
+                    const matchedUser = editors.find((u) => String(u.id || u._id) === selectedEditor);
+                    const selectedEditorName = (matchedUser?.name || '').trim();
+                    if (!selectedEditorName) return;
+                    updateProjectEditors([...normalizeEditors(localProject), selectedEditorName]);
                   }}
                   aria-label="Add editor"
+                  disabled={!canAssignEditors}
                   className="ml-auto bg-[#1f1f1f] border border-[#333] text-white text-[10px] rounded px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">+ Add</option>
                   {editors
-                    .filter((u) => !normalizeEditors(localProject).includes(u.name))
+                    .filter((u) => !normalizeEditors(localProject).includes((u.name || '').trim()))
                     .map((u) => (
-                      <option key={u.id} value={u.name}>
-                        {u.name}
+                      <option key={u.id || u._id} value={u.id || u._id}>
+                        {(u.name || '').trim()}
                       </option>
                     ))}
                 </select>
@@ -474,7 +570,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <select
                 value={localProject.contentFormat || 'LongForm'}
                 onChange={(e) => {
-                  const updated = { ...localProject, contentFormat: e.target.value };
+                  const updated = { ...localProject, contentFormat: e.target.value, lastUpdated: Date.now() };
                   setLocalProject(updated);
                   onUpdate(updated);
                 }}
@@ -573,7 +669,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             </button>
             <div className="w-px h-6 bg-[#2f2f2f] mx-1 hidden sm:block"></div>
             <button
-              onClick={onClose}
+              onClick={handleSaveAndClose}
               className="text-[#999] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1"
               aria-label="Close modal (ESC)"
               title="Close (ESC)"
@@ -693,7 +789,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 <textarea
                   className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#ddd] focus:border-indigo-500 focus:outline-none transition-colors min-h-[80px]"
                   value={localProject.topic}
-                  onChange={(e) => setLocalProject({ ...localProject, topic: e.target.value })}
+                  onChange={(e) => handleTextFieldChange('topic', e.target.value)}
                   onBlur={handleSave}
                 />
               </div>
@@ -705,7 +801,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 <textarea
                   className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-4 text-sm text-[#eee] font-sans leading-relaxed min-h-[300px] focus:border-indigo-500 focus:outline-none"
                   value={localProject.script}
-                  onChange={(e) => setLocalProject({ ...localProject, script: e.target.value })}
+                  onChange={(e) => handleTextFieldChange('script', e.target.value)}
                   onBlur={handleSave}
                   placeholder="Script content will appear here..."
                 />
@@ -782,7 +878,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#ccc] focus:border-indigo-500 focus:outline-none min-h-[150px]"
                   placeholder="Enter technical specifications, color codes, or assembly notes..."
                   value={localProject.technicalNotes}
-                  onChange={(e) => setLocalProject({ ...localProject, technicalNotes: e.target.value })}
+                  onChange={(e) => handleTextFieldChange('technicalNotes', e.target.value)}
                   onBlur={handleSave}
                 />
               </div>

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  buildCurrentUserContext,
+  filterProjectsForUser,
+  normalizeRoles,
+  normalizeText
+} from '@/lib/projectAccess';
 
 function toPlainObject(input) {
   if (!input) return {};
@@ -10,6 +16,10 @@ function toPlainObject(input) {
 }
 
 function stripMongoInternals(value) {
+  if (value instanceof Date) {
+    return value;
+  }
+
   if (Array.isArray(value)) {
     return value.map((item) => stripMongoInternals(item));
   }
@@ -28,6 +38,50 @@ function stripMongoInternals(value) {
 
 function sanitizeDoc(input) {
   return stripMongoInternals(toPlainObject(input));
+}
+
+function findRequestUser(users = [], context = {}) {
+  const requestedId = String(context?.id || '').trim();
+  const requestedName = normalizeText(context?.name);
+
+  if (requestedId) {
+    const byId = users.find((user) => {
+      const userId = String(user?.id || user?._id || '').trim();
+      const mongoId = String(user?._id || '').trim();
+      return requestedId === userId || requestedId === mongoId;
+    });
+    if (byId) return byId;
+  }
+
+  if (requestedName) {
+    const byName = users.find((user) => normalizeText(user?.name) === requestedName);
+    if (byName) return byName;
+  }
+
+  return null;
+}
+
+function resolveCurrentUserContext(rawContext = {}, users = []) {
+  const requestedId = String(rawContext?.id || '').trim();
+  const requestedName = normalizeText(rawContext?.name);
+  const matchedUser = findRequestUser(users, rawContext);
+
+  // If client did not send any user identity, keep context empty.
+  if (!requestedId && !requestedName) {
+    return buildCurrentUserContext({});
+  }
+
+  // Identity sent but not found in DB: treat as unauthenticated.
+  if (!matchedUser) {
+    return buildCurrentUserContext({});
+  }
+
+  return buildCurrentUserContext({
+    id: matchedUser.id || matchedUser._id || '',
+    name: matchedUser.name || '',
+    role: matchedUser.role || '',
+    roles: Array.isArray(matchedUser.roles) ? matchedUser.roles : []
+  });
 }
 
 async function addToRecycleBin(items, entityType, source = 'state_api') {
@@ -81,9 +135,24 @@ export async function GET(request) {
     const channels = await Channel.find({});
     const dailyTasks = await DailyTask.find({});
 
+    const { searchParams } = new URL(request.url);
+    const rawRoles = searchParams.get('userRoles');
+    const requestedContext = buildCurrentUserContext({
+      id: searchParams.get('userId') || '',
+      name: searchParams.get('userName') || '',
+      role: searchParams.get('userRole') || '',
+      roles: rawRoles ? rawRoles.split(',') : []
+    });
+    const context = resolveCurrentUserContext(requestedContext, users || []);
+    const hasUserContext = Boolean(context.name || context.id || normalizeRoles(context.roles, context.role).length > 0);
+
+    const filteredProjects = hasUserContext
+      ? filterProjectsForUser(projects || [], context)
+      : [];
+
     return NextResponse.json({
       users: users || [],
-      projects: projects || [],
+      projects: filteredProjects,
       channels: channels || [],
       dailyTasks: dailyTasks || [],
       lastUpdated: new Date()
@@ -145,12 +214,20 @@ export async function POST(request) {
       }
 
       // Import NotificationEngine for event tracking
-      const { NotificationEngine } = (await import('@/lib/services/notificationEngine.js')).default || (await import('@/lib/services/notificationEngine.js'));
+      const notificationEngineModule = await import('@/lib/services/notificationEngine.js');
+      const NotificationEngine = notificationEngineModule.NotificationEngine || notificationEngineModule.default;
 
       // Update or insert remaining projects
       for (const project of body.projects) {
         // Fetch existing project to detect changes
         const existingProject = await Project.findOne({ id: project.id });
+        const incomingLastUpdated = Number(project?.lastUpdated || 0);
+        const existingLastUpdated = Number(existingProject?.lastUpdated || 0);
+
+        // Ignore stale writes to prevent out-of-order request overwrites.
+        if (existingProject && incomingLastUpdated > 0 && existingLastUpdated > incomingLastUpdated) {
+          continue;
+        }
 
         // Check for assignment change
         if (!existingProject) {
@@ -191,7 +268,12 @@ export async function POST(request) {
 
         await Project.updateOne(
           { id: project.id },
-          { $set: sanitizeDoc(project) },
+          {
+            $set: {
+              ...sanitizeDoc(project),
+              lastUpdated: incomingLastUpdated || Date.now()
+            }
+          },
           { upsert: true }
         );
       }

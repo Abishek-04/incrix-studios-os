@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User, Plus } from 'lucide-react';
+import { getProjectStageDate, getProjectStageMonthKey } from '@/utils/projectDates';
 
 const PRODUCTION_DATE_FIELDS = [
     { key: 'shootDate', short: 'SH', label: 'Shoot' },
     { key: 'editDate', short: 'ED', label: 'Edit' },
     { key: 'uploadDoneDate', short: 'UP', label: 'Upload/Done' }
 ];
+const MISSING_DATE_LABEL = 'No date given';
 
-const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, searchQuery, onDeleteProject }) => {
+const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, searchQuery, onDeleteProject, currentUser }) => {
     const [filter, setFilter] = useState('all');
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [selectedCreator, setSelectedCreator] = useState('all');
@@ -17,6 +19,8 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     const [viewMode, setViewMode] = useState(() =>
         typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'table'
     );
+    const activeRole = String(currentUser?.role || '').trim().toLowerCase();
+    const canCreateProject = activeRole === 'manager' || activeRole === 'superadmin' || activeRole === 'creator';
 
     // Auto-switch to cards on resize
     useEffect(() => {
@@ -31,9 +35,8 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     const availableMonths = useMemo(() => {
         const months = new Set();
         projects.forEach(p => {
-            const date = new Date(p.uploadDoneDate || p.dueDate);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            months.add(key);
+            const key = getProjectStageMonthKey(p);
+            if (key) months.add(key);
         });
         return Array.from(months).sort().reverse(); // Newest first
     }, [projects]);
@@ -72,7 +75,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
     };
 
     const formatShortDate = (timestamp) => {
-        if (!timestamp) return '--';
+        if (!timestamp) return MISSING_DATE_LABEL;
         return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
@@ -89,8 +92,13 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
         }));
     };
 
-    const handleCreateNew = () => {
+    const handleCreateNew = async () => {
         if (!onCreateProject) return;
+        if (!canCreateProject) {
+            window.alert('Only manager and creator accounts can create projects');
+            return;
+        }
+
         const newProject = {
             id: `PRJ-${Date.now().toString().slice(-4)}`,
             title: 'New Untitled Project',
@@ -119,8 +127,10 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
             hasMographNeeds: false,
             archived: false
         };
-        onCreateProject(newProject);
-        onSelectProject(newProject);
+        const result = await onCreateProject(newProject);
+        if (result?.success) {
+            onSelectProject(result.project || newProject);
+        }
     };
 
     const sortedProjects = useMemo(() => {
@@ -148,8 +158,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
             // Date Filter
             let matchesDate = true;
             if (selectedMonth !== 'all') {
-                const date = new Date(p.uploadDoneDate || p.dueDate);
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const key = getProjectStageMonthKey(p);
                 matchesDate = key === selectedMonth;
             }
 
@@ -185,6 +194,12 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
             return sortOrder === 'asc' ? comparison : -comparison;
         });
     }, [projects, filter, selectedMonth, selectedCreator, searchQuery, sortBy, sortOrder]);
+
+    const formatStageDate = (project) => {
+        const ts = getProjectStageDate(project);
+        if (!ts) return MISSING_DATE_LABEL;
+        return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
 
     return (
         <div className="p-4 md:p-8 md:h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -313,13 +328,15 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
                         </button>
                     </div>
 
-                    <button
-                        onClick={handleCreateNew}
-                        className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20"
-                    >
-                        <Plus size={15} />
-                        <span>New Project</span>
-                    </button>
+                    {canCreateProject && (
+                        <button
+                            onClick={handleCreateNew}
+                            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20"
+                        >
+                            <Plus size={15} />
+                            <span>New Project</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -347,7 +364,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
                                 >
                                     <td className="p-4 text-xs text-[#999] font-mono hidden lg:table-cell">{project.id}</td>
                                     <td className="p-4 text-xs text-[#999] font-mono hidden sm:table-cell">
-                                        {new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                        {formatStageDate(project)}
                                     </td>
                                     <td className="p-4">
                                         <div className="font-medium text-white text-sm flex items-center">
@@ -544,7 +561,7 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
                                             </span>
                                         ) : (
                                             <span className="text-[10px] text-[#999]">
-                                                {new Date(project.uploadDoneDate || project.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                {formatStageDate(project)}
                                             </span>
                                         )}
                                         <button
