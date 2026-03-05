@@ -31,6 +31,46 @@ import NotificationPanel from '@/components/NotificationPanel';
 import AccountSwitcher from '@/components/dev/AccountSwitcher';
 import { UIProvider } from '@/contexts/UIContext';
 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function subscribeToPush(userId) {
+  if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, subscription: subscription.toJSON() })
+    });
+  } catch (error) {
+    console.error('Push subscription failed:', error);
+  }
+}
+
 export default function ProtectedLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,6 +114,13 @@ export default function ProtectedLayout({ children }) {
     const interval = setInterval(() => fetchNotifications(currentUser.id), 30000);
     return () => clearInterval(interval);
   }, [currentUser?.id, fetchNotifications]);
+
+  // Subscribe to push notifications after login
+  useEffect(() => {
+    if (currentUser?.id) {
+      subscribeToPush(currentUser.id);
+    }
+  }, [currentUser?.id]);
 
   if (!currentUser) return null;
 
