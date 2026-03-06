@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import ManageChannels from '@/components/ManageChannels';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState, saveState } from '@/services/api';
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
   const [undoDelete, setUndoDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
   const undoTimerRef = useRef(null);
 
   useEffect(() => {
@@ -19,6 +21,8 @@ export default function ChannelsPage() {
         setUsers(data.users || []);
       } catch (error) {
         console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -61,6 +65,10 @@ export default function ChannelsPage() {
       }
     });
   };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>

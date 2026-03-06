@@ -189,30 +189,10 @@ export async function POST(request) {
       }
     }
 
-    // Update projects
+    // Update projects (upsert only — never delete projects not in the incoming
+    // array because clients receive a filtered subset and would inadvertently
+    // remove other users' projects). Use DELETE /api/projects/:id for deletions.
     if (body.projects && Array.isArray(body.projects)) {
-      // Get all existing project IDs
-      const existingProjects = await Project.find({}).select('id');
-      const existingIds = existingProjects.map(p => p.id);
-
-      // Get incoming project IDs
-      const incomingIds = body.projects.map(p => p.id);
-
-      // Find projects that need to be deleted (in DB but not in incoming array)
-      const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
-
-      // Delete projects that are no longer in the array
-      if (idsToDelete.length > 0) {
-        const projectsToDelete = await Project.find({ id: { $in: idsToDelete } });
-        const snapshottedIds = await addToRecycleBin(projectsToDelete, 'project');
-        if (snapshottedIds.length > 0) {
-          await Project.deleteMany({ id: { $in: snapshottedIds } });
-        }
-        if (snapshottedIds.length !== idsToDelete.length) {
-          console.error('[State API] Some projects were not deleted because recycle snapshot failed');
-        }
-      }
-
       // Import NotificationEngine for event tracking
       const notificationEngineModule = await import('@/lib/services/notificationEngine.js');
       const NotificationEngine = notificationEngineModule.NotificationEngine || notificationEngineModule.default;

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
 
@@ -15,6 +16,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
   const showToast = useToast();
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export default function ProjectsPage() {
         }
       } catch (error) {
         console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -136,6 +140,10 @@ export default function ProjectsPage() {
 
     return { success: true, project: response.project || newProject };
   };
+
+  if (loading || !currentUser) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>

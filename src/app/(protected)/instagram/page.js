@@ -9,6 +9,7 @@ import AutomationBuilder from '@/components/instagram/AutomationBuilder';
 import AnalyticsDashboard from '@/components/instagram/AnalyticsDashboard';
 import InstagramOnboarding from '@/components/instagram/InstagramOnboarding';
 import ManyChatStyleBuilder from '@/components/instagram/ManyChatStyleBuilder';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 export default function InstagramPage() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -161,11 +162,7 @@ export default function InstagramPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Show onboarding wizard if no Instagram accounts connected

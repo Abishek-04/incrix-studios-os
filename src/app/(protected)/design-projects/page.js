@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { fetchState, saveState } from '@/services/api';
+import { useEffect, useState } from 'react';
+import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
 import { getProjectConfig } from '@/config/projectConfig';
 import { ProjectType, DesignStage, Priority, Status } from '@/types';
 import { Plus, Palette, Calendar, User, Filter, Search, Archive, Trash2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { useConfirm } from '@/contexts/UIContext';
 
 export default function DesignProjectsPage() {
@@ -20,17 +21,9 @@ export default function DesignProjectsPage() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [undoDelete, setUndoDelete] = useState(null);
-  const undoTimerRef = useRef(null);
 
   const config = getProjectConfig('design');
   const confirmAction = useConfirm();
-
-  const clearUndoTimer = () => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
-    }
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -118,20 +111,17 @@ export default function DesignProjectsPage() {
   };
 
   const handleSaveProject = async (project) => {
-    let updatedProjects;
     const existingIndex = allProjects.findIndex(p => p.id === project.id);
+    const updatedProject = { ...project, lastUpdated: Date.now() };
 
     if (existingIndex >= 0) {
-      // Update existing
-      updatedProjects = [...allProjects];
-      updatedProjects[existingIndex] = { ...project, lastUpdated: Date.now() };
+      setAllProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+      await updateProject(project.id, updatedProject);
     } else {
-      // Create new
-      updatedProjects = [...allProjects, { ...project, lastUpdated: Date.now() }];
+      setAllProjects(prev => [...prev, updatedProject]);
+      await createProject(updatedProject);
     }
 
-    setAllProjects(updatedProjects);
-    await saveState({ projects: updatedProjects });
     setShowModal(false);
     setSelectedProject(null);
   };
@@ -139,29 +129,24 @@ export default function DesignProjectsPage() {
   const handleDeleteProject = async (projectId) => {
     const confirmed = await confirmAction('Delete Design Project?', 'Are you sure you want to delete this design project?');
     if (!confirmed) return;
-    clearUndoTimer();
 
-    const snapshot = allProjects;
     const deletedProject = allProjects.find(p => p.id === projectId);
-    const updatedProjects = allProjects.filter(p => p.id !== projectId);
-
-    setAllProjects(updatedProjects);
+    setAllProjects(prev => prev.filter(p => p.id !== projectId));
     setShowModal(false);
     setSelectedProject(null);
 
-    undoTimerRef.current = setTimeout(async () => {
-      await saveState({ projects: updatedProjects });
-      setUndoDelete(null);
-      undoTimerRef.current = null;
-    }, 5000);
+    const response = await deleteProject(projectId);
+    if (!response?.success) {
+      if (deletedProject) {
+        setAllProjects(prev => [...prev, deletedProject]);
+      }
+      return;
+    }
 
     setUndoDelete({
-      message: `Deleted "${deletedProject?.title || 'design project'}"`,
-      onUndo: () => {
-        clearUndoTimer();
-        setAllProjects(snapshot);
-        setUndoDelete(null);
-      }
+      deletedItemId: response.deletedItemId,
+      project: deletedProject,
+      message: `Deleted "${deletedProject?.title || 'design project'}"`
     });
   };
 
@@ -169,11 +154,7 @@ export default function DesignProjectsPage() {
   const uniqueDesigners = [...new Set(designProjects.map(p => p.assignedDesigner))];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-white">Loading design projects...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!currentUser) return null;
@@ -314,14 +295,28 @@ export default function DesignProjectsPage() {
     <UndoToast
       isVisible={!!undoDelete}
       message={undoDelete?.message || ''}
-      onUndo={() => undoDelete?.onUndo?.()}
-      onClose={async () => {
-        if (undoDelete) {
-          clearUndoTimer();
-          await saveState({ projects: allProjects });
+      onUndo={async () => {
+        if (!undoDelete?.deletedItemId) return;
+        try {
+          const response = await fetch('/api/recycle-bin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId })
+          });
+          const data = await response.json();
+          if (data.success && undoDelete.project) {
+            setAllProjects(prev => {
+              const exists = prev.some(p => p.id === undoDelete.project.id);
+              return exists ? prev : [undoDelete.project, ...prev];
+            });
+          }
+        } catch (error) {
+          console.error('Undo project restore failed:', error);
+        } finally {
           setUndoDelete(null);
         }
       }}
+      onClose={() => setUndoDelete(null)}
     />
     </>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import {
   Users,
   Briefcase,
@@ -80,7 +81,7 @@ export default function AnalyticsPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const response = await fetch(`/api/analytics/overview?role=${currentUser.role}&range=${timeRange}`);
+      const response = await fetch(`/api/analytics/overview?role=${currentUser.role}&range=${timeRange}`, { cache: 'no-store' });
       const result = await response.json();
 
       if (result.success) {
@@ -106,7 +107,7 @@ export default function AnalyticsPage() {
 
       if (userId) params.append('userId', userId);
 
-      const response = await fetch(`/api/analytics/activity?${params}`);
+      const response = await fetch(`/api/analytics/activity?${params}`, { cache: 'no-store' });
       const result = await response.json();
 
       if (result.success) {
@@ -132,11 +133,7 @@ export default function AnalyticsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!data) {

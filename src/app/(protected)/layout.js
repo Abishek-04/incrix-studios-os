@@ -98,7 +98,7 @@ export default function ProtectedLayout({ children }) {
   // Fetch notifications from DB
   const fetchNotifications = useCallback(async (userId) => {
     try {
-      const res = await fetch(`/api/notifications?userId=${userId}&limit=50`);
+      const res = await fetch(`/api/notifications?userId=${userId}&limit=50`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);

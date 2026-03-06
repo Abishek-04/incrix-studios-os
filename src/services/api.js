@@ -148,7 +148,9 @@ export async function fetchState() {
   }
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/api/state${query ? `?${query}` : ''}`);
+  const response = await fetch(`${API_BASE_URL}/api/state${query ? `?${query}` : ''}`, {
+    cache: 'no-store'
+  });
   const data = await response.json();
   return data;
 }

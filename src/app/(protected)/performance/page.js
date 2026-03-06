@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PerformanceView from '@/components/PerformanceView';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState } from '@/services/api';
 
 export default function PerformancePage() {
@@ -38,14 +39,8 @@ export default function PerformancePage() {
     }
   }, [currentUser]);
 
-  if (!currentUser) return null;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-white">Loading performance data...</div>
-      </div>
-    );
+  if (!currentUser || loading) {
+    return <LoadingScreen />;
   }
 
   return (

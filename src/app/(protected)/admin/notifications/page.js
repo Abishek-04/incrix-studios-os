@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, Send, CheckCircle, XCircle, Clock, Users, Info, AlertTriangle, AlertCircle, X } from 'lucide-react';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState } from '@/services/api';
 
 export default function AdminNotificationsPage() {
@@ -177,11 +178,7 @@ export default function AdminNotificationsPage() {
   const usersWithNumber = users.filter((u) => u.whatsappNumber);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!currentUser || !['superadmin', 'manager'].includes(currentUser.role)) {

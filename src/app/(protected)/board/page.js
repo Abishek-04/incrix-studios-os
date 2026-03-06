@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ProjectBoard from '@/components/ProjectBoard';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
 
@@ -14,6 +15,7 @@ export default function BoardPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
   const showToast = useToast();
 
   useEffect(() => {
@@ -35,6 +37,8 @@ export default function BoardPage() {
         }
       } catch (error) {
         console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -112,6 +116,10 @@ export default function BoardPage() {
       message: `Deleted "${deletedProject?.title || 'project'}"`
     });
   };
+
+  if (loading || !currentUser) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>

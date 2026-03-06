@@ -6,6 +6,7 @@ import UserManagement from '@/components/admin/UserManagement';
 import { RoleGuard } from '@/components/common/PermissionGuard';
 import { ROLES } from '@/config/permissions';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { useToast } from '@/contexts/UIContext';
 
 export default function UserManagementPage() {
@@ -30,7 +31,7 @@ export default function UserManagementPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/users?all=1');
+        const response = await fetch('/api/users?all=1', { cache: 'no-store' });
         const data = await response.json();
 
         if (data.success) {
@@ -183,9 +184,7 @@ export default function UserManagementPage() {
       currentUser={currentUser}
     >
       {loading ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-white">Loading users...</div>
-        </div>
+        <LoadingScreen />
       ) : error ? (
         <div className="flex items-center justify-center h-full">
           <div className="text-rose-400">{error}</div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import NotionDailyTasks from '@/components/NotionDailyTasks';
 import UndoToast from '@/components/ui/UndoToast';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState, saveState } from '@/services/api';
 
 export default function DailyPage() {
@@ -10,6 +11,7 @@ export default function DailyPage() {
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
   const undoTimerRef = useRef(null);
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export default function DailyPage() {
         }
       } catch (error) {
         console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -78,6 +82,10 @@ export default function DailyPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
+  }
+
+  if (loading || !currentUser) {
+    return <LoadingScreen />;
   }
 
   return (
