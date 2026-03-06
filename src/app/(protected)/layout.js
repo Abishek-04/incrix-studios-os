@@ -224,9 +224,9 @@ export default function ProtectedLayout({ children }) {
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
       {/* Sidebar - Desktop */}
       <div className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col justify-between hidden md:flex transition-all duration-300`}>
-        <div>
+        <div className="flex flex-col min-h-0 flex-1">
           {/* Logo */}
-          <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f] relative">
+          <div className="h-16 flex-shrink-0 flex items-center px-6 border-b border-[#1f1f1f] relative">
             {!sidebarCollapsed && (
               <>
                 <img src="/icons/icon-192.png" alt="#teamincrix" className="w-7 h-7 rounded-lg mr-3" />
@@ -247,7 +247,7 @@ export default function ProtectedLayout({ children }) {
           </div>
 
           {/* Navigation */}
-          <div className="p-4">
+          <div className="p-4 flex-1 overflow-y-auto">
             {!sidebarCollapsed && <div className="text-xs font-bold text-[#999] uppercase tracking-wider mb-3 px-4">Menu</div>}
             <nav className="space-y-1">
               <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" isActive={isActive('/dashboard')} collapsed={sidebarCollapsed} />

@@ -4,6 +4,8 @@ import User from '@/models/User';
 import { hasPermission, PERMISSIONS, ROLES } from '@/config/permissions';
 import { logUserAction } from '@/utils/activityLogger';
 
+export const dynamic = 'force-dynamic';
+
 function normalizeRole(role) {
   if (typeof role !== 'string') return '';
   return role.trim().toLowerCase().replace(/[\s_-]+/g, '');

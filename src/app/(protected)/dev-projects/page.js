@@ -140,8 +140,8 @@ export default function DevProjectsPage() {
 
     const response = await deleteProject(projectId);
     if (!response?.success) {
-      // Restore on failure
-      if (deletedProject) {
+      // If "Project not found", it's already gone from DB — don't re-add
+      if (response?.error !== 'Project not found' && deletedProject) {
         setAllProjects(prev => [...prev, deletedProject]);
       }
       return;

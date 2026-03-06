@@ -8,6 +8,8 @@ import {
   normalizeText
 } from '@/lib/projectAccess';
 
+export const dynamic = 'force-dynamic';
+
 function toPlainObject(input) {
   if (!input) return {};
   if (typeof input.toObject === 'function') return input.toObject();
@@ -156,6 +158,10 @@ export async function GET(request) {
       channels: channels || [],
       dailyTasks: dailyTasks || [],
       lastUpdated: new Date()
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
     });
 
   } catch (error) {

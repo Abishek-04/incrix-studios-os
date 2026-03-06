@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import Project from '@/models/Project';
 import User from '@/models/User';
+
+export const dynamic = 'force-dynamic';
 import {
   buildCurrentUserContext,
   canManageAllProjects,

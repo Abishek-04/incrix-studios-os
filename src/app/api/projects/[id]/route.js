@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import Project from '@/models/Project';
+
+export const dynamic = 'force-dynamic';
 import DeletedItem from '@/models/DeletedItem';
 import User from '@/models/User';
 import {

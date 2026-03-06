@@ -100,6 +100,10 @@ export default function BoardPage() {
 
     if (!response?.success) {
       console.error('Project delete failed:', response?.error);
+      // If "Project not found", it's already gone from DB — don't re-add to UI
+      if (response?.error === 'Project not found') {
+        return;
+      }
       showToast(response?.error || 'Failed to delete project');
       if (deletedProject) {
         setProjects((prevProjects) => {

@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
+
+export const dynamic = 'force-dynamic';
 import { sendPushToUser } from '@/lib/webPush';
 
 // GET — Fetch notifications for a user
