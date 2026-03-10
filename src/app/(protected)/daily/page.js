@@ -40,9 +40,14 @@ export default function DailyPage() {
 
   const handleAddTask = async (newTask) => {
     setDailyTasks(prev => [...prev, newTask]);
-    const response = await createDailyTask(newTask);
-    if (!response?.success) {
-      console.error('Failed to create task:', response?.error);
+    try {
+      const response = await createDailyTask(newTask);
+      if (!response?.success) {
+        console.error('Failed to create task:', response?.error);
+        setDailyTasks(prev => prev.filter(t => t.id !== newTask.id));
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
       setDailyTasks(prev => prev.filter(t => t.id !== newTask.id));
     }
   };
@@ -52,9 +57,14 @@ export default function DailyPage() {
     if (!task) return;
     const newDone = !task.done;
     setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: newDone } : t));
-    const response = await updateDailyTask(taskId, { done: newDone });
-    if (!response?.success) {
-      console.error('Failed to toggle task:', response?.error);
+    try {
+      const response = await updateDailyTask(taskId, { done: newDone });
+      if (!response?.success) {
+        console.error('Failed to toggle task:', response?.error);
+        setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !newDone } : t));
+      }
+    } catch (error) {
+      console.error('Failed to toggle task:', error);
       setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !newDone } : t));
     }
   };
@@ -64,9 +74,14 @@ export default function DailyPage() {
     if (!task) return;
     const oldText = task.task;
     setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, task: newText } : t));
-    const response = await updateDailyTask(taskId, { task: newText });
-    if (!response?.success) {
-      console.error('Failed to update task text:', response?.error);
+    try {
+      const response = await updateDailyTask(taskId, { task: newText });
+      if (!response?.success) {
+        console.error('Failed to update task text:', response?.error);
+        setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, task: oldText } : t));
+      }
+    } catch (error) {
+      console.error('Failed to update task text:', error);
       setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, task: oldText } : t));
     }
   };
@@ -75,21 +90,28 @@ export default function DailyPage() {
     const deletedTask = dailyTasks.find(t => t.id === taskId);
     setDailyTasks(prev => prev.filter(t => t.id !== taskId));
 
-    const response = await deleteDailyTask(taskId);
-    if (!response?.success) {
-      if (response?.error === 'Task not found') return;
-      console.error('Failed to delete task:', response?.error);
+    try {
+      const response = await deleteDailyTask(taskId);
+      if (!response?.success) {
+        if (response?.error === 'Task not found') return;
+        console.error('Failed to delete task:', response?.error);
+        if (deletedTask) {
+          setDailyTasks(prev => [...prev, deletedTask]);
+        }
+        return;
+      }
+
+      setUndoDelete({
+        deletedItemId: response.deletedItemId,
+        task: deletedTask,
+        message: `Deleted "${deletedTask?.task || 'task'}"`
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
       if (deletedTask) {
         setDailyTasks(prev => [...prev, deletedTask]);
       }
-      return;
     }
-
-    setUndoDelete({
-      deletedItemId: response.deletedItemId,
-      task: deletedTask,
-      message: `Deleted "${deletedTask?.task || 'task'}"`
-    });
   };
 
   if (loading || !currentUser) {

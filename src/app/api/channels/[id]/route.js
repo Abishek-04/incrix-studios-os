@@ -3,42 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import Channel from '@/models/Channel';
 import DeletedItem from '@/models/DeletedItem';
-import User from '@/models/User';
-import { buildCurrentUserContext, normalizeRole } from '@/lib/projectAccess';
+import { buildCurrentUserContext, canManageAllProjects } from '@/lib/projectAccess';
 
 export const dynamic = 'force-dynamic';
-
-const MANAGER_ROLES = new Set(['manager', 'superadmin']);
-
-async function resolveUser(request, body = null) {
-  const raw = body?.currentUser || {};
-  const id = String(raw.id || raw._id || '').trim();
-  const name = String(raw.name || '').trim();
-
-  if (!id && !name) return buildCurrentUserContext({});
-
-  let user = null;
-  if (id) user = await User.findOne({ id }).select('id name role roles');
-  if (!user && name) {
-    user = await User.findOne({
-      name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
-    }).select('id name role roles');
-  }
-  if (!user) return buildCurrentUserContext({});
-
-  return buildCurrentUserContext({
-    id: user.id || String(user._id || ''),
-    name: user.name || '',
-    role: user.role || '',
-    roles: Array.isArray(user.roles) ? user.roles : []
-  });
-}
-
-function isManagerUser(currentUser) {
-  const primary = normalizeRole(currentUser?.role);
-  if (primary) return MANAGER_ROLES.has(primary);
-  return (currentUser?.roles || []).some(r => MANAGER_ROLES.has(normalizeRole(r)));
-}
 
 export async function PATCH(request, { params }) {
   try {
@@ -46,9 +13,9 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const channelId = decodeURIComponent(id);
     const body = await request.json();
-    const currentUser = await resolveUser(request, body);
+    const currentUser = buildCurrentUserContext(body.currentUser || {});
 
-    if (!isManagerUser(currentUser)) {
+    if (!canManageAllProjects(currentUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can update channels' }, { status: 403 });
     }
 
@@ -85,9 +52,9 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     const channelId = decodeURIComponent(id);
     const body = await request.json().catch(() => ({}));
-    const currentUser = await resolveUser(request, body);
+    const currentUser = buildCurrentUserContext(body.currentUser || {});
 
-    if (!isManagerUser(currentUser)) {
+    if (!canManageAllProjects(currentUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can delete channels' }, { status: 403 });
     }
 

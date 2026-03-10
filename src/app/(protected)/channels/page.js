@@ -30,9 +30,14 @@ export default function ChannelsPage() {
 
   const handleCreateChannel = async (newChannel) => {
     setChannels(prev => [...prev, newChannel]);
-    const response = await createChannel(newChannel);
-    if (!response?.success) {
-      console.error('Failed to create channel:', response?.error);
+    try {
+      const response = await createChannel(newChannel);
+      if (!response?.success) {
+        console.error('Failed to create channel:', response?.error);
+        setChannels(prev => prev.filter(c => c.id !== newChannel.id));
+      }
+    } catch (error) {
+      console.error('Failed to create channel:', error);
       setChannels(prev => prev.filter(c => c.id !== newChannel.id));
     }
   };
@@ -40,9 +45,16 @@ export default function ChannelsPage() {
   const handleUpdateChannelMember = async (channelId, memberId) => {
     const oldChannel = channels.find(c => c.id === channelId);
     setChannels(prev => prev.map(c => c.id === channelId ? { ...c, memberId: memberId || undefined } : c));
-    const response = await updateChannel(channelId, { memberId: memberId || undefined });
-    if (!response?.success) {
-      console.error('Failed to update channel:', response?.error);
+    try {
+      const response = await updateChannel(channelId, { memberId: memberId || undefined });
+      if (!response?.success) {
+        console.error('Failed to update channel:', response?.error);
+        if (oldChannel) {
+          setChannels(prev => prev.map(c => c.id === channelId ? oldChannel : c));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update channel:', error);
       if (oldChannel) {
         setChannels(prev => prev.map(c => c.id === channelId ? oldChannel : c));
       }
@@ -53,21 +65,28 @@ export default function ChannelsPage() {
     const deletedChannel = channels.find(c => c.id === channelId);
     setChannels(prev => prev.filter(c => c.id !== channelId));
 
-    const response = await deleteChannel(channelId);
-    if (!response?.success) {
-      if (response?.error === 'Channel not found') return;
-      console.error('Failed to delete channel:', response?.error);
+    try {
+      const response = await deleteChannel(channelId);
+      if (!response?.success) {
+        if (response?.error === 'Channel not found') return;
+        console.error('Failed to delete channel:', response?.error);
+        if (deletedChannel) {
+          setChannels(prev => [...prev, deletedChannel]);
+        }
+        return;
+      }
+
+      setUndoDelete({
+        deletedItemId: response.deletedItemId,
+        channel: deletedChannel,
+        message: `Deleted "${deletedChannel?.name || 'channel'}"`
+      });
+    } catch (error) {
+      console.error('Failed to delete channel:', error);
       if (deletedChannel) {
         setChannels(prev => [...prev, deletedChannel]);
       }
-      return;
     }
-
-    setUndoDelete({
-      deletedItemId: response.deletedItemId,
-      channel: deletedChannel,
-      message: `Deleted "${deletedChannel?.name || 'channel'}"`
-    });
   };
 
   if (loading) {
