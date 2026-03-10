@@ -90,8 +90,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             topic: 'To be decided',
             vertical: Vertical.Software, // Default
             platform: Platform.YouTube, // Default
-            role: 'manager',
-            creator: 'Unassigned',
+            creator: currentUser?.name || 'Unassigned',
             editor: 'Unassigned',
             editors: [],
             stage: Stage.Backlog,

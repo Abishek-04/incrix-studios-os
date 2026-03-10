@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import NotionDailyTasks from '@/components/NotionDailyTasks';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState, saveState } from '@/services/api';
+import { fetchState, createDailyTask, updateDailyTask, deleteDailyTask } from '@/services/api';
 
 export default function DailyPage() {
   const [dailyTasks, setDailyTasks] = useState([]);
@@ -12,7 +12,6 @@ export default function DailyPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
-  const undoTimerRef = useRef(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -21,7 +20,6 @@ export default function DailyPage() {
         setDailyTasks(data.dailyTasks || []);
         setUsers(data.users || []);
 
-        // Get current user from localStorage
         const storedUser = localStorage.getItem('auth_user');
         if (storedUser) {
           setCurrentUser(JSON.parse(storedUser));
@@ -40,49 +38,59 @@ export default function DailyPage() {
     loadData();
   }, []);
 
-  const clearUndoTimer = () => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
+  const handleAddTask = async (newTask) => {
+    setDailyTasks(prev => [...prev, newTask]);
+    const response = await createDailyTask(newTask);
+    if (!response?.success) {
+      console.error('Failed to create task:', response?.error);
+      setDailyTasks(prev => prev.filter(t => t.id !== newTask.id));
     }
   };
 
-  const handleUpdateTasks = (updatedTasks) => {
-    setDailyTasks(updatedTasks);
-    saveState({ dailyTasks: updatedTasks });
+  const handleToggleTask = async (taskId) => {
+    const task = dailyTasks.find(t => t.id === taskId);
+    if (!task) return;
+    const newDone = !task.done;
+    setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: newDone } : t));
+    const response = await updateDailyTask(taskId, { done: newDone });
+    if (!response?.success) {
+      console.error('Failed to toggle task:', response?.error);
+      setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !newDone } : t));
+    }
   };
 
-  const handleDeleteTask = (taskId) => {
-    clearUndoTimer();
-    const snapshot = dailyTasks;
+  const handleUpdateTaskText = async (taskId, newText) => {
+    const task = dailyTasks.find(t => t.id === taskId);
+    if (!task) return;
+    const oldText = task.task;
+    setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, task: newText } : t));
+    const response = await updateDailyTask(taskId, { task: newText });
+    if (!response?.success) {
+      console.error('Failed to update task text:', response?.error);
+      setDailyTasks(prev => prev.map(t => t.id === taskId ? { ...t, task: oldText } : t));
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
     const deletedTask = dailyTasks.find(t => t.id === taskId);
-    const updatedTasks = dailyTasks.filter(t => t.id !== taskId);
+    setDailyTasks(prev => prev.filter(t => t.id !== taskId));
 
-    setDailyTasks(updatedTasks);
-
-    undoTimerRef.current = setTimeout(() => {
-      saveState({ dailyTasks: updatedTasks });
-      setUndoDelete(null);
-      undoTimerRef.current = null;
-    }, 5000);
+    const response = await deleteDailyTask(taskId);
+    if (!response?.success) {
+      if (response?.error === 'Task not found') return;
+      console.error('Failed to delete task:', response?.error);
+      if (deletedTask) {
+        setDailyTasks(prev => [...prev, deletedTask]);
+      }
+      return;
+    }
 
     setUndoDelete({
-      message: `Deleted "${deletedTask?.text || deletedTask?.task || 'task'}"`,
-      onUndo: () => {
-        clearUndoTimer();
-        setDailyTasks(snapshot);
-        setUndoDelete(null);
-      }
+      deletedItemId: response.deletedItemId,
+      task: deletedTask,
+      message: `Deleted "${deletedTask?.task || 'task'}"`
     });
   };
-
-  if (!currentUser) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
 
   if (loading || !currentUser) {
     return <LoadingScreen />;
@@ -94,20 +102,36 @@ export default function DailyPage() {
         tasks={dailyTasks}
         users={users}
         currentUser={currentUser}
-        onUpdateTasks={handleUpdateTasks}
+        onAddTask={handleAddTask}
+        onToggleTask={handleToggleTask}
+        onUpdateTaskText={handleUpdateTaskText}
         onDeleteTask={handleDeleteTask}
       />
       <UndoToast
         isVisible={!!undoDelete}
         message={undoDelete?.message || ''}
-        onUndo={() => undoDelete?.onUndo?.()}
-        onClose={() => {
-          if (undoDelete) {
-            clearUndoTimer();
-            saveState({ dailyTasks });
+        onUndo={async () => {
+          if (!undoDelete?.deletedItemId) return;
+          try {
+            const response = await fetch('/api/recycle-bin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+            });
+            const data = await response.json();
+            if (data.success && undoDelete.task) {
+              setDailyTasks(prev => {
+                const exists = prev.some(t => t.id === undoDelete.task.id);
+                return exists ? prev : [...prev, undoDelete.task];
+              });
+            }
+          } catch (error) {
+            console.error('Undo task restore failed:', error);
+          } finally {
             setUndoDelete(null);
           }
         }}
+        onClose={() => setUndoDelete(null)}
       />
     </>
   );

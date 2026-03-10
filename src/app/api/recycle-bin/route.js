@@ -3,14 +3,48 @@ import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import DeletedItem from '@/models/DeletedItem';
 import Project from '@/models/Project';
-
-export const dynamic = 'force-dynamic';
 import Channel from '@/models/Channel';
 import DailyTask from '@/models/DailyTask';
 import User from '@/models/User';
 import AutomationRule from '@/models/AutomationRule';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { buildCurrentUserContext, normalizeRole } from '@/lib/projectAccess';
+
+export const dynamic = 'force-dynamic';
+
+const MANAGER_ROLES = new Set(['manager', 'superadmin']);
+
+async function resolveUser(request, body = null) {
+  const { searchParams } = new URL(request.url);
+  const raw = body?.currentUser || {};
+  const id = String(raw.id || raw._id || searchParams.get('userId') || '').trim();
+  const name = String(raw.name || searchParams.get('userName') || '').trim();
+
+  if (!id && !name) return buildCurrentUserContext({});
+
+  let user = null;
+  if (id) user = await User.findOne({ id }).select('id name role roles');
+  if (!user && name) {
+    user = await User.findOne({
+      name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+    }).select('id name role roles');
+  }
+  if (!user) return buildCurrentUserContext({});
+
+  return buildCurrentUserContext({
+    id: user.id || String(user._id || ''),
+    name: user.name || '',
+    role: user.role || '',
+    roles: Array.isArray(user.roles) ? user.roles : []
+  });
+}
+
+function isManagerUser(currentUser) {
+  const primary = normalizeRole(currentUser?.role);
+  if (primary) return MANAGER_ROLES.has(primary);
+  return (currentUser?.roles || []).some(r => MANAGER_ROLES.has(normalizeRole(r)));
+}
 
 function buildUserLookup(id) {
   if (!id) return null;
@@ -69,6 +103,10 @@ const RESTORE_HANDLERS = {
 export async function GET(request) {
   try {
     await connectDB();
+    const currentUser = await resolveUser(request);
+    if (!isManagerUser(currentUser)) {
+      return NextResponse.json({ success: false, error: 'Only managers can access recycle bin' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -96,6 +134,10 @@ export async function POST(request) {
   try {
     await connectDB();
     const body = await request.json();
+    const currentUser = await resolveUser(request, body);
+    if (!isManagerUser(currentUser)) {
+      return NextResponse.json({ success: false, error: 'Only managers can restore items' }, { status: 403 });
+    }
 
     const { deletedItemId, deletedItemIds } = body;
     const ids = deletedItemIds || (deletedItemId ? [deletedItemId] : []);
@@ -148,6 +190,10 @@ export async function DELETE(request) {
   try {
     await connectDB();
     const body = await request.json().catch(() => ({}));
+    const currentUser = await resolveUser(request, body);
+    if (!isManagerUser(currentUser)) {
+      return NextResponse.json({ success: false, error: 'Only managers can permanently delete items' }, { status: 403 });
+    }
     const { id, ids } = body;
 
     if (id || (ids && ids.length)) {
@@ -178,6 +224,10 @@ export async function PUT(request) {
   try {
     await connectDB();
     const body = await request.json();
+    const currentUser = await resolveUser(request, body);
+    if (!isManagerUser(currentUser)) {
+      return NextResponse.json({ success: false, error: 'Only managers can add items to recycle bin' }, { status: 403 });
+    }
     const { entityType, entityId, data, deletedBy = 'system', source = 'api' } = body;
 
     if (!entityType || !entityId || !data) {

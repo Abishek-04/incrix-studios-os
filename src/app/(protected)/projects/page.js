@@ -185,7 +185,7 @@ export default function ProjectsPage() {
             const response = await fetch('/api/recycle-bin', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId })
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
             });
             const data = await response.json();
             if (data.success && undoDelete.project) {

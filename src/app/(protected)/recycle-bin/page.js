@@ -20,6 +20,22 @@ function getItemTitle(item) {
   return item?.data?.title || item?.data?.name || item?.data?.task || item?.data?.email || item.entityId;
 }
 
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('auth_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function userParams() {
+  const u = getStoredUser();
+  if (!u) return '';
+  const p = new URLSearchParams();
+  if (u.id || u._id) p.set('userId', u.id || u._id);
+  if (u.name) p.set('userName', u.name);
+  return p.toString();
+}
+
 export default function RecycleBinPage() {
   const confirmAction = useConfirm();
   const [items, setItems] = useState([]);
@@ -33,7 +49,8 @@ export default function RecycleBinPage() {
   const loadItems = async (type = activeFilter) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/recycle-bin?type=${type}&limit=200`, { cache: 'no-store' });
+      const up = userParams();
+      const response = await fetch(`/api/recycle-bin?type=${type}&limit=200${up ? `&${up}` : ''}`, { cache: 'no-store' });
       const data = await response.json();
       if (data.success) {
         setItems(data.items || []);
@@ -77,7 +94,7 @@ export default function RecycleBinPage() {
       const response = await fetch('/api/recycle-bin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deletedItemId: id })
+        body: JSON.stringify({ deletedItemId: id, currentUser: getStoredUser() })
       });
       const data = await response.json();
       if (data.success) {
@@ -97,7 +114,7 @@ export default function RecycleBinPage() {
       const response = await fetch('/api/recycle-bin', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id, currentUser: getStoredUser() })
       });
       const data = await response.json();
       if (data.success) {
@@ -126,7 +143,7 @@ export default function RecycleBinPage() {
       const response = await fetch('/api/recycle-bin', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
+        body: JSON.stringify({ ids, currentUser: getStoredUser() })
       });
       const data = await response.json();
       if (data.success) {
@@ -149,7 +166,7 @@ export default function RecycleBinPage() {
       const response = await fetch('/api/recycle-bin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deletedItemIds: ids })
+        body: JSON.stringify({ deletedItemIds: ids, currentUser: getStoredUser() })
       });
       const data = await response.json();
       if (data.success) {

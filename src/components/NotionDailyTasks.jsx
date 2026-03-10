@@ -44,7 +44,9 @@ export default function NotionDailyTasks({
   tasks = [],
   users = [],
   currentUser,
-  onUpdateTasks,
+  onAddTask,
+  onToggleTask,
+  onUpdateTaskText,
   onDeleteTask,
 }) {
   const todayStr = toDateString(new Date());
@@ -79,23 +81,19 @@ export default function NotionDailyTasks({
       task: taskText.trim(),
       done: false,
     };
-    onUpdateTasks([...tasks, newTask]);
+    onAddTask(newTask);
   };
 
   const handleToggleTask = (taskId) => {
-    onUpdateTasks(tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)));
+    onToggleTask(taskId);
   };
 
   const handleUpdateTaskText = (taskId, newText) => {
-    onUpdateTasks(tasks.map((t) => (t.id === taskId ? { ...t, task: newText } : t)));
+    onUpdateTaskText(taskId, newText);
   };
 
   const handleDeleteTaskItem = (taskId) => {
-    if (onDeleteTask) {
-      onDeleteTask(taskId);
-    } else {
-      onUpdateTasks(tasks.filter((t) => t.id !== taskId));
-    }
+    onDeleteTask(taskId);
   };
 
   return (

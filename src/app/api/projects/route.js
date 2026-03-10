@@ -74,7 +74,6 @@ function sanitizeProjectPayload(rawProject = {}, { isCreate = false } = {}) {
         topic: 'To be decided',
         vertical: 'software',
         platform: 'youtube',
-        role: 'manager',
         creator: 'Unassigned',
         editor: 'Unassigned',
         editors: [],
@@ -107,6 +106,9 @@ function sanitizeProjectPayload(rawProject = {}, { isCreate = false } = {}) {
   merged.title = String(merged.title || '').trim() || base.title || 'New Untitled Project';
   merged.topic = String(merged.topic || '').trim() || base.topic || 'To be decided';
   merged.creator = String(merged.creator || '').trim() || 'Unassigned';
+
+  // Remove spurious 'role' field — projects don't have roles
+  delete merged.role;
 
   const normalizedEditors = normalizeEditors(merged);
   merged.editors = normalizedEditors;
@@ -227,7 +229,7 @@ export async function POST(request) {
     }
 
     const isManager = canManageAllProjects(currentUser);
-    const isCreator = currentUser.role === 'creator';
+    const isCreator = currentUser.role === 'creator' || (currentUser.roles || []).includes('creator');
     if (!isManager && !isCreator) {
       return NextResponse.json(
         { success: false, error: 'Only managers and creators can create projects' },
@@ -236,6 +238,13 @@ export async function POST(request) {
     }
 
     const payload = sanitizeProjectPayload(body?.project || {}, { isCreate: true });
+
+    // Default creator to the current user if it's "Unassigned"
+    if (normalizeText(payload.creator) === 'unassigned' && currentUser.name) {
+      payload.creator = currentUser.name;
+    }
+
+    // Non-managers must be the creator
     if (!isManager) {
       if (!currentUser.name) {
         return NextResponse.json(

@@ -194,6 +194,70 @@ export async function deleteProject(projectId) {
   return response.json();
 }
 
+// ── Daily Task CRUD ──
+
+export async function createDailyTask(taskData) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/daily-tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, task: taskData })
+  });
+  return response.json();
+}
+
+export async function updateDailyTask(taskId, updates) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, updates })
+  });
+  return response.json();
+}
+
+export async function deleteDailyTask(taskId) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser })
+  });
+  return response.json();
+}
+
+// ── Channel CRUD ──
+
+export async function createChannel(channelData) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/channels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, channel: channelData })
+  });
+  return response.json();
+}
+
+export async function updateChannel(channelId, updates) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/channels/${encodeURIComponent(channelId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser, updates })
+  });
+  return response.json();
+}
+
+export async function deleteChannel(channelId) {
+  const currentUser = getStoredCurrentUser();
+  const response = await fetch(`${API_BASE_URL}/api/channels/${encodeURIComponent(channelId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentUser })
+  });
+  return response.json();
+}
+
 // Debounced save (keep existing pattern)
 let saveTimeout = null;
 export function debouncedSave(data, delay = 1000) {

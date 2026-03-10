@@ -3,7 +3,7 @@ import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { Plus, Trash2, Tv, Eye, EyeOff, Save, X, Globe, Share2, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Mail, User as UserIcon } from 'lucide-react';
 import { useConfirm } from '@/contexts/UIContext';
 
-const ManageChannels = ({ channels, users, onUpdateChannels, onDeleteChannel }) => {
+const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMember, onDeleteChannel }) => {
     const confirmAction = useConfirm();
     const [isAdding, setIsAdding] = useState(false);
     const [isDetecting, setIsDetecting] = useState(false);
@@ -90,25 +90,18 @@ const ManageChannels = ({ channels, users, onUpdateChannels, onDeleteChannel }) 
             memberId: formData.memberId || undefined
         };
 
-        onUpdateChannels([...channels, newChannel]);
+        onCreateChannel(newChannel);
         resetForm();
     };
 
     const handleUpdateChannelMember = (channelId, memberId) => {
-        const updatedChannels = channels.map(c =>
-            c.id === channelId ? { ...c, memberId: memberId || undefined } : c
-        );
-        onUpdateChannels(updatedChannels);
+        onUpdateChannelMember(channelId, memberId);
     };
 
     const deleteChannel = async (id) => {
         const confirmed = await confirmAction('Delete Channel?', 'Are you sure you want to delete this channel?');
         if (confirmed) {
-            if (onDeleteChannel) {
-                onDeleteChannel(id);
-            } else {
-                onUpdateChannels(channels.filter(c => c.id !== id));
-            }
+            onDeleteChannel(id);
         }
     };
 

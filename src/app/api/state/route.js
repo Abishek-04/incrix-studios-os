@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
   buildCurrentUserContext,
+  canManageAllProjects,
+  canViewProject,
   filterProjectsForUser,
   normalizeRoles,
   normalizeText
@@ -199,6 +201,14 @@ export async function POST(request) {
     // array because clients receive a filtered subset and would inadvertently
     // remove other users' projects). Use DELETE /api/projects/:id for deletions.
     if (body.projects && Array.isArray(body.projects)) {
+      // Resolve requesting user for permission checks
+      const allUsers = await User.find({}).select('-password -refreshTokens');
+      const userContext = resolveCurrentUserContext(
+        buildCurrentUserContext(body.currentUser || {}),
+        allUsers || []
+      );
+      const isManager = canManageAllProjects(userContext);
+
       // Import NotificationEngine for event tracking
       const notificationEngineModule = await import('@/lib/services/notificationEngine.js');
       const NotificationEngine = notificationEngineModule.NotificationEngine || notificationEngineModule.default;
@@ -207,6 +217,11 @@ export async function POST(request) {
       for (const project of body.projects) {
         // Fetch existing project to detect changes
         const existingProject = await Project.findOne({ id: project.id });
+
+        // Permission check: non-managers can only update projects they can view
+        if (!isManager && existingProject && !canViewProject(existingProject, userContext)) {
+          continue;
+        }
         const incomingLastUpdated = Number(project?.lastUpdated || 0);
         const existingLastUpdated = Number(existingProject?.lastUpdated || 0);
 
@@ -265,31 +280,9 @@ export async function POST(request) {
       }
     }
 
-    // Update channels
+    // Update channels (upsert only — never delete channels not in the incoming
+    // array. Use DELETE /api/channels/:id for deletions.)
     if (body.channels && Array.isArray(body.channels)) {
-      // Get all existing channel IDs from the database
-      const existingChannels = await Channel.find({}).select('id');
-      const existingIds = existingChannels.map(c => c.id);
-
-      // Get incoming channel IDs
-      const incomingIds = body.channels.map(c => c.id);
-
-      // Find channels that need to be deleted (in DB but not in incoming array)
-      const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
-
-      // Delete channels that are no longer in the array
-      if (idsToDelete.length > 0) {
-        const channelsToDelete = await Channel.find({ id: { $in: idsToDelete } });
-        const snapshottedIds = await addToRecycleBin(channelsToDelete, 'channel');
-        if (snapshottedIds.length > 0) {
-          await Channel.deleteMany({ id: { $in: snapshottedIds } });
-        }
-        if (snapshottedIds.length !== idsToDelete.length) {
-          console.error('[State API] Some channels were not deleted because recycle snapshot failed');
-        }
-      }
-
-      // Update or insert remaining channels
       for (const channel of body.channels) {
         await Channel.updateOne(
           { id: channel.id },
@@ -299,48 +292,10 @@ export async function POST(request) {
       }
     }
 
-    // Update daily tasks
+    // Update daily tasks (upsert only — never delete tasks not in the incoming
+    // array. Use DELETE /api/daily-tasks/:id for deletions.)
     if (body.dailyTasks && Array.isArray(body.dailyTasks)) {
-      // Get all existing daily task IDs from the database
-      const existingTasks = await DailyTask.find({}).select('id');
-      const existingIds = existingTasks.map(t => t.id);
-
-      // Get incoming daily task IDs
-      const incomingIds = body.dailyTasks.map(t => t.id);
-
-      // Find tasks that need to be deleted (in DB but not in incoming array)
-      const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
-
-      // Delete tasks that are no longer in the array
-      if (idsToDelete.length > 0) {
-        const tasksToDelete = await DailyTask.find({ id: { $in: idsToDelete } });
-        const snapshottedIds = await addToRecycleBin(tasksToDelete, 'daily_task');
-        if (snapshottedIds.length > 0) {
-          await DailyTask.deleteMany({ id: { $in: snapshottedIds } });
-        }
-        if (snapshottedIds.length !== idsToDelete.length) {
-          console.error('[State API] Some daily tasks were not deleted because recycle snapshot failed');
-        }
-      }
-
-      // Import NotificationEngine if not already imported
-      const NotificationEngineModule = await import('@/lib/services/notificationEngine.js');
-      const TaskNotificationEngine = NotificationEngineModule.default?.NotificationEngine || NotificationEngineModule.NotificationEngine;
-
-      // Update or insert remaining tasks
       for (const task of body.dailyTasks) {
-        // Check if this is a new task
-        const existingTask = await DailyTask.findOne({ id: task.id });
-
-        if (!existingTask && task.userId) {
-          // New task - notify assignee
-          try {
-            await TaskNotificationEngine.onTaskAssigned(task, task.userId);
-          } catch (err) {
-            console.error('[State API] Task notification error:', err);
-          }
-        }
-
         await DailyTask.updateOne(
           { id: task.id },
           { $set: sanitizeDoc(task) },

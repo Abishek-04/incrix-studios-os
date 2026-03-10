@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ManageChannels from '@/components/ManageChannels';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState, saveState } from '@/services/api';
+import { fetchState, createChannel, updateChannel, deleteChannel } from '@/services/api';
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
-  const undoTimerRef = useRef(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -29,40 +28,45 @@ export default function ChannelsPage() {
     loadData();
   }, []);
 
-  const clearUndoTimer = () => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
+  const handleCreateChannel = async (newChannel) => {
+    setChannels(prev => [...prev, newChannel]);
+    const response = await createChannel(newChannel);
+    if (!response?.success) {
+      console.error('Failed to create channel:', response?.error);
+      setChannels(prev => prev.filter(c => c.id !== newChannel.id));
     }
   };
 
-  const handleUpdateChannels = (updatedChannels) => {
-    setChannels(updatedChannels);
-    saveState({ channels: updatedChannels });
+  const handleUpdateChannelMember = async (channelId, memberId) => {
+    const oldChannel = channels.find(c => c.id === channelId);
+    setChannels(prev => prev.map(c => c.id === channelId ? { ...c, memberId: memberId || undefined } : c));
+    const response = await updateChannel(channelId, { memberId: memberId || undefined });
+    if (!response?.success) {
+      console.error('Failed to update channel:', response?.error);
+      if (oldChannel) {
+        setChannels(prev => prev.map(c => c.id === channelId ? oldChannel : c));
+      }
+    }
   };
 
-  const handleDeleteChannel = (channelId) => {
-    clearUndoTimer();
-
-    const snapshot = channels;
+  const handleDeleteChannel = async (channelId) => {
     const deletedChannel = channels.find(c => c.id === channelId);
-    const updatedChannels = channels.filter(c => c.id !== channelId);
+    setChannels(prev => prev.filter(c => c.id !== channelId));
 
-    setChannels(updatedChannels);
-
-    undoTimerRef.current = setTimeout(() => {
-      saveState({ channels: updatedChannels });
-      setUndoDelete(null);
-      undoTimerRef.current = null;
-    }, 5000);
+    const response = await deleteChannel(channelId);
+    if (!response?.success) {
+      if (response?.error === 'Channel not found') return;
+      console.error('Failed to delete channel:', response?.error);
+      if (deletedChannel) {
+        setChannels(prev => [...prev, deletedChannel]);
+      }
+      return;
+    }
 
     setUndoDelete({
-      message: `Deleted "${deletedChannel?.name || 'channel'}"`,
-      onUndo: () => {
-        clearUndoTimer();
-        setChannels(snapshot);
-        setUndoDelete(null);
-      }
+      deletedItemId: response.deletedItemId,
+      channel: deletedChannel,
+      message: `Deleted "${deletedChannel?.name || 'channel'}"`
     });
   };
 
@@ -75,20 +79,35 @@ export default function ChannelsPage() {
       <ManageChannels
         channels={channels}
         users={users}
-        onUpdateChannels={handleUpdateChannels}
+        onCreateChannel={handleCreateChannel}
+        onUpdateChannelMember={handleUpdateChannelMember}
         onDeleteChannel={handleDeleteChannel}
       />
       <UndoToast
         isVisible={!!undoDelete}
         message={undoDelete?.message || ''}
-        onUndo={() => undoDelete?.onUndo?.()}
-        onClose={() => {
-          if (undoDelete) {
-            clearUndoTimer();
-            saveState({ channels });
+        onUndo={async () => {
+          if (!undoDelete?.deletedItemId) return;
+          try {
+            const response = await fetch('/api/recycle-bin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+            });
+            const data = await response.json();
+            if (data.success && undoDelete.channel) {
+              setChannels(prev => {
+                const exists = prev.some(c => c.id === undoDelete.channel.id);
+                return exists ? prev : [...prev, undoDelete.channel];
+              });
+            }
+          } catch (error) {
+            console.error('Undo channel restore failed:', error);
+          } finally {
             setUndoDelete(null);
           }
         }}
+        onClose={() => setUndoDelete(null)}
       />
     </>
   );
