@@ -113,17 +113,30 @@ export default function DesignProjectsPage() {
   const handleSaveProject = async (project) => {
     const existingIndex = allProjects.findIndex(p => p.id === project.id);
     const updatedProject = { ...project, lastUpdated: Date.now() };
+    const previousProjects = [...allProjects];
 
     if (existingIndex >= 0) {
       setAllProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
-      await updateProject(project.id, updatedProject);
     } else {
       setAllProjects(prev => [...prev, updatedProject]);
-      await createProject(updatedProject);
     }
 
     setShowModal(false);
     setSelectedProject(null);
+
+    try {
+      const response = existingIndex >= 0
+        ? await updateProject(project.id, updatedProject)
+        : await createProject(updatedProject);
+
+      if (!response?.success) {
+        console.error('Design project save failed:', response?.error);
+        setAllProjects(previousProjects);
+      }
+    } catch (error) {
+      console.error('Design project save error:', error);
+      setAllProjects(previousProjects);
+    }
   };
 
   const handleDeleteProject = async (projectId) => {
@@ -135,20 +148,26 @@ export default function DesignProjectsPage() {
     setShowModal(false);
     setSelectedProject(null);
 
-    const response = await deleteProject(projectId);
-    if (!response?.success) {
-      // If "Project not found", it's already gone from DB — don't re-add
-      if (response?.error !== 'Project not found' && deletedProject) {
+    try {
+      const response = await deleteProject(projectId);
+      if (!response?.success) {
+        if (response?.error !== 'Project not found' && deletedProject) {
+          setAllProjects(prev => [...prev, deletedProject]);
+        }
+        return;
+      }
+
+      setUndoDelete({
+        deletedItemId: response.deletedItemId,
+        project: deletedProject,
+        message: `Deleted "${deletedProject?.title || 'design project'}"`
+      });
+    } catch (error) {
+      console.error('Design project delete error:', error);
+      if (deletedProject) {
         setAllProjects(prev => [...prev, deletedProject]);
       }
-      return;
     }
-
-    setUndoDelete({
-      deletedItemId: response.deletedItemId,
-      project: deletedProject,
-      message: `Deleted "${deletedProject?.title || 'design project'}"`
-    });
   };
 
   const designers = users.filter(u => u.role === 'designer' || u.role === 'manager');

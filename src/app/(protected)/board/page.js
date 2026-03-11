@@ -51,74 +51,92 @@ export default function BoardPage() {
     );
     setSelectedProject((prev) => prev?.id === updatedProject.id ? updatedProject : prev);
 
-    const response = await updateProject(updatedProject.id, updatedProject);
-    if (!response?.success) {
-      if (response?.error === 'Project not found') {
-        const isDraftProject = !updatedProject?.createdAt;
-        if (isDraftProject) {
-          const createResponse = await createProject(updatedProject);
-          if (createResponse?.success) {
-            const persistedProject = createResponse.project || updatedProject;
-            setProjects((prevProjects) => {
-              const exists = prevProjects.some((p) => p.id === persistedProject.id);
-              if (exists) {
-                return prevProjects.map((p) => (p.id === persistedProject.id ? persistedProject : p));
-              }
-              return [...prevProjects, persistedProject];
-            });
-            setSelectedProject(persistedProject);
-            return { success: true, project: persistedProject };
+    try {
+      const response = await updateProject(updatedProject.id, updatedProject);
+      if (!response?.success) {
+        if (response?.error === 'Project not found') {
+          const isDraftProject = !updatedProject?.createdAt;
+          if (isDraftProject) {
+            const createResponse = await createProject(updatedProject);
+            if (createResponse?.success) {
+              const persistedProject = createResponse.project || updatedProject;
+              setProjects((prevProjects) => {
+                const exists = prevProjects.some((p) => p.id === persistedProject.id);
+                if (exists) {
+                  return prevProjects.map((p) => (p.id === persistedProject.id ? persistedProject : p));
+                }
+                return [...prevProjects, persistedProject];
+              });
+              setSelectedProject(persistedProject);
+              return { success: true, project: persistedProject };
+            }
           }
+
+          setProjects((prevProjects) => prevProjects.filter((p) => p.id !== updatedProject.id));
+          setSelectedProject((prevSelected) => (prevSelected?.id === updatedProject.id ? null : prevSelected));
         }
 
-        setProjects((prevProjects) => prevProjects.filter((p) => p.id !== updatedProject.id));
-        setSelectedProject((prevSelected) => (prevSelected?.id === updatedProject.id ? null : prevSelected));
+        console.error('Project update failed:', response?.error);
+        showToast(response?.error || 'Failed to save project changes');
+        return { success: false, error: response?.error || 'Update failed' };
       }
 
-      console.error('Project update failed:', response?.error);
-      showToast(response?.error || 'Failed to save project changes');
-      return { success: false, error: response?.error || 'Update failed' };
-    }
+      if (response.project) {
+        setProjects((prevProjects) =>
+          prevProjects.map((p) => (p.id === response.project.id ? response.project : p))
+        );
+        setSelectedProject((prevSelected) =>
+          prevSelected?.id === response.project.id ? response.project : prevSelected
+        );
+      }
 
-    if (response.project) {
-      setProjects((prevProjects) =>
-        prevProjects.map((p) => (p.id === response.project.id ? response.project : p))
-      );
-      setSelectedProject((prevSelected) =>
-        prevSelected?.id === response.project.id ? response.project : prevSelected
-      );
+      return { success: true };
+    } catch (error) {
+      console.error('Project update error:', error);
+      showToast('Failed to save project changes');
+      return { success: false, error: 'Update failed' };
     }
-
-    return { success: true };
   };
 
   const handleDeleteProject = async (projectId) => {
     const deletedProject = projects.find(p => p.id === projectId);
     setProjects((prevProjects) => prevProjects.filter((p) => p.id !== projectId));
     setSelectedProject(null);
-    const response = await deleteProject(projectId);
 
-    if (!response?.success) {
-      console.error('Project delete failed:', response?.error);
-      // If "Project not found", it's already gone from DB — don't re-add to UI
-      if (response?.error === 'Project not found') {
+    try {
+      const response = await deleteProject(projectId);
+
+      if (!response?.success) {
+        console.error('Project delete failed:', response?.error);
+        // If "Project not found", it's already gone from DB — don't re-add to UI
+        if (response?.error === 'Project not found') {
+          return;
+        }
+        showToast(response?.error || 'Failed to delete project');
+        if (deletedProject) {
+          setProjects((prevProjects) => {
+            const exists = prevProjects.some((p) => p.id === deletedProject.id);
+            return exists ? prevProjects : [...prevProjects, deletedProject];
+          });
+        }
         return;
       }
-      showToast(response?.error || 'Failed to delete project');
+
+      setUndoDelete({
+        deletedItemId: response.deletedItemId,
+        project: deletedProject,
+        message: `Deleted "${deletedProject?.title || 'project'}"`
+      });
+    } catch (error) {
+      console.error('Project delete error:', error);
+      showToast('Failed to delete project');
       if (deletedProject) {
         setProjects((prevProjects) => {
           const exists = prevProjects.some((p) => p.id === deletedProject.id);
           return exists ? prevProjects : [...prevProjects, deletedProject];
         });
       }
-      return;
     }
-
-    setUndoDelete({
-      deletedItemId: response.deletedItemId,
-      project: deletedProject,
-      message: `Deleted "${deletedProject?.title || 'project'}"`
-    });
   };
 
   if (loading || !currentUser) {
@@ -137,23 +155,31 @@ export default function BoardPage() {
         onCreateProject={async (newProject) => {
           setProjects((prevProjects) => [...prevProjects, newProject]);
 
-          const response = await createProject(newProject);
-          if (!response?.success) {
-            console.error('Project create failed:', response?.error);
-            showToast(response?.error || 'Failed to create project');
+          try {
+            const response = await createProject(newProject);
+            if (!response?.success) {
+              console.error('Project create failed:', response?.error);
+              showToast(response?.error || 'Failed to create project');
+              setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
+              setSelectedProject(null);
+              return { success: false, error: response?.error || 'Create failed' };
+            }
+
+            if (response.project) {
+              const createdProject = response.project;
+              setProjects((prevProjects) =>
+                prevProjects.map((p) => (p.id === newProject.id ? createdProject : p))
+              );
+              setSelectedProject(createdProject);
+            }
+            return { success: true, project: response.project || newProject };
+          } catch (error) {
+            console.error('Project create error:', error);
+            showToast('Failed to create project');
             setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
             setSelectedProject(null);
-            return { success: false, error: response?.error || 'Create failed' };
+            return { success: false, error: 'Create failed' };
           }
-
-          if (response.project) {
-            const createdProject = response.project;
-            setProjects((prevProjects) =>
-              prevProjects.map((p) => (p.id === newProject.id ? createdProject : p))
-            );
-            setSelectedProject(createdProject);
-          }
-          return { success: true, project: response.project || newProject };
         }}
         searchQuery=""
         selectedMonth="all"

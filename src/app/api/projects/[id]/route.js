@@ -134,29 +134,45 @@ async function resolveCurrentUserFromRequest(request, body = null) {
   const requestedName = typeof (raw.name || searchParams.get('userName') || '') === 'string'
     ? (raw.name || searchParams.get('userName') || '').trim()
     : '';
+  const requestedRole = raw.role || searchParams.get('userRole') || '';
+  const requestedRoles = Array.isArray(raw.roles) ? raw.roles : [];
 
   let user = null;
-  const lookup = buildUserLookup(requestedId);
-  if (lookup) {
-    user = await User.findOne(lookup).select('id name role roles');
+  try {
+    const lookup = buildUserLookup(requestedId);
+    if (lookup) {
+      user = await User.findOne(lookup).select('id name role roles');
+    }
+
+    if (!user && requestedName) {
+      user = await User.findOne({
+        name: { $regex: `^${escapeRegex(requestedName)}$`, $options: 'i' }
+      }).select('id name role roles');
+    }
+  } catch (err) {
+    console.error('[Projects] User lookup failed, using client context:', err.message);
   }
 
-  if (!user && requestedName) {
-    user = await User.findOne({
-      name: { $regex: `^${escapeRegex(requestedName)}$`, $options: 'i' }
-    }).select('id name role roles');
+  if (user) {
+    return buildCurrentUserContext({
+      id: user.id || String(user._id || ''),
+      name: user.name || '',
+      role: user.role || '',
+      roles: Array.isArray(user.roles) ? user.roles : []
+    });
   }
 
-  if (!user) {
-    return buildCurrentUserContext({});
+  // Fallback: trust client-provided identity when DB lookup fails
+  if (requestedId || requestedName) {
+    return buildCurrentUserContext({
+      id: requestedId,
+      name: requestedName,
+      role: requestedRole,
+      roles: requestedRoles
+    });
   }
 
-  return buildCurrentUserContext({
-    id: user.id || String(user._id || ''),
-    name: user.name || '',
-    role: user.role || '',
-    roles: Array.isArray(user.roles) ? user.roles : []
-  });
+  return buildCurrentUserContext({});
 }
 
 function hasUserContext(currentUser) {
