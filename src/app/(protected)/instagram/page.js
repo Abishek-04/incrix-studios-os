@@ -50,15 +50,27 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
   const [triggerKeyword, setTriggerKeyword] = useState(existingAutomation?.triggerKeyword || '');
   const [matchType, setMatchType] = useState(existingAutomation?.matchType || 'contains');
   const [replyType, setReplyType] = useState(existingAutomation?.replyType || 'both');
-  const [replyMessage, setReplyMessage] = useState(existingAutomation?.replyMessage || '');
+  const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage || existingAutomation?.replyMessage || '');
+  const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage || existingAutomation?.replyMessage || '');
   const [productLink, setProductLink] = useState(existingAutomation?.productLink || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const needsComment = replyType === 'comment' || replyType === 'both';
+  const needsDm = replyType === 'dm' || replyType === 'both';
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!triggerKeyword.trim() || !replyMessage.trim()) {
-      setError('Trigger keyword and reply message are required');
+    if (!triggerKeyword.trim()) {
+      setError('Trigger keyword is required');
+      return;
+    }
+    if (needsComment && !commentReplyMessage.trim()) {
+      setError('Comment reply message is required');
+      return;
+    }
+    if (needsDm && !dmReplyMessage.trim()) {
+      setError('DM reply message is required');
       return;
     }
 
@@ -71,7 +83,9 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
         triggerKeyword: triggerKeyword.trim(),
         matchType,
         replyType,
-        replyMessage: replyMessage.trim(),
+        commentReplyMessage: commentReplyMessage.trim(),
+        dmReplyMessage: dmReplyMessage.trim(),
+        replyMessage: commentReplyMessage.trim() || dmReplyMessage.trim(), // fallback
         productLink: productLink.trim(),
         targetMediaId: media?.id || 'any',
         targetMediaCaption: media?.caption || '',
@@ -171,16 +185,31 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-[#999] mb-1">Reply Message</label>
-              <textarea
-                value={replyMessage}
-                onChange={e => setReplyMessage(e.target.value)}
-                placeholder="Message to send when keyword is detected..."
-                rows={3}
-                className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none resize-none"
-              />
-            </div>
+            {needsComment && (
+              <div>
+                <label className="block text-sm text-[#999] mb-1">Comment Reply</label>
+                <textarea
+                  value={commentReplyMessage}
+                  onChange={e => setCommentReplyMessage(e.target.value)}
+                  placeholder="Reply posted as a comment..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none resize-none"
+                />
+              </div>
+            )}
+
+            {needsDm && (
+              <div>
+                <label className="block text-sm text-[#999] mb-1">DM Reply</label>
+                <textarea
+                  value={dmReplyMessage}
+                  onChange={e => setDmReplyMessage(e.target.value)}
+                  placeholder="Message sent as a DM..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none resize-none"
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-sm text-[#999] mb-1">Product Link (optional)</label>
@@ -249,12 +278,22 @@ function AutomationCard({ automation, onToggle, onEdit, onDelete }) {
             </button>
           </div>
 
-          {/* Reply Message */}
-          <div className="mb-3 p-3 rounded-lg bg-[#151515] border border-[#252525]">
-            <div className="text-[10px] uppercase tracking-wider text-[#666] font-semibold mb-1">Reply Message</div>
-            <p className="text-sm text-[#ccc] leading-relaxed">{automation.replyMessage}</p>
+          {/* Reply Messages */}
+          <div className="mb-3 space-y-2">
+            {(automation.commentReplyMessage || (!automation.dmReplyMessage && automation.replyMessage)) && (
+              <div className="p-3 rounded-lg bg-[#151515] border border-[#252525]">
+                <div className="text-[10px] uppercase tracking-wider text-[#666] font-semibold mb-1">Comment Reply</div>
+                <p className="text-sm text-[#ccc] leading-relaxed">{automation.commentReplyMessage || automation.replyMessage}</p>
+              </div>
+            )}
+            {automation.dmReplyMessage && (
+              <div className="p-3 rounded-lg bg-[#151515] border border-[#252525]">
+                <div className="text-[10px] uppercase tracking-wider text-[#666] font-semibold mb-1">DM Reply</div>
+                <p className="text-sm text-[#ccc] leading-relaxed">{automation.dmReplyMessage}</p>
+              </div>
+            )}
             {automation.productLink && (
-              <p className="mt-1 text-xs text-indigo-400 break-all">{automation.productLink}</p>
+              <p className="text-xs text-indigo-400 break-all px-1">{automation.productLink}</p>
             )}
           </div>
 

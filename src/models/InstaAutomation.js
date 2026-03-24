@@ -10,7 +10,9 @@ const instaAutomationSchema = new mongoose.Schema(
     triggerKeyword: { type: String },
     matchType: { type: String, default: 'contains' },
     replyType: { type: String, default: 'both' },
-    replyMessage: { type: String },
+    replyMessage: { type: String }, // legacy / fallback
+    commentReplyMessage: { type: String },
+    dmReplyMessage: { type: String },
     compiledReplyMessage: { type: String },
     productLink: { type: String },
     targetMediaId: { type: String },

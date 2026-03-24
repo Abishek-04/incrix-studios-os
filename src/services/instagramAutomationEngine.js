@@ -87,7 +87,9 @@ export const AutomationEngine = {
     }
 
     console.log(`[engine] Trigger matched "${matched.triggerKeyword}" for ${account.username}`);
-    const replyMessage = matched.compiledReplyMessage || matched.replyMessage;
+    const fallbackMessage = matched.compiledReplyMessage || matched.replyMessage;
+    const commentMessage = matched.commentReplyMessage || fallbackMessage;
+    const dmMessage = matched.dmReplyMessage || fallbackMessage;
 
     await markEventProcessed(recentEventKey);
 
@@ -95,11 +97,11 @@ export const AutomationEngine = {
     let dmSent = false;
 
     if (matched.replyType === 'comment' || matched.replyType === 'both') {
-      commentSent = await InstagramService.replyToComment(commentId, replyMessage, account);
+      commentSent = await InstagramService.replyToComment(commentId, commentMessage, account);
     }
 
     if (matched.replyType === 'dm' || matched.replyType === 'both') {
-      dmSent = await InstagramService.sendPrivateReply(commentId, replyMessage, account);
+      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account);
     }
 
     // Update stats
