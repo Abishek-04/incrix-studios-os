@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getCurrentUser } from '@/services/api';
+import { getCurrentUser, hasToken } from '@/services/api';
 
 const AuthContext = createContext(null);
 
@@ -10,12 +10,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
+    if (!hasToken()) {
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
+
     try {
       const userData = await getCurrentUser();
       setUser(userData);
       return userData;
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
+    } catch {
       setUser(null);
       return null;
     } finally {
@@ -27,10 +32,7 @@ export function AuthProvider({ children }) {
     fetchUser();
   }, [fetchUser]);
 
-  // Refresh user data from DB (call after profile updates, role changes, etc.)
-  const refreshUser = useCallback(async () => {
-    return fetchUser();
-  }, [fetchUser]);
+  const refreshUser = useCallback(() => fetchUser(), [fetchUser]);
 
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser }}>
@@ -41,8 +43,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

@@ -1,173 +1,215 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
+// ── Token Management ──
+
+function getAccessToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+}
+
+function getRefreshToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+}
+
+function setTokens(accessToken, refreshToken) {
+  if (typeof window === 'undefined') return;
+  if (accessToken) localStorage.setItem('access_token', accessToken);
+  if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+}
+
+function clearTokens() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+// ── Core Fetch ──
+
 async function refreshAccessToken() {
-  const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+  const rt = getRefreshToken();
+  if (!rt) throw new Error('No refresh token');
+
+  const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
     method: 'POST',
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: rt }),
   });
 
-  if (!response.ok) {
+  if (!res.ok) {
+    clearTokens();
     throw new Error('Session expired');
   }
 
-  return true;
+  const data = await res.json();
+  if (data.accessToken) setTokens(data.accessToken, null);
+  return data.accessToken;
 }
 
 export async function fetchWithAuth(url, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers
+    ...options.headers,
   };
 
-  let response = await fetch(`${API_BASE_URL}${url}`, {
+  const token = getAccessToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let res = await fetch(`${API_BASE_URL}${url}`, {
     cache: 'no-store',
     ...options,
     headers,
-    credentials: 'include', // Always send cookies
   });
 
-  // If 401, try refreshing token and retry once
-  if (response.status === 401) {
+  // If 401, try refresh once
+  if (res.status === 401) {
     try {
-      await refreshAccessToken();
-      response = await fetch(`${API_BASE_URL}${url}`, {
+      const newToken = await refreshAccessToken();
+      headers['Authorization'] = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE_URL}${url}`, {
         cache: 'no-store',
         ...options,
         headers,
-        credentials: 'include',
       });
-    } catch (error) {
-      throw error;
+    } catch {
+      throw new Error('Session expired');
     }
   }
 
-  return response;
+  return res;
 }
 
 // ── Auth ──
 
 export async function login(email, password) {
-  const response = await fetch(`${API_BASE_URL}/api/login`, {
+  const res = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // Receive HttpOnly cookies
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
   });
 
-  return response.json();
+  const data = await res.json();
+
+  if (data.success) {
+    setTokens(data.accessToken, data.refreshToken);
+  }
+
+  return data;
 }
 
 export async function logout() {
   try {
-    await fetch(`${API_BASE_URL}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-  } catch (error) {
-    // Ignore logout errors
+    await fetchWithAuth('/api/auth/logout', { method: 'POST' });
+  } catch {
+    // ignore
   }
+  clearTokens();
 }
 
 export async function getCurrentUser() {
+  const token = getAccessToken();
+  if (!token) return null;
+
   try {
-    const response = await fetchWithAuth('/api/auth/me');
-    if (!response.ok) return null;
-    const data = await response.json();
+    const res = await fetchWithAuth('/api/auth/me');
+    if (!res.ok) return null;
+    const data = await res.json();
     return data.user || null;
-  } catch (error) {
+  } catch {
     return null;
   }
+}
+
+export function hasToken() {
+  return Boolean(getAccessToken());
 }
 
 // ── State ──
 
 export async function fetchState() {
-  const response = await fetchWithAuth('/api/state');
-  const data = await response.json();
-  return data;
+  const res = await fetchWithAuth('/api/state');
+  return res.json();
 }
 
 export async function saveState(data) {
-  const response = await fetchWithAuth('/api/state', {
+  const res = await fetchWithAuth('/api/state', {
     method: 'POST',
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-  return response.json();
+  return res.json();
 }
 
 // ── Project CRUD ──
 
 export async function createProject(projectData) {
-  const response = await fetchWithAuth('/api/projects', {
+  const res = await fetchWithAuth('/api/projects', {
     method: 'POST',
-    body: JSON.stringify({ project: projectData })
+    body: JSON.stringify({ project: projectData }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function updateProject(projectId, projectData) {
-  const response = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
+  const res = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ project: projectData })
+    body: JSON.stringify({ project: projectData }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function deleteProject(projectId) {
-  const response = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
-    method: 'DELETE'
+  const res = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
+    method: 'DELETE',
   });
-  return response.json();
+  return res.json();
 }
 
 // ── Daily Task CRUD ──
 
 export async function createDailyTask(taskData) {
-  const response = await fetchWithAuth('/api/daily-tasks', {
+  const res = await fetchWithAuth('/api/daily-tasks', {
     method: 'POST',
-    body: JSON.stringify({ task: taskData })
+    body: JSON.stringify({ task: taskData }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function updateDailyTask(taskId, updates) {
-  const response = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+  const res = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ updates })
+    body: JSON.stringify({ updates }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function deleteDailyTask(taskId) {
-  const response = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
-    method: 'DELETE'
+  const res = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+    method: 'DELETE',
   });
-  return response.json();
+  return res.json();
 }
 
 // ── Channel CRUD ──
 
 export async function createChannel(channelData) {
-  const response = await fetchWithAuth('/api/channels', {
+  const res = await fetchWithAuth('/api/channels', {
     method: 'POST',
-    body: JSON.stringify({ channel: channelData })
+    body: JSON.stringify({ channel: channelData }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function updateChannel(channelId, updates) {
-  const response = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
+  const res = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ updates })
+    body: JSON.stringify({ updates }),
   });
-  return response.json();
+  return res.json();
 }
 
 export async function deleteChannel(channelId) {
-  const response = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
-    method: 'DELETE'
+  const res = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
+    method: 'DELETE',
   });
-  return response.json();
+  return res.json();
 }
 
 // Debounced save
