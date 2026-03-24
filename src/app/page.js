@@ -26,7 +26,8 @@ export default function HomePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = () => {
-    router.push('/dashboard');
+    // Full page navigation to ensure cookies are sent on first load
+    window.location.href = '/dashboard';
   };
 
   // Don't show login until we've checked
