@@ -714,16 +714,24 @@ export default function InstagramPage() {
               <p className="text-[#999]">No automations yet. Select a post or reel to create one.</p>
             </div>
           ) : (
-            automations.map(automation => (
+            automations.map(automation => {
+              // Look up fresh media URL from loaded media (stored URLs expire)
+              const freshMedia = media.find(m => m.id === automation.targetMediaId);
+              const enrichedAutomation = {
+                ...automation,
+                targetMediaUrl: freshMedia?.thumbnail_url || freshMedia?.media_url || automation.targetMediaUrl,
+                targetMediaCaption: automation.targetMediaCaption || freshMedia?.caption || '',
+              };
+              return (
               <AutomationCard
                 key={automation.id}
-                automation={automation}
+                automation={enrichedAutomation}
                 onToggle={handleToggle}
                 onEdit={(a) => {
                   setEditingAutomation(a);
                   setBuilderMedia({
                     id: a.targetMediaId,
-                    media_url: a.targetMediaUrl,
+                    media_url: freshMedia?.media_url || a.targetMediaUrl,
                     caption: a.targetMediaCaption,
                     media_type: a.targetMediaType,
                   });
@@ -731,7 +739,8 @@ export default function InstagramPage() {
                 }}
                 onDelete={handleDeleteAutomation}
               />
-            ))
+              );
+            })
           )}
         </div>
       )}
