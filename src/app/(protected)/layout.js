@@ -206,10 +206,10 @@ function ProtectedLayoutInner({ children }) {
       title: 'Admin',
       items: [
         ...(hasAnyRole(['superadmin']) ? [{ href: '/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+        { href: '/instagram', icon: Instagram, label: 'Instagram' },
         ...(hasAnyRole(['superadmin', 'manager']) ? [
           { href: '/team', icon: Users, label: 'Users' },
           { href: '/channels', icon: Radio, label: 'Channels' },
-          { href: '/instagram', icon: Instagram, label: 'Instagram' },
           { href: '/admin/notifications', icon: Bell, label: 'Notifications' }
         ] : []),
         { href: '/recycle-bin', icon: Trash2, label: 'Recycle Bin' }
@@ -267,6 +267,8 @@ function ProtectedLayoutInner({ children }) {
                 <NavItem href="/dev-projects" icon={Code} label="Dev Projects" isActive={isActive('/dev-projects')} collapsed={sidebarCollapsed} />
               )}
 
+              <NavItem href="/instagram" icon={Instagram} label="Instagram" isActive={isActive('/instagram')} collapsed={sidebarCollapsed} />
+
               {hasAnyRole(['superadmin', 'manager']) && (
                 <>
                   {!sidebarCollapsed && <div className="text-xs font-bold text-[#999] uppercase tracking-wider mt-6 mb-3 px-4">Admin</div>}
@@ -275,7 +277,6 @@ function ProtectedLayoutInner({ children }) {
                   )}
                   <NavItem href="/team" icon={Users} label="Users" isActive={isActive('/team')} collapsed={sidebarCollapsed} />
                   <NavItem href="/channels" icon={Radio} label="Channels" isActive={isActive('/channels')} collapsed={sidebarCollapsed} />
-                  <NavItem href="/instagram" icon={Instagram} label="Instagram" isActive={isActive('/instagram')} collapsed={sidebarCollapsed} />
                   <NavItem href="/admin/notifications" icon={Bell} label="Notifications" isActive={isActive('/admin/notifications')} collapsed={sidebarCollapsed} />
                 </>
               )}

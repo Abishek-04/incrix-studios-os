@@ -26,8 +26,10 @@ export default function HomePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = () => {
-    // Full page navigation to ensure cookies are sent on first load
-    window.location.href = '/dashboard';
+    // Small delay to ensure cookies are set before navigation
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 100);
   };
 
   // Don't show login until we've checked
