@@ -9,52 +9,23 @@ import User from '@/models/User';
 import AutomationRule from '@/models/AutomationRule';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { buildCurrentUserContext, normalizeRole } from '@/lib/projectAccess';
+import { getAuthUser } from '@/lib/auth';
+import { normalizeRole } from '@/lib/projectAccess';
 
 export const dynamic = 'force-dynamic';
 
 const MANAGER_ROLES = new Set(['manager', 'superadmin']);
 
-async function resolveUser(request, body = null) {
-  const { searchParams } = new URL(request.url);
-  const raw = body?.currentUser || {};
-  const id = String(raw.id || raw._id || searchParams.get('userId') || '').trim();
-  const name = String(raw.name || searchParams.get('userName') || '').trim();
-
-  if (!id && !name) return buildCurrentUserContext({});
-
-  let user = null;
-  if (id) user = await User.findOne({ id }).select('id name role roles');
-  if (!user && name) {
-    user = await User.findOne({
-      name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
-    }).select('id name role roles');
-  }
-  if (!user) return buildCurrentUserContext({});
-
-  return buildCurrentUserContext({
-    id: user.id || String(user._id || ''),
-    name: user.name || '',
-    role: user.role || '',
-    roles: Array.isArray(user.roles) ? user.roles : []
-  });
-}
-
-function isManagerUser(currentUser) {
-  const primary = normalizeRole(currentUser?.role);
+function isManagerUser(user) {
+  const primary = normalizeRole(user?.role);
   if (primary) return MANAGER_ROLES.has(primary);
-  return (currentUser?.roles || []).some(r => MANAGER_ROLES.has(normalizeRole(r)));
+  return (user?.roles || []).some(r => MANAGER_ROLES.has(normalizeRole(r)));
 }
 
 function buildUserLookup(id) {
   if (!id) return null;
   if (mongoose.Types.ObjectId.isValid(id)) {
-    return {
-      $or: [
-        { id },
-        { _id: new mongoose.Types.ObjectId(id) }
-      ]
-    };
+    return { $or: [{ id }, { _id: new mongoose.Types.ObjectId(id) }] };
   }
   return { id };
 }
@@ -82,11 +53,8 @@ const RESTORE_HANDLERS = {
     const data = { ...item.data };
     delete data._id;
     delete data.__v;
-    if (!data.id) {
-      data.id = item.entityId;
-    }
+    if (!data.id) data.id = item.entityId;
     if (!data.password) {
-      // Legacy snapshots may not include password; generate a secure temporary hash.
       const tempPassword = `Tmp#${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
       data.password = await bcrypt.hash(tempPassword, 12);
     }
@@ -103,8 +71,9 @@ const RESTORE_HANDLERS = {
 export async function GET(request) {
   try {
     await connectDB();
-    const currentUser = await resolveUser(request);
-    if (!isManagerUser(currentUser)) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser || !isManagerUser(authUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can access recycle bin' }, { status: 403 });
     }
 
@@ -117,16 +86,10 @@ export async function GET(request) {
 
     const items = await DeletedItem.find(query).sort({ createdAt: -1 }).limit(limit).lean();
 
-    return NextResponse.json({
-      success: true,
-      items
-    });
+    return NextResponse.json({ success: true, items });
   } catch (error) {
     console.error('[RecycleBin] GET error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch recycle bin items' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to fetch recycle bin items' }, { status: 500 });
   }
 }
 
@@ -134,8 +97,9 @@ export async function POST(request) {
   try {
     await connectDB();
     const body = await request.json();
-    const currentUser = await resolveUser(request, body);
-    if (!isManagerUser(currentUser)) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser || !isManagerUser(authUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can restore items' }, { status: 403 });
     }
 
@@ -143,10 +107,7 @@ export async function POST(request) {
     const ids = deletedItemIds || (deletedItemId ? [deletedItemId] : []);
 
     if (!ids.length) {
-      return NextResponse.json(
-        { success: false, error: 'deletedItemId or deletedItemIds is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'deletedItemId or deletedItemIds is required' }, { status: 400 });
     }
 
     const items = await DeletedItem.find({ id: { $in: ids } });
@@ -159,7 +120,6 @@ export async function POST(request) {
         failed.push({ id: item.id, reason: `Unsupported entity type: ${item.entityType}` });
         continue;
       }
-
       try {
         await handler(item);
         restored.push(item.id);
@@ -172,17 +132,10 @@ export async function POST(request) {
       await DeletedItem.deleteMany({ id: { $in: restored } });
     }
 
-    return NextResponse.json({
-      success: true,
-      restored,
-      failed
-    });
+    return NextResponse.json({ success: true, restored, failed });
   } catch (error) {
     console.error('[RecycleBin] POST restore error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to restore items' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to restore items' }, { status: 500 });
   }
 }
 
@@ -190,10 +143,12 @@ export async function DELETE(request) {
   try {
     await connectDB();
     const body = await request.json().catch(() => ({}));
-    const currentUser = await resolveUser(request, body);
-    if (!isManagerUser(currentUser)) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser || !isManagerUser(authUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can permanently delete items' }, { status: 403 });
     }
+
     const { id, ids } = body;
 
     if (id || (ids && ids.length)) {
@@ -201,22 +156,11 @@ export async function DELETE(request) {
       return NextResponse.json({ success: true, message: 'Items permanently deleted' });
     }
 
-    // Purge expired records by default when no explicit ids passed
-    const result = await DeletedItem.deleteMany({
-      expiresAt: { $lte: new Date() }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Expired items purged',
-      deletedCount: result.deletedCount
-    });
+    const result = await DeletedItem.deleteMany({ expiresAt: { $lte: new Date() } });
+    return NextResponse.json({ success: true, message: 'Expired items purged', deletedCount: result.deletedCount });
   } catch (error) {
     console.error('[RecycleBin] DELETE error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to permanently delete items' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to permanently delete items' }, { status: 500 });
   }
 }
 
@@ -224,17 +168,15 @@ export async function PUT(request) {
   try {
     await connectDB();
     const body = await request.json();
-    const currentUser = await resolveUser(request, body);
-    if (!isManagerUser(currentUser)) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser || !isManagerUser(authUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can add items to recycle bin' }, { status: 403 });
     }
-    const { entityType, entityId, data, deletedBy = 'system', source = 'api' } = body;
 
+    const { entityType, entityId, data, source = 'api' } = body;
     if (!entityType || !entityId || !data) {
-      return NextResponse.json(
-        { success: false, error: 'entityType, entityId and data are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'entityType, entityId and data are required' }, { status: 400 });
     }
 
     const item = await DeletedItem.create({
@@ -242,7 +184,7 @@ export async function PUT(request) {
       entityType,
       entityId,
       source,
-      deletedBy,
+      deletedBy: authUser.name || 'system',
       data,
       expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
     });
@@ -250,9 +192,6 @@ export async function PUT(request) {
     return NextResponse.json({ success: true, item });
   } catch (error) {
     console.error('[RecycleBin] PUT error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to add item to recycle bin' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to add item to recycle bin' }, { status: 500 });
   }
 }

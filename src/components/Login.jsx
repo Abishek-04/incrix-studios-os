@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { login } from '@/services/api';
 
 const Login = ({ onLogin }) => {
     const [email, setEmail] = useState('');
@@ -12,17 +13,10 @@ const Login = ({ onLogin }) => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
+            const data = await login(email, password);
 
-            const data = await response.json();
-
-            if (response.ok) {
-                localStorage.setItem('auth_user', JSON.stringify(data.user));
-                onLogin(data.user);
+            if (data.success) {
+                onLogin();
             } else {
                 setError(data.error || 'Login failed');
             }

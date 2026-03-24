@@ -8,6 +8,7 @@ import {
   UserPlus, Lock, Archive, RefreshCw
 } from 'lucide-react';
 import { ROLES, getRoleInfo } from '@/config/permissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 const readFileAsDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -443,10 +444,7 @@ const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const currentUser =
-    typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('auth_user') || 'null')
-      : null;
+  const { user: currentUser } = useAuth();
   const isSelf = (currentUser?.id || currentUser?._id) === (user?.id || user?._id);
 
   const handleSubmit = async (e) => {

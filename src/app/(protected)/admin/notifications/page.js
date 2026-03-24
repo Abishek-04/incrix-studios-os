@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Bell, Send, CheckCircle, XCircle, Clock, Users, Info, AlertTriangle, AlertCircle, X } from 'lucide-react';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState } from '@/services/api';
+import { fetchState, fetchWithAuth } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminNotificationsPage() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -33,15 +34,12 @@ export default function AdminNotificationsPage() {
   async function loadData() {
     try {
       const data = await fetchState();
-      const storedUser = localStorage.getItem('auth_user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
 
-      if (user && !['superadmin', 'manager'].includes(user.role)) {
+      if (currentUser && !['superadmin', 'manager'].includes(currentUser.role)) {
         showMsg('Access denied', 'error');
         return;
       }
 
-      setCurrentUser(user);
       setUsers(data.users || []);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -85,9 +83,8 @@ export default function AdminNotificationsPage() {
         body.targetRole = pushTarget;
       }
 
-      const res = await fetch('/api/notifications', {
+      const res = await fetchWithAuth('/api/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
@@ -133,9 +130,8 @@ export default function AdminNotificationsPage() {
         return;
       }
 
-      const response = await fetch('/api/whatsapp/broadcast', {
+      const response = await fetchWithAuth('/api/whatsapp/broadcast', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userIds: targetUsers.map((u) => u.id),
           message: broadcastMessage,

@@ -8,30 +8,24 @@ import { ROLES } from '@/config/permissions';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { useToast } from '@/contexts/UIContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchWithAuth } from '@/services/api';
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
   const showToast = useToast();
 
-  // Load current user from localStorage
-  useEffect(() => {
-    const user = localStorage.getItem('auth_user');
-    if (user) {
-      setCurrentUser(JSON.parse(user));
-    }
-  }, []);
-
   // Fetch users from API
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/users?all=1', { cache: 'no-store' });
+        const response = await fetchWithAuth('/api/users?all=1');
         const data = await response.json();
 
         if (data.success) {
@@ -55,10 +49,9 @@ export default function UserManagementPage() {
   // CRUD handlers
   const handleUpdateUser = async (userId, updates) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetchWithAuth(`/api/users/${userId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentUser, updates })
+        body: JSON.stringify({ updates })
       });
 
       const data = await response.json();
@@ -69,8 +62,7 @@ export default function UserManagementPage() {
           )
         );
         if ((currentUser?.id || currentUser?._id) === userId) {
-          setCurrentUser(data.user);
-          localStorage.setItem('auth_user', JSON.stringify(data.user));
+          // User data will be refreshed via AuthContext
         }
       } else {
         console.error('Update failed:', data.error);
@@ -88,10 +80,8 @@ export default function UserManagementPage() {
     const userId = targetUser?.id || targetUser?._id || userOrId;
     const deletedUser = targetUser || users.find((u) => (u.id || u._id) === userId);
     try {
-      const response = await fetch(`/api/users/${encodeURIComponent(userId)}?role=${currentUser.role}`, {
+      const response = await fetchWithAuth(`/api/users/${encodeURIComponent(userId)}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentUser, targetUser: deletedUser })
       });
 
       const data = await response.json().catch(() => ({}));
@@ -119,10 +109,9 @@ export default function UserManagementPage() {
 
   const handleCreateUser = async (userData) => {
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetchWithAuth('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentUser, userData })
+        body: JSON.stringify({ userData })
       });
 
       const data = await response.json();
@@ -156,11 +145,9 @@ export default function UserManagementPage() {
 
   const handleChangePassword = async (userId, passwordData) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetchWithAuth(`/api/users/${userId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          currentUser,
           updates: {
             currentPassword: passwordData.currentPassword,
             newPassword: passwordData.newPassword
@@ -204,10 +191,9 @@ export default function UserManagementPage() {
         onUndo={async () => {
           if (!undoDelete?.deletedItemId) return;
           try {
-            const response = await fetch('/api/recycle-bin', {
+            const response = await fetchWithAuth('/api/recycle-bin', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser })
             });
             const data = await response.json();
             if (data.success) {

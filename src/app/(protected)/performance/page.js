@@ -4,20 +4,13 @@ import { useEffect, useState } from 'react';
 import PerformanceView from '@/components/PerformanceView';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PerformancePage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Load current user
-    const user = localStorage.getItem('auth_user');
-    if (user) {
-      setCurrentUser(JSON.parse(user));
-    }
-  }, []);
 
   useEffect(() => {
     // Load data

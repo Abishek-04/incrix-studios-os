@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchWithAuth } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import {
   Users,
@@ -50,7 +52,7 @@ const COLORS = {
 const CHART_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
 
 export default function AnalyticsPage() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [timeRange, setTimeRange] = useState('30');
@@ -59,18 +61,10 @@ export default function AnalyticsPage() {
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setCurrentUser(user);
-
-      // Check if user is Super Admin
-      if (user.role !== 'superadmin') {
-        window.location.href = '/dashboard';
-        return;
-      }
+    if (currentUser && currentUser.role !== 'superadmin') {
+      window.location.href = '/dashboard';
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -81,7 +75,7 @@ export default function AnalyticsPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const response = await fetch(`/api/analytics/overview?role=${currentUser.role}&range=${timeRange}`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`/api/analytics/overview?role=${currentUser.role}&range=${timeRange}`);
       const result = await response.json();
 
       if (result.success) {
@@ -107,7 +101,7 @@ export default function AnalyticsPage() {
 
       if (userId) params.append('userId', userId);
 
-      const response = await fetch(`/api/analytics/activity?${params}`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`/api/analytics/activity?${params}`);
       const result = await response.json();
 
       if (result.success) {

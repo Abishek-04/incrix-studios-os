@@ -3,9 +3,19 @@ import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import DailyTask from '@/models/DailyTask';
 import DeletedItem from '@/models/DeletedItem';
+import { getAuthUser } from '@/lib/auth';
 import { buildCurrentUserContext, canManageAllProjects } from '@/lib/projectAccess';
 
 export const dynamic = 'force-dynamic';
+
+function buildContextFromUser(user) {
+  return buildCurrentUserContext({
+    id: user.id || String(user._id || ''),
+    name: user.name || '',
+    role: user.role || '',
+    roles: Array.isArray(user.roles) ? user.roles : []
+  });
+}
 
 export async function PATCH(request, { params }) {
   try {
@@ -13,11 +23,13 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const taskId = decodeURIComponent(id);
     const body = await request.json();
-    const currentUser = buildCurrentUserContext(body.currentUser || {});
-    if (!currentUser.id && !currentUser.name) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    const currentUser = buildContextFromUser(authUser);
     const task = await DailyTask.findOne({ id: taskId });
     if (!task) {
       return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 });
@@ -55,12 +67,13 @@ export async function DELETE(request, { params }) {
     await connectDB();
     const { id } = await params;
     const taskId = decodeURIComponent(id);
-    const body = await request.json().catch(() => ({}));
-    const currentUser = buildCurrentUserContext(body.currentUser || {});
-    if (!currentUser.id && !currentUser.name) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    const currentUser = buildContextFromUser(authUser);
     const task = await DailyTask.findOne({ id: taskId });
     if (!task) {
       return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 });
@@ -71,7 +84,6 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Add to recycle bin
     const plain = task.toObject();
     delete plain._id;
     delete plain.__v;
@@ -81,7 +93,7 @@ export async function DELETE(request, { params }) {
       entityType: 'daily_task',
       entityId: taskId,
       source: 'daily_tasks_api',
-      deletedBy: currentUser.name || 'system',
+      deletedBy: authUser.name || 'system',
       data: plain,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });

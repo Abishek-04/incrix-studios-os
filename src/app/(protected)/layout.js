@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -28,8 +28,12 @@ import {
   X
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
-import AccountSwitcher from '@/components/dev/AccountSwitcher';
+// import AccountSwitcher from '@/components/dev/AccountSwitcher';
 import { UIProvider } from '@/contexts/UIContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { logout as apiLogout, fetchWithAuth } from '@/services/api';
+
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -71,25 +75,22 @@ async function subscribeToPush(userId) {
   }
 }
 
-export default function ProtectedLayout({ children }) {
+function ProtectedLayoutInner({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, loading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Check authentication
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const user = localStorage.getItem('auth_user');
-    if (!user) {
+    if (!loading && !currentUser) {
       router.push('/');
-    } else {
-      setCurrentUser(JSON.parse(user));
     }
-  }, [router]);
+  }, [loading, currentUser, router]);
 
   useEffect(() => {
     setShowMobileMenu(false);
@@ -98,7 +99,7 @@ export default function ProtectedLayout({ children }) {
   // Fetch notifications from DB
   const fetchNotifications = useCallback(async (userId) => {
     try {
-      const res = await fetch(`/api/notifications?userId=${userId}&limit=50`, { cache: 'no-store' });
+      const res = await fetchWithAuth(`/api/notifications?userId=${userId}&limit=50`);
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
@@ -122,20 +123,18 @@ export default function ProtectedLayout({ children }) {
     }
   }, [currentUser?.id]);
 
-  if (!currentUser) return null;
+  if (loading || !currentUser) return <LoadingScreen />;
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('activeView');
+  const handleLogout = async () => {
+    await apiLogout();
     router.push('/');
   };
 
   const handleMarkAllRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     try {
-      await fetch('/api/notifications', {
+      await fetchWithAuth('/api/notifications', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAllRead: true, userId: currentUser.id }),
       });
     } catch (err) {
@@ -146,9 +145,8 @@ export default function ProtectedLayout({ children }) {
   const handleMarkAsRead = async (notifId) => {
     setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
     try {
-      await fetch('/api/notifications', {
+      await fetchWithAuth('/api/notifications', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationIds: [notifId], userId: currentUser.id }),
       });
     } catch (err) {
@@ -220,7 +218,6 @@ export default function ProtectedLayout({ children }) {
   ].filter((section) => section.items.length > 0);
 
   return (
-    <UIProvider>
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
       {/* Sidebar - Desktop */}
       <div className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col justify-between hidden md:flex transition-all duration-300`}>
@@ -482,10 +479,18 @@ export default function ProtectedLayout({ children }) {
         </div>
       )}
 
-      {/* Development Account Switcher */}
-      <AccountSwitcher />
+      {/* Development Account Switcher (disabled — uses cookie-based auth now) */}
     </div>
-    </UIProvider>
+  );
+}
+
+export default function ProtectedLayout({ children }) {
+  return (
+    <AuthProvider>
+      <UIProvider>
+        <ProtectedLayoutInner>{children}</ProtectedLayoutInner>
+      </UIProvider>
+    </AuthProvider>
   );
 }
 

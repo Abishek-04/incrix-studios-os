@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `incrix-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `incrix-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline';
@@ -74,6 +74,11 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  // Never cache API requests — always go to network
+  if (request.url.includes('/api/')) {
+    return;
+  }
+
   if (request.method !== 'GET') {
     return;
   }
@@ -88,6 +93,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Only cache static assets (images, fonts, CSS, JS bundles)
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {

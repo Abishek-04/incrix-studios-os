@@ -33,16 +33,36 @@ export async function comparePassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-// Helper function for API routes to authenticate requests
-export async function authenticate(request) {
+/**
+ * Get the access token from the request.
+ * Checks HttpOnly cookie first, then Authorization header as fallback.
+ */
+function getTokenFromRequest(request) {
+  // 1. Check HttpOnly cookie
+  const cookie = request.cookies?.get('access_token');
+  if (cookie?.value) return cookie.value;
+
+  // 2. Fallback to Authorization header
   const authHeader = request.headers.get('authorization');
-  if (!authHeader) {
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+
+  return null;
+}
+
+/**
+ * Authenticate request via JWT token (cookie or header).
+ * Returns the decoded token payload or throws.
+ */
+export async function authenticate(request) {
+  const token = getTokenFromRequest(request);
+
+  if (!token) {
     throw new Error('No authorization header');
   }
 
-  const token = authHeader.split(' ')[1];
   const decoded = verifyToken(token);
-
   if (!decoded) {
     throw new Error('Invalid or expired token');
   }
@@ -51,42 +71,32 @@ export async function authenticate(request) {
 }
 
 /**
- * Get authenticated user — tries JWT first, falls back to request body currentUser.
- * Returns { user, source } where source is 'jwt' or 'body'.
- * Use this during the migration period while endpoints transition to JWT.
+ * Get the authenticated user from JWT.
+ * Decodes token → looks up user in DB → returns { user, source }.
+ * Returns { user: null } if not authenticated.
  */
-export async function getAuthUser(request, body = null) {
-  // Try JWT first
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-    if (decoded) {
-      const connectDB = (await import('@/lib/mongodb')).default;
-      await connectDB();
-      const User = (await import('@/models/User')).default;
-      const user = await User.findOne({ id: decoded.userId }).lean();
-      if (user) {
-        delete user.password;
-        delete user.refreshTokens;
-        return { user, source: 'jwt' };
-      }
-    }
+export async function getAuthUser(request) {
+  const token = getTokenFromRequest(request);
+
+  if (!token) {
+    return { user: null, source: null };
   }
 
-  // Fallback to request body (backward compat)
-  if (body?.currentUser?.id || body?.currentUser?._id) {
-    const connectDB = (await import('@/lib/mongodb')).default;
-    await connectDB();
-    const User = (await import('@/models/User')).default;
-    const userId = body.currentUser.id || body.currentUser._id;
-    const user = await User.findOne({ id: userId }).lean();
-    if (user) {
-      delete user.password;
-      delete user.refreshTokens;
-      return { user, source: 'body' };
-    }
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return { user: null, source: null };
   }
 
-  return { user: null, source: null };
+  const connectDB = (await import('@/lib/mongodb')).default;
+  await connectDB();
+  const User = (await import('@/models/User')).default;
+  const user = await User.findOne({ id: decoded.userId }).lean();
+
+  if (!user) {
+    return { user: null, source: null };
+  }
+
+  delete user.password;
+  delete user.refreshTokens;
+  return { user, source: 'jwt' };
 }

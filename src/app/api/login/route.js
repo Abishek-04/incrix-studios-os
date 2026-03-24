@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
+import { setAuthCookies } from '@/lib/cookies';
 import { logLogin, logLoginFailed } from '@/lib/services/activityLogger';
 
 function normalizeEmail(email) {
@@ -111,12 +112,15 @@ export async function POST(request) {
     // Log successful login
     await logLogin(userResponse, ipAddress, userAgent);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: userResponse,
-      accessToken: jwtAccessToken,
-      refreshToken: jwtRefreshToken,
     });
+
+    // Set tokens as HttpOnly cookies
+    setAuthCookies(response, jwtAccessToken, jwtRefreshToken);
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);

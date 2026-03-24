@@ -1,16 +1,31 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Channel from '@/models/Channel';
+import { getAuthUser } from '@/lib/auth';
 import { buildCurrentUserContext, canManageAllProjects } from '@/lib/projectAccess';
 
 export const dynamic = 'force-dynamic';
+
+function buildContextFromUser(user) {
+  return buildCurrentUserContext({
+    id: user.id || String(user._id || ''),
+    name: user.name || '',
+    role: user.role || '',
+    roles: Array.isArray(user.roles) ? user.roles : []
+  });
+}
 
 export async function POST(request) {
   try {
     await connectDB();
     const body = await request.json();
-    const currentUser = buildCurrentUserContext(body.currentUser || {});
 
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const currentUser = buildContextFromUser(authUser);
     if (!canManageAllProjects(currentUser)) {
       return NextResponse.json({ success: false, error: 'Only managers can create channels' }, { status: 403 });
     }

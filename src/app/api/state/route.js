@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { v4 as uuidv4 } from 'uuid';
+import { getAuthUser } from '@/lib/auth';
 import {
   buildCurrentUserContext,
   canManageAllProjects,
@@ -20,14 +20,8 @@ function toPlainObject(input) {
 }
 
 function stripMongoInternals(value) {
-  if (value instanceof Date) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => stripMongoInternals(item));
-  }
-
+  if (value instanceof Date) return value;
+  if (Array.isArray(value)) return value.map((item) => stripMongoInternals(item));
   if (value && typeof value === 'object') {
     const result = {};
     for (const [key, nestedValue] of Object.entries(value)) {
@@ -36,7 +30,6 @@ function stripMongoInternals(value) {
     }
     return result;
   }
-
   return value;
 }
 
@@ -44,88 +37,29 @@ function sanitizeDoc(input) {
   return stripMongoInternals(toPlainObject(input));
 }
 
-function findRequestUser(users = [], context = {}) {
-  const requestedId = String(context?.id || '').trim();
-  const requestedName = normalizeText(context?.name);
-
-  if (requestedId) {
-    const byId = users.find((user) => {
-      const userId = String(user?.id || user?._id || '').trim();
-      const mongoId = String(user?._id || '').trim();
-      return requestedId === userId || requestedId === mongoId;
-    });
-    if (byId) return byId;
-  }
-
-  if (requestedName) {
-    const byName = users.find((user) => normalizeText(user?.name) === requestedName);
-    if (byName) return byName;
-  }
-
-  return null;
-}
-
-function resolveCurrentUserContext(rawContext = {}, users = []) {
-  const requestedId = String(rawContext?.id || '').trim();
-  const requestedName = normalizeText(rawContext?.name);
-  const matchedUser = findRequestUser(users, rawContext);
-
-  // If client did not send any user identity, keep context empty.
-  if (!requestedId && !requestedName) {
-    return buildCurrentUserContext({});
-  }
-
-  // Identity sent but not found in DB: treat as unauthenticated.
-  if (!matchedUser) {
-    return buildCurrentUserContext({});
-  }
-
+function buildContextFromUser(user) {
   return buildCurrentUserContext({
-    id: matchedUser.id || matchedUser._id || '',
-    name: matchedUser.name || '',
-    role: matchedUser.role || '',
-    roles: Array.isArray(matchedUser.roles) ? matchedUser.roles : []
+    id: user.id || String(user._id || ''),
+    name: user.name || '',
+    role: user.role || '',
+    roles: Array.isArray(user.roles) ? user.roles : []
   });
-}
-
-async function addToRecycleBin(items, entityType, source = 'state_api') {
-  if (!items || items.length === 0) return [];
-
-  const DeletedItem = (await import('@/models/DeletedItem')).default;
-  const snapshottedEntityIds = [];
-
-  await Promise.all(
-    items.map(async (item) => {
-      const plain = sanitizeDoc(item);
-      const entityId = String(plain?.id || item?.id || '');
-      if (!entityId) {
-        console.error(`[State API] Skipping ${entityType} recycle snapshot due to missing id`);
-        return;
-      }
-
-      try {
-        await DeletedItem.create({
-          id: uuidv4(),
-          entityType,
-          entityId,
-          source,
-          deletedBy: 'system',
-          data: plain,
-          expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
-        });
-        snapshottedEntityIds.push(entityId);
-      } catch (err) {
-        console.error(`[State API] Failed to add ${entityType} ${entityId} to recycle bin:`, err.message);
-      }
-    })
-  );
-
-  return snapshottedEntityIds;
 }
 
 export async function GET(request) {
   try {
     await connectDB();
+
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const context = buildContextFromUser(authUser);
 
     // Import models
     const User = (await import('@/models/User')).default;
@@ -139,20 +73,7 @@ export async function GET(request) {
     const channels = await Channel.find({});
     const dailyTasks = await DailyTask.find({});
 
-    const { searchParams } = new URL(request.url);
-    const rawRoles = searchParams.get('userRoles');
-    const requestedContext = buildCurrentUserContext({
-      id: searchParams.get('userId') || '',
-      name: searchParams.get('userName') || '',
-      role: searchParams.get('userRole') || '',
-      roles: rawRoles ? rawRoles.split(',') : []
-    });
-    const context = resolveCurrentUserContext(requestedContext, users || []);
-    const hasUserContext = Boolean(context.name || context.id || normalizeRoles(context.roles, context.role).length > 0);
-
-    const filteredProjects = hasUserContext
-      ? filterProjectsForUser(projects || [], context)
-      : [];
+    const filteredProjects = filterProjectsForUser(projects || [], context);
 
     return NextResponse.json({
       users: users || [],
@@ -180,6 +101,18 @@ export async function POST(request) {
     const body = await request.json();
     await connectDB();
 
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const context = buildContextFromUser(authUser);
+    const isManager = canManageAllProjects(context);
+
     // Import models
     const User = (await import('@/models/User')).default;
     const Project = (await import('@/models/Project')).default;
@@ -197,91 +130,49 @@ export async function POST(request) {
       }
     }
 
-    // Update projects (upsert only — never delete projects not in the incoming
-    // array because clients receive a filtered subset and would inadvertently
-    // remove other users' projects). Use DELETE /api/projects/:id for deletions.
+    // Update projects
     if (body.projects && Array.isArray(body.projects)) {
-      // Resolve requesting user for permission checks
-      const allUsers = await User.find({}).select('-password -refreshTokens');
-      const userContext = resolveCurrentUserContext(
-        buildCurrentUserContext(body.currentUser || {}),
-        allUsers || []
-      );
-      const isManager = canManageAllProjects(userContext);
-
-      // Import NotificationEngine for event tracking
       const notificationEngineModule = await import('@/lib/services/notificationEngine.js');
       const NotificationEngine = notificationEngineModule.NotificationEngine || notificationEngineModule.default;
 
-      // Update or insert remaining projects
       for (const project of body.projects) {
-        // Fetch existing project to detect changes
         const existingProject = await Project.findOne({ id: project.id });
 
-        // Permission check: non-managers can only update projects they can view
-        if (!isManager && existingProject && !canViewProject(existingProject, userContext)) {
+        if (!isManager && existingProject && !canViewProject(existingProject, context)) {
           continue;
         }
+
         const incomingLastUpdated = Number(project?.lastUpdated || 0);
         const existingLastUpdated = Number(existingProject?.lastUpdated || 0);
 
-        // Ignore stale writes to prevent out-of-order request overwrites.
         if (existingProject && incomingLastUpdated > 0 && existingLastUpdated > incomingLastUpdated) {
           continue;
         }
 
-        // Check for assignment change
-        if (!existingProject) {
-          // New project - notify assignee
-          if (project.assignedTo) {
-            try {
-              await NotificationEngine.onProjectAssigned(project, project.assignedTo);
-            } catch (err) {
-              console.error('[State API] Notification error:', err);
-            }
-          }
-        } else if (existingProject.assignedTo !== project.assignedTo && project.assignedTo) {
-          // Reassignment - notify new assignee
-          try {
-            await NotificationEngine.onProjectAssigned(project, project.assignedTo);
-          } catch (err) {
-            console.error('[State API] Notification error:', err);
-          }
+        // Notification checks
+        if (!existingProject && project.assignedTo) {
+          try { await NotificationEngine.onProjectAssigned(project, project.assignedTo); } catch (err) { console.error('[State API] Notification error:', err); }
+        } else if (existingProject && existingProject.assignedTo !== project.assignedTo && project.assignedTo) {
+          try { await NotificationEngine.onProjectAssigned(project, project.assignedTo); } catch (err) { console.error('[State API] Notification error:', err); }
         }
 
-        // Check for stage change
         if (existingProject && existingProject.stage !== project.stage) {
-          try {
-            await NotificationEngine.onProjectStageChanged(project, existingProject.stage, project.stage);
-          } catch (err) {
-            console.error('[State API] Notification error:', err);
-          }
+          try { await NotificationEngine.onProjectStageChanged(project, existingProject.stage, project.stage); } catch (err) { console.error('[State API] Notification error:', err); }
         }
 
-        // Check if project is at risk (status === 'Blocked')
         if (existingProject && project.status === 'Blocked' && existingProject.status !== 'Blocked') {
-          try {
-            await NotificationEngine.onProjectAtRisk(project);
-          } catch (err) {
-            console.error('[State API] Notification error:', err);
-          }
+          try { await NotificationEngine.onProjectAtRisk(project); } catch (err) { console.error('[State API] Notification error:', err); }
         }
 
         await Project.updateOne(
           { id: project.id },
-          {
-            $set: {
-              ...sanitizeDoc(project),
-              lastUpdated: incomingLastUpdated || Date.now()
-            }
-          },
+          { $set: { ...sanitizeDoc(project), lastUpdated: incomingLastUpdated || Date.now() } },
           { upsert: true }
         );
       }
     }
 
-    // Update channels (upsert only — never delete channels not in the incoming
-    // array. Use DELETE /api/channels/:id for deletions.)
+    // Update channels
     if (body.channels && Array.isArray(body.channels)) {
       for (const channel of body.channels) {
         await Channel.updateOne(
@@ -292,8 +183,7 @@ export async function POST(request) {
       }
     }
 
-    // Update daily tasks (upsert only — never delete tasks not in the incoming
-    // array. Use DELETE /api/daily-tasks/:id for deletions.)
+    // Update daily tasks
     if (body.dailyTasks && Array.isArray(body.dailyTasks)) {
       for (const task of body.dailyTasks) {
         await DailyTask.updateOne(

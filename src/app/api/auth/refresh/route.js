@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { verifyToken, generateAccessToken } from '@/lib/auth';
+import { getCookie, setAuthCookies, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@/lib/cookies';
 
 export async function POST(request) {
   try {
-    const { refreshToken } = await request.json();
+    // Read refresh token from cookie
+    const refreshToken = getCookie(request, REFRESH_TOKEN_COOKIE);
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -41,10 +43,14 @@ export async function POST(request) {
     // Generate new access token
     const accessToken = generateAccessToken(user.id);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      accessToken
     });
+
+    // Set new access token cookie
+    setAuthCookies(response, accessToken, null);
+
+    return response;
 
   } catch (error) {
     console.error('Refresh error:', error);

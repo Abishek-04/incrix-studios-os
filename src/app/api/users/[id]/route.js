@@ -5,6 +5,7 @@ import User from '@/models/User';
 import DeletedItem from '@/models/DeletedItem';
 import { v4 as uuidv4 } from 'uuid';
 import { hasPermission, PERMISSIONS, ROLES } from '@/config/permissions';
+import { getAuthUser } from '@/lib/auth';
 import { logUserAction } from '@/utils/activityLogger';
 import {
   logUserUpdated,
@@ -123,9 +124,13 @@ export async function PATCH(request, { params }) {
     await connectDB();
 
     const { id } = await params;
+    const { user: currentUser } = await getAuthUser(request);
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { currentUser, updates: rawUpdates } = body;
-    const updates = rawUpdates || {};
+    const updates = body.updates || {};
     const safeUpdatesForLogs = { ...updates };
     delete safeUpdatesForLogs.currentPassword;
     delete safeUpdatesForLogs.newPassword;
@@ -301,18 +306,13 @@ export async function DELETE(request, { params }) {
     await connectDB();
 
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const body = await request.json().catch(() => ({}));
-    const actor = body?.currentUser || {};
-    const targetUser = body?.targetUser || {};
-    const actorId = actor?.id;
-    let currentUserRole = normalizeRole(actor?.role || searchParams.get('role'));
-
-    // Fallback: derive role from DB when client role is stale or missing
-    if (!currentUserRole && actorId) {
-      const actorUser = await User.findOne(buildUserLookup(actorId)).select('role');
-      currentUserRole = normalizeRole(actorUser?.role);
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+
+    const currentUserRole = normalizeRole(authUser.role);
+    const actorId = authUser.id;
 
     // Permission check
     if (!hasPermission(currentUserRole, PERMISSIONS.DELETE_USERS)) {
@@ -322,11 +322,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Find and delete user (fallback to unique email for legacy/mismatched client ids)
+    // Find user to delete
     let user = await User.findOne(buildUserLookup(id)).select('+password');
-    if (!user && targetUser?.email) {
-      user = await User.findOne({ email: targetUser.email }).select('+password');
-    }
     if (!user) {
       return NextResponse.json(
         {
@@ -358,8 +355,7 @@ export async function DELETE(request, { params }) {
     await User.deleteOne({ _id: user._id });
 
     // Log activity
-    const currentUser = { id: 'system', name: 'System', role: currentUserRole };
-    logUserAction('deleted', serializeUser(user), currentUser);
+    logUserAction('deleted', serializeUser(user), authUser);
 
     return NextResponse.json({
       success: true,

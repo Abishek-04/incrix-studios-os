@@ -1,99 +1,44 @@
 import { NextResponse } from 'next/server';
-import { getMediaForChannel } from '@/services/instagramMediaService';
-// Dynamic import for queue (not available in Vercel production)
+import connectDB from '@/lib/mongodb';
+import InstaAccount from '@/models/InstaAccount';
+import { InstagramService } from '@/services/instagramService';
+import { getAuthUser } from '@/lib/auth';
 
 /**
- * GET /api/instagram/media?channelId=xxx&type=VIDEO&page=1&limit=20
- * Get media for a channel with filters
+ * GET /api/instagram/media?accountId=xxx
+ * Fetch media for an Instagram account directly from Instagram Graph API
  */
 export async function GET(request) {
   try {
+    const { user } = await getAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const channelId = searchParams.get('channelId');
-    const mediaType = searchParams.get('type');
-    const automationActive = searchParams.get('automationActive');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
-    const sort = searchParams.get('sort') || '-timestamp';
+    const accountId = searchParams.get('accountId');
 
-    if (!channelId) {
-      return NextResponse.json(
-        { success: false, error: 'channelId parameter required' },
-        { status: 400 }
-      );
+    if (!accountId) {
+      return NextResponse.json({ success: false, error: 'accountId required' }, { status: 400 });
     }
 
-    const result = await getMediaForChannel(channelId, {
-      mediaType,
-      automationActive: automationActive === 'true' ? true : automationActive === 'false' ? false : undefined,
-      startDate,
-      endDate,
-      page,
-      limit,
-      sort,
-    });
+    await connectDB();
+    const account = await InstaAccount.findById(accountId).lean();
+    if (!account) {
+      return NextResponse.json({ success: false, error: 'Account not found' }, { status: 404 });
+    }
 
-    return NextResponse.json(result);
+    const media = await InstagramService.getAccountMedia(account);
+    return NextResponse.json({ success: true, media });
   } catch (error) {
-    console.error('[Instagram Media API] Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch media' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * POST /api/instagram/media/sync
- * Trigger immediate sync for a channel
- */
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { channelId } = body;
-
-    if (!channelId) {
-      return NextResponse.json(
-        { success: false, error: 'channelId required' },
-        { status: 400 }
-      );
-    }
-
-    // Check if running in production (Vercel) where background jobs are not available
-    if (process.env.VERCEL === '1') {
-      console.log('[Instagram Media API] Background sync not available in production');
+    if (error.status === 401 || error.code === 'INSTAGRAM_AUTH_EXPIRED') {
       return NextResponse.json({
-        success: true,
-        message: 'Background sync not available in serverless environment. Media will sync on next API call.',
-        production: true,
-      });
+        success: false,
+        error: 'Instagram session expired. Please reconnect.',
+        code: 'INSTAGRAM_AUTH_EXPIRED',
+      }, { status: 401 });
     }
-
-    // Queue sync job (only in development)
-    try {
-      const { queueFullSync } = await import('@/lib/queues/instagramSyncQueue');
-      const job = await queueFullSync(channelId);
-
-      return NextResponse.json({
-        success: true,
-        message: 'Sync job queued',
-        jobId: job?.id,
-      });
-    } catch (queueError) {
-      console.log('[Instagram Media API] Queue not available:', queueError.message);
-      return NextResponse.json({
-        success: true,
-        message: 'Background sync not available. Media will sync on next API call.',
-        queueAvailable: false,
-      });
-    }
-  } catch (error) {
-    console.error('[Instagram Media API] Sync error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to queue sync' },
-      { status: 500 }
-    );
+    console.error('[instagram-media] Failed:', error.message);
+    return NextResponse.json({ success: false, error: 'Failed to load Instagram media' }, { status: 500 });
   }
 }

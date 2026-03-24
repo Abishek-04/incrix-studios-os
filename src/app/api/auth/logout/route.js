@@ -1,40 +1,44 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { authenticate } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
+import { getCookie, clearAuthCookies, REFRESH_TOKEN_COOKIE } from '@/lib/cookies';
 
 export async function POST(request) {
   try {
-    // Authenticate
-    const decoded = await authenticate(request);
+    const refreshToken = getCookie(request, REFRESH_TOKEN_COOKIE);
 
-    const { refreshToken } = await request.json();
+    if (refreshToken) {
+      const decoded = verifyToken(refreshToken);
+      if (decoded) {
+        await connectDB();
+        const User = (await import('@/models/User')).default;
 
-    if (!refreshToken) {
-      return NextResponse.json(
-        { success: false, error: 'Refresh token required' },
-        { status: 400 }
-      );
+        // Remove refresh token from user
+        await User.updateOne(
+          { id: decoded.userId },
+          { $pull: { refreshTokens: refreshToken } }
+        );
+      }
     }
 
-    await connectDB();
-    const User = (await import('@/models/User')).default;
-
-    // Remove refresh token from user
-    await User.updateOne(
-      { id: decoded.userId },
-      { $pull: { refreshTokens: refreshToken } }
-    );
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Logged out successfully'
     });
 
+    // Clear auth cookies
+    clearAuthCookies(response);
+
+    return response;
+
   } catch (error) {
     console.error('Logout error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to logout' },
+    // Still clear cookies even on error
+    const response = NextResponse.json(
+      { success: false, error: 'Failed to logout' },
       { status: 500 }
     );
+    clearAuthCookies(response);
+    return response;
   }
 }

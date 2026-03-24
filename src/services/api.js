@@ -1,79 +1,41 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-let accessToken = null;
-let refreshToken = null;
-
-// Load tokens from localStorage on client
-if (typeof window !== 'undefined') {
-  accessToken = localStorage.getItem('access_token');
-  refreshToken = localStorage.getItem('refresh_token');
-}
-
-function getStoredCurrentUser() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('auth_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch (error) {
-    console.error('Failed to parse auth_user:', error);
-    return null;
-  }
-}
-
 async function refreshAccessToken() {
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-
   const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken })
+    credentials: 'include',
   });
 
   if (!response.ok) {
-    // Refresh token expired, need to re-login
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      window.location.href = '/';
-    }
+    if (typeof window !== 'undefined') window.location.href = '/';
     throw new Error('Session expired');
   }
 
-  const data = await response.json();
-  accessToken = data.accessToken;
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('access_token', accessToken);
-  }
-  return accessToken;
+  return true;
 }
 
-async function fetchWithAuth(url, options = {}) {
-  // Add auth header
+export async function fetchWithAuth(url, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
   let response = await fetch(`${API_BASE_URL}${url}`, {
+    cache: 'no-store',
     ...options,
-    headers
+    headers,
+    credentials: 'include', // Always send cookies
   });
 
-  // If 401/403, try refreshing token
-  if (response.status === 401 || response.status === 403) {
+  // If 401, try refreshing token and retry once
+  if (response.status === 401) {
     try {
       await refreshAccessToken();
-      // Retry with new token
-      headers['Authorization'] = `Bearer ${accessToken}`;
       response = await fetch(`${API_BASE_URL}${url}`, {
+        cache: 'no-store',
         ...options,
-        headers
+        headers,
+        credentials: 'include',
       });
     } catch (error) {
       throw error;
@@ -83,113 +45,78 @@ async function fetchWithAuth(url, options = {}) {
   return response;
 }
 
+// ── Auth ──
+
 export async function login(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // Receive HttpOnly cookies
     body: JSON.stringify({ email, password })
   });
 
-  const data = await response.json();
-
-  if (data.success && typeof window !== 'undefined') {
-    if (data.accessToken) {
-      accessToken = data.accessToken;
-      localStorage.setItem('access_token', accessToken);
-    }
-    if (data.refreshToken) {
-      refreshToken = data.refreshToken;
-      localStorage.setItem('refresh_token', refreshToken);
-    }
-    if (data.user) {
-      localStorage.setItem('auth_user', JSON.stringify(data.user));
-    }
-  }
-
-  return data;
+  return response.json();
 }
 
 export async function logout() {
   try {
-    await fetchWithAuth('/api/auth/logout', {
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
-      body: JSON.stringify({ refreshToken })
+      credentials: 'include',
     });
   } catch (error) {
-    console.error('Logout error:', error);
-  }
-
-  accessToken = null;
-  refreshToken = null;
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('auth_user');
+    // Ignore logout errors
   }
 }
 
-export async function fetchState() {
-  const params = new URLSearchParams();
-  const currentUser = getStoredCurrentUser();
-  if (currentUser) {
-    if (currentUser?.id || currentUser?._id) {
-      params.set('userId', currentUser.id || currentUser._id);
-    }
-    if (currentUser?.name) {
-      params.set('userName', currentUser.name);
-    }
-    if (currentUser?.role) {
-      params.set('userRole', currentUser.role);
-    }
-    const roles = Array.isArray(currentUser?.roles) ? currentUser.roles.filter(Boolean) : [];
-    if (roles.length > 0) {
-      params.set('userRoles', roles.join(','));
-    }
+export async function getCurrentUser() {
+  try {
+    const response = await fetchWithAuth('/api/auth/me');
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.user || null;
+  } catch (error) {
+    return null;
   }
+}
 
-  const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/api/state${query ? `?${query}` : ''}`, {
-    cache: 'no-store'
-  });
+// ── State ──
+
+export async function fetchState() {
+  const response = await fetchWithAuth('/api/state');
   const data = await response.json();
   return data;
 }
 
 export async function saveState(data) {
-  const response = await fetch(`${API_BASE_URL}/api/state`, {
+  const response = await fetchWithAuth('/api/state', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
   return response.json();
 }
 
+// ── Project CRUD ──
+
 export async function createProject(projectData) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/projects`, {
+  const response = await fetchWithAuth('/api/projects', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, project: projectData })
+    body: JSON.stringify({ project: projectData })
   });
   return response.json();
 }
 
 export async function updateProject(projectId, projectData) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}`, {
+  const response = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, project: projectData })
+    body: JSON.stringify({ project: projectData })
   });
   return response.json();
 }
 
 export async function deleteProject(projectId) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser })
+  const response = await fetchWithAuth(`/api/projects/${encodeURIComponent(projectId)}`, {
+    method: 'DELETE'
   });
   return response.json();
 }
@@ -197,31 +124,24 @@ export async function deleteProject(projectId) {
 // ── Daily Task CRUD ──
 
 export async function createDailyTask(taskData) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/daily-tasks`, {
+  const response = await fetchWithAuth('/api/daily-tasks', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, task: taskData })
+    body: JSON.stringify({ task: taskData })
   });
   return response.json();
 }
 
 export async function updateDailyTask(taskId, updates) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+  const response = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, updates })
+    body: JSON.stringify({ updates })
   });
   return response.json();
 }
 
 export async function deleteDailyTask(taskId) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/daily-tasks/${encodeURIComponent(taskId)}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser })
+  const response = await fetchWithAuth(`/api/daily-tasks/${encodeURIComponent(taskId)}`, {
+    method: 'DELETE'
   });
   return response.json();
 }
@@ -229,49 +149,31 @@ export async function deleteDailyTask(taskId) {
 // ── Channel CRUD ──
 
 export async function createChannel(channelData) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/channels`, {
+  const response = await fetchWithAuth('/api/channels', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, channel: channelData })
+    body: JSON.stringify({ channel: channelData })
   });
   return response.json();
 }
 
 export async function updateChannel(channelId, updates) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/channels/${encodeURIComponent(channelId)}`, {
+  const response = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser, updates })
+    body: JSON.stringify({ updates })
   });
   return response.json();
 }
 
 export async function deleteChannel(channelId) {
-  const currentUser = getStoredCurrentUser();
-  const response = await fetch(`${API_BASE_URL}/api/channels/${encodeURIComponent(channelId)}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentUser })
+  const response = await fetchWithAuth(`/api/channels/${encodeURIComponent(channelId)}`, {
+    method: 'DELETE'
   });
   return response.json();
 }
 
-// Debounced save (keep existing pattern)
+// Debounced save
 let saveTimeout = null;
 export function debouncedSave(data, delay = 1000) {
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => saveState(data), delay);
-}
-
-export async function getCurrentUser() {
-  try {
-    const response = await fetchWithAuth('/api/auth/me');
-    const data = await response.json();
-    return data.user;
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return null;
-  }
 }

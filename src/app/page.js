@@ -3,27 +3,28 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
+import { getCurrentUser } from '@/services/api';
 
 export default function HomePage() {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
 
-  // If user is already logged in, redirect to dashboard
+  // If user is already logged in (has valid cookie), redirect to dashboard
   useEffect(() => {
-    const stored = localStorage.getItem('auth_user');
-    if (stored) {
-      router.replace('/dashboard');
-    } else {
-      setChecked(true);
-    }
+    getCurrentUser().then((user) => {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        setChecked(true);
+      }
+    });
   }, [router]);
 
-  const handleLogin = (user) => {
-    localStorage.setItem('auth_user', JSON.stringify(user));
+  const handleLogin = () => {
     router.push('/dashboard');
   };
 
-  // Don't show login until we've checked localStorage
+  // Don't show login until we've checked
   if (!checked) return null;
 
   return <Login onLogin={handleLogin} />;

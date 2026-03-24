@@ -5,14 +5,15 @@ import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
+import { fetchState, createProject, updateProject, deleteProject, fetchWithAuth } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProjectsPage() {
+  const { user: currentUser } = useAuth();
   const [projects, setProjects] = useState([]);
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
@@ -26,16 +27,6 @@ export default function ProjectsPage() {
         setProjects(data.projects || []);
         setChannels(data.channels || []);
         setUsers(data.users || []);
-
-        // Get current user from localStorage
-        const storedUser = localStorage.getItem('auth_user');
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
-        } else if (data.users && data.users.length > 0) {
-          const fallbackUser = data.users.find(u => u.role === 'manager') || data.users[0];
-          setCurrentUser(fallbackUser);
-          localStorage.setItem('auth_user', JSON.stringify(fallbackUser));
-        }
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
@@ -207,10 +198,9 @@ export default function ProjectsPage() {
         onUndo={async () => {
           if (!undoDelete?.deletedItemId) return;
           try {
-            const response = await fetch('/api/recycle-bin', {
+            const response = await fetchWithAuth('/api/recycle-bin', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser })
             });
             const data = await response.json();
             if (data.success && undoDelete.project) {

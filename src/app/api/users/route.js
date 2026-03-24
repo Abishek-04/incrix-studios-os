@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { getAuthUser } from '@/lib/auth';
 import { hasPermission, PERMISSIONS, ROLES } from '@/config/permissions';
 import { logUserAction } from '@/utils/activityLogger';
 
@@ -39,13 +40,15 @@ function validateRoles(roles) {
   return Array.isArray(roles) && roles.length > 0 && roles.every((role) => allowedRoles.has(role));
 }
 
-/**
- * GET /api/users
- * Get all users (with role-based filtering)
- */
 export async function GET(request) {
   try {
     await connectDB();
+
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role');
@@ -55,7 +58,6 @@ export async function GET(request) {
     const limitParam = parseInt(searchParams.get('limit') || '100', 10);
     const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 5000) : 100;
 
-    // Build query
     const andConditions = [];
 
     if (role && role !== 'all') {
@@ -69,7 +71,6 @@ export async function GET(request) {
     }
 
     if (search) {
-      // Escape regex metacharacters to prevent ReDoS attacks
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       andConditions.push({ $or: [
         { name: { $regex: escapedSearch, $options: 'i' } },
@@ -80,7 +81,7 @@ export async function GET(request) {
     const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
     let userQuery = User.find(query)
-      .select('-password') // Exclude password
+      .select('-password')
       .sort({ createdAt: -1 });
 
     if (!all) {
@@ -95,37 +96,31 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('[API] Error fetching users:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-/**
- * POST /api/users
- * Create a new user (Super Admin only)
- */
 export async function POST(request) {
   try {
     await connectDB();
-
     const body = await request.json();
-    const { currentUser, userData } = body;
 
-    // Permission check
-    if (!currentUser || !hasPermission(normalizeRole(currentUser.role), PERMISSIONS.CREATE_USERS)) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 403 }
-      );
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Validate required fields
-    const normalizedEmail = normalizeEmail(userData.email);
+    // Permission check using DB user's role
+    if (!hasPermission(normalizeRole(authUser.role), PERMISSIONS.CREATE_USERS)) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
 
-    const normalizedRoles = normalizeRoles(userData.roles, userData.role);
-    const primaryRole = normalizedRoles[0];
+    const { userData } = body;
+
+    const normalizedEmail = normalizeEmail(userData.email);
+    const normalizedUserRoles = normalizeRoles(userData.roles, userData.role);
+    const primaryRole = normalizedUserRoles[0];
 
     if (!userData.name || !normalizedEmail || !primaryRole || !userData.password) {
       return NextResponse.json(
@@ -134,30 +129,19 @@ export async function POST(request) {
       );
     }
 
-    if (!validateRoles(normalizedRoles)) {
-      return NextResponse.json(
-        { success: false, error: 'One or more selected roles are invalid' },
-        { status: 400 }
-      );
+    if (!validateRoles(normalizedUserRoles)) {
+      return NextResponse.json({ success: false, error: 'One or more selected roles are invalid' }, { status: 400 });
     }
 
     if (userData.password.length < 8) {
-      return NextResponse.json(
-        { success: false, error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Password must be at least 8 characters long' }, { status: 400 });
     }
 
-    // Check if email already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'Email already exists' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Email already exists' }, { status: 400 });
     }
 
-    // Create user
     const newUser = await User.create({
       id: userData.id || `user-${Date.now()}`,
       name: userData.name,
@@ -165,7 +149,7 @@ export async function POST(request) {
       password: userData.password,
       phoneNumber: userData.phoneNumber,
       role: primaryRole,
-      roles: normalizedRoles,
+      roles: normalizedUserRoles,
       avatarColor: userData.avatarColor || 'bg-indigo-500',
       profilePhoto: userData.profilePhoto || '',
       isActive: userData.isActive !== false,
@@ -173,18 +157,11 @@ export async function POST(request) {
       lastActive: Date.now()
     });
 
-    // Log activity
-    logUserAction('created', serializeUser(newUser), currentUser);
+    logUserAction('created', serializeUser(newUser), serializeUser(authUser));
 
-    return NextResponse.json({
-      success: true,
-      user: serializeUser(newUser)
-    });
+    return NextResponse.json({ success: true, user: serializeUser(newUser) });
   } catch (error) {
     console.error('[API] Error creating user:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

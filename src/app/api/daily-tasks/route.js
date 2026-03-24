@@ -1,19 +1,31 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import DailyTask from '@/models/DailyTask';
+import { getAuthUser } from '@/lib/auth';
 import { buildCurrentUserContext, canManageAllProjects } from '@/lib/projectAccess';
 
 export const dynamic = 'force-dynamic';
+
+function buildContextFromUser(user) {
+  return buildCurrentUserContext({
+    id: user.id || String(user._id || ''),
+    name: user.name || '',
+    role: user.role || '',
+    roles: Array.isArray(user.roles) ? user.roles : []
+  });
+}
 
 export async function POST(request) {
   try {
     await connectDB();
     const body = await request.json();
-    const currentUser = buildCurrentUserContext(body.currentUser || {});
-    if (!currentUser.id && !currentUser.name) {
+
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    const currentUser = buildContextFromUser(authUser);
     const task = body.task;
     if (!task || !task.id || !task.date || !task.timeSlot || !task.userId || !task.task) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -29,7 +41,7 @@ export async function POST(request) {
       date: task.date,
       timeSlot: task.timeSlot,
       userId: task.userId,
-      userName: task.userName || currentUser.name,
+      userName: task.userName || authUser.name,
       task: task.task,
       done: task.done || false,
       sourceProjectId: task.sourceProjectId || undefined,

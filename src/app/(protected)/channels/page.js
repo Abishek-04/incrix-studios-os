@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import ManageChannels from '@/components/ManageChannels';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState, createChannel, updateChannel, deleteChannel } from '@/services/api';
+import { fetchState, createChannel, updateChannel, deleteChannel, fetchWithAuth } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ChannelsPage() {
+  const { user: currentUser } = useAuth();
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
   const [undoDelete, setUndoDelete] = useState(null);
@@ -108,10 +110,9 @@ export default function ChannelsPage() {
         onUndo={async () => {
           if (!undoDelete?.deletedItemId) return;
           try {
-            const response = await fetch('/api/recycle-bin', {
+            const response = await fetchWithAuth('/api/recycle-bin', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser })
             });
             const data = await response.json();
             if (data.success && undoDelete.channel) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
+import { fetchState, createProject, updateProject, deleteProject, fetchWithAuth } from '@/services/api';
 import { getProjectConfig } from '@/config/projectConfig';
 import { ProjectType, DesignStage, Priority, Status } from '@/types';
 import { Plus, Palette, Calendar, User, Filter, Search, Archive, Trash2, ExternalLink } from 'lucide-react';
@@ -9,11 +9,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { useConfirm } from '@/contexts/UIContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DesignProjectsPage() {
+  const { user: currentUser } = useAuth();
   const [allProjects, setAllProjects] = useState([]);
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStage, setFilterStage] = useState('all');
   const [filterDesigner, setFilterDesigner] = useState('all');
@@ -32,11 +33,6 @@ export default function DesignProjectsPage() {
         const data = await fetchState();
         setAllProjects(data.projects || []);
         setUsers(data.users || []);
-
-        const storedUser = localStorage.getItem('auth_user');
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
-        }
       } catch (error) {
         console.error('Failed to load design projects:', error);
       } finally {
@@ -318,10 +314,9 @@ export default function DesignProjectsPage() {
       onUndo={async () => {
         if (!undoDelete?.deletedItemId) return;
         try {
-          const response = await fetch('/api/recycle-bin', {
+          const response = await fetchWithAuth('/api/recycle-bin', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+            body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser })
           });
           const data = await response.json();
           if (data.success && undoDelete.project) {

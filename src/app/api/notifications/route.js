@@ -3,23 +3,26 @@ import { v4 as uuidv4 } from 'uuid';
 import connectDB from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 import { sendPushToUser } from '@/lib/webPush';
 
-// GET — Fetch notifications for a user
+// GET — Fetch notifications for authenticated user
 export async function GET(request) {
   try {
+    await connectDB();
+
+    const { user: authUser } = await getAuthUser(request);
+    // Allow fallback to query param for backward compat (layout polls this)
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = authUser?.id || searchParams.get('userId');
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
-
-    await connectDB();
 
     const query = { userId };
     if (unreadOnly) query.read = false;
@@ -42,21 +45,22 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, message, type = 'info', targetUserIds = [], targetRole, senderId } = body;
+    const { title, message, type = 'info', targetUserIds = [], targetRole } = body;
 
     if (!title || !message) {
       return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
     }
 
-    if (!senderId) {
-      return NextResponse.json({ error: 'senderId is required' }, { status: 400 });
-    }
-
     await connectDB();
 
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Verify sender is manager or superadmin
-    const sender = await User.findOne({ id: senderId }).lean();
-    if (!sender || !['superadmin', 'manager'].includes(sender.role)) {
+    if (!['superadmin', 'manager'].includes(authUser.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -70,7 +74,6 @@ export async function POST(request) {
       const users = await User.find(query).select('id').lean();
       userIds = users.map(u => u.id);
     } else if (userIds.length === 0) {
-      // No target specified — send to all active users
       const users = await User.find({ isActive: { $ne: false } }).select('id').lean();
       userIds = users.map(u => u.id);
     }
@@ -79,7 +82,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No target users found' }, { status: 400 });
     }
 
-    // Create one notification per user
     const notifications = userIds.map(userId => ({
       id: uuidv4(),
       userId,
@@ -87,21 +89,17 @@ export async function POST(request) {
       message,
       type,
       read: false,
-      metadata: { sentBy: senderId, sentByName: sender.name }
+      metadata: { sentBy: authUser.id, sentByName: authUser.name }
     }));
 
     await Notification.insertMany(notifications);
 
-    // Send web push notifications (fire and forget)
     const pushPayload = { title, message, type };
     Promise.allSettled(
       userIds.map(uid => sendPushToUser(uid, pushPayload))
     ).catch(err => console.error('[Push] Batch send error:', err));
 
-    return NextResponse.json({
-      success: true,
-      count: notifications.length
-    });
+    return NextResponse.json({ success: true, count: notifications.length });
   } catch (error) {
     console.error('POST /api/notifications error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -112,13 +110,18 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const body = await request.json();
-    const { notificationIds = [], markAllRead = false, userId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
+    const { notificationIds = [], markAllRead = false } = body;
 
     await connectDB();
+
+    // Authenticate via JWT
+    const { user: authUser } = await getAuthUser(request);
+    // Fallback to body userId for backward compat
+    const userId = authUser?.id || body.userId;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (markAllRead) {
       await Notification.updateMany(

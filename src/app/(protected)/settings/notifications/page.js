@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Bell, Check, X, Send } from 'lucide-react';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState } from '@/services/api';
+import { fetchState, fetchWithAuth } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function NotificationSettingsPage() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [preferences, setPreferences] = useState({
     whatsapp: {
@@ -33,11 +34,9 @@ export default function NotificationSettingsPage() {
   async function loadUser() {
     try {
       const data = await fetchState();
-      const storedUser = localStorage.getItem('auth_user');
-      let user = null;
+      let user = currentUser;
 
-      if (storedUser) {
-        user = JSON.parse(storedUser);
+      if (user) {
         // Find the full user data from the API
         const fullUser = data.users?.find((u) => u.id === user.id);
         if (fullUser) {
@@ -45,12 +44,7 @@ export default function NotificationSettingsPage() {
         }
       }
 
-      if (!user && data.users && data.users.length > 0) {
-        user = data.users.find((u) => u.role === 'manager') || data.users[0];
-      }
-
       if (user) {
-        setCurrentUser(user);
         setWhatsappNumber(user.whatsappNumber || user.phoneNumber || '');
 
         // Load user's notification preferences
@@ -76,13 +70,9 @@ export default function NotificationSettingsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
+      const response = await fetchWithAuth(`/api/users/${currentUser.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
-          currentUser,
           updates: {
             whatsappNumber,
             notificationPreferences: preferences,
@@ -93,15 +83,6 @@ export default function NotificationSettingsPage() {
       if (!response.ok) {
         throw new Error('Failed to save settings');
       }
-
-      // Update localStorage
-      const updatedUser = {
-        ...currentUser,
-        whatsappNumber,
-        notificationPreferences: preferences,
-      };
-      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
 
       showMessage('Settings saved successfully!', 'success');
     } catch (error) {
@@ -120,11 +101,8 @@ export default function NotificationSettingsPage() {
 
     setTestingSend(true);
     try {
-      const response = await fetch('/api/whatsapp/send', {
+      const response = await fetchWithAuth('/api/whatsapp/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           to: whatsappNumber,
           message: `🔔 Test notification from #teamincrix\n\nHello ${currentUser?.name}! Your WhatsApp notifications are working correctly. You will now receive updates about projects, tasks, and deadlines.`,

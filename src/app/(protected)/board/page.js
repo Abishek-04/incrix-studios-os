@@ -5,43 +5,34 @@ import ProjectBoard from '@/components/ProjectBoard';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { fetchState, createProject, updateProject, deleteProject } from '@/services/api';
+import { fetchState, createProject, updateProject, deleteProject, fetchWithAuth } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function BoardPage() {
+  const { user: currentUser } = useAuth();
   const [projects, setProjects] = useState([]);
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
 
+  const loadData = async () => {
+    try {
+      const data = await fetchState();
+      setProjects(data.projects || []);
+      setChannels(data.channels || []);
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchState();
-        setProjects(data.projects || []);
-        setChannels(data.channels || []);
-        setUsers(data.users || []);
-
-        // Get current user from localStorage
-        const storedUser = localStorage.getItem('auth_user');
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
-        } else if (data.users && data.users.length > 0) {
-          const fallbackUser = data.users.find(u => u.role === 'manager') || data.users[0];
-          setCurrentUser(fallbackUser);
-          localStorage.setItem('auth_user', JSON.stringify(fallbackUser));
-        }
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
   }, []);
 
@@ -94,6 +85,7 @@ export default function BoardPage() {
     } catch (error) {
       console.error('Project update error:', error);
       showToast('Failed to save project changes');
+      await loadData();
       return { success: false, error: 'Update failed' };
     }
   };
@@ -108,17 +100,13 @@ export default function BoardPage() {
 
       if (!response?.success) {
         console.error('Project delete failed:', response?.error);
-        // If "Project not found", it's already gone from DB — don't re-add to UI
+        // If already gone from DB, just keep it removed from UI
         if (response?.error === 'Project not found') {
           return;
         }
+        // Real failure — refetch DB state to get truth
         showToast(response?.error || 'Failed to delete project');
-        if (deletedProject) {
-          setProjects((prevProjects) => {
-            const exists = prevProjects.some((p) => p.id === deletedProject.id);
-            return exists ? prevProjects : [...prevProjects, deletedProject];
-          });
-        }
+        await loadData();
         return;
       }
 
@@ -130,12 +118,7 @@ export default function BoardPage() {
     } catch (error) {
       console.error('Project delete error:', error);
       showToast('Failed to delete project');
-      if (deletedProject) {
-        setProjects((prevProjects) => {
-          const exists = prevProjects.some((p) => p.id === deletedProject.id);
-          return exists ? prevProjects : [...prevProjects, deletedProject];
-        });
-      }
+      await loadData();
     }
   };
 
@@ -172,11 +155,12 @@ export default function BoardPage() {
               );
               setSelectedProject(createdProject);
             }
+            await loadData();
             return { success: true, project: response.project || newProject };
           } catch (error) {
             console.error('Project create error:', error);
             showToast('Failed to create project');
-            setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
+            await loadData();
             setSelectedProject(null);
             return { success: false, error: 'Create failed' };
           }
@@ -220,10 +204,9 @@ export default function BoardPage() {
         onUndo={async () => {
           if (!undoDelete?.deletedItemId) return;
           try {
-            const response = await fetch('/api/recycle-bin', {
+            const response = await fetchWithAuth('/api/recycle-bin', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId, currentUser: JSON.parse(localStorage.getItem('auth_user') || '{}') })
+              body: JSON.stringify({ deletedItemId: undoDelete.deletedItemId })
             });
             const data = await response.json();
             if (data.success && undoDelete.project) {

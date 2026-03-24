@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Trash2, RotateCcw, X, Calendar, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import { useConfirm } from '@/contexts/UIContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchWithAuth } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const ENTITY_LABELS = {
@@ -20,24 +22,17 @@ function getItemTitle(item) {
   return item?.data?.title || item?.data?.name || item?.data?.task || item?.data?.email || item.entityId;
 }
 
-function getStoredUser() {
-  try {
-    const raw = localStorage.getItem('auth_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function userParams() {
-  const u = getStoredUser();
-  if (!u) return '';
-  const p = new URLSearchParams();
-  if (u.id || u._id) p.set('userId', u.id || u._id);
-  if (u.name) p.set('userName', u.name);
-  return p.toString();
-}
-
 export default function RecycleBinPage() {
   const confirmAction = useConfirm();
+  const { user: currentUser } = useAuth();
+
+  function userParams() {
+    if (!currentUser) return '';
+    const p = new URLSearchParams();
+    if (currentUser.id || currentUser._id) p.set('userId', currentUser.id || currentUser._id);
+    if (currentUser.name) p.set('userName', currentUser.name);
+    return p.toString();
+  }
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -50,7 +45,7 @@ export default function RecycleBinPage() {
     try {
       setLoading(true);
       const up = userParams();
-      const response = await fetch(`/api/recycle-bin?type=${type}&limit=200${up ? `&${up}` : ''}`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`/api/recycle-bin?type=${type}&limit=200${up ? `&${up}` : ''}`);
       const data = await response.json();
       if (data.success) {
         setItems(data.items || []);
@@ -91,10 +86,9 @@ export default function RecycleBinPage() {
   const handleRestore = async (id) => {
     setRestoringIds(prev => ({ ...prev, [id]: true }));
     try {
-      const response = await fetch('/api/recycle-bin', {
+      const response = await fetchWithAuth('/api/recycle-bin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deletedItemId: id, currentUser: getStoredUser() })
+        body: JSON.stringify({ deletedItemId: id, currentUser: currentUser })
       });
       const data = await response.json();
       if (data.success) {
@@ -111,10 +105,9 @@ export default function RecycleBinPage() {
   const handlePermanentDelete = async (id) => {
     setDeletingIds(prev => ({ ...prev, [id]: true }));
     try {
-      const response = await fetch('/api/recycle-bin', {
+      const response = await fetchWithAuth('/api/recycle-bin', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, currentUser: getStoredUser() })
+        body: JSON.stringify({ id, currentUser: currentUser })
       });
       const data = await response.json();
       if (data.success) {
@@ -140,10 +133,9 @@ export default function RecycleBinPage() {
 
     setBulkAction('deleting');
     try {
-      const response = await fetch('/api/recycle-bin', {
+      const response = await fetchWithAuth('/api/recycle-bin', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, currentUser: getStoredUser() })
+        body: JSON.stringify({ ids, currentUser: currentUser })
       });
       const data = await response.json();
       if (data.success) {
@@ -163,10 +155,9 @@ export default function RecycleBinPage() {
 
     setBulkAction('restoring');
     try {
-      const response = await fetch('/api/recycle-bin', {
+      const response = await fetchWithAuth('/api/recycle-bin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deletedItemIds: ids, currentUser: getStoredUser() })
+        body: JSON.stringify({ deletedItemIds: ids, currentUser: currentUser })
       });
       const data = await response.json();
       if (data.success) {
