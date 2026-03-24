@@ -23,6 +23,7 @@ export function buildInstagramLoginUrl(studioUserId) {
   const params = new URLSearchParams({
     enable_fb_login: '0',
     force_authentication: '1',
+    auth_type: 'reauthenticate',
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     response_type: 'code',
