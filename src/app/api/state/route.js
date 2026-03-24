@@ -66,12 +66,14 @@ export async function GET(request) {
     const Project = (await import('@/models/Project')).default;
     const Channel = (await import('@/models/Channel')).default;
     const DailyTask = (await import('@/models/DailyTask')).default;
+    const Course = (await import('@/models/Course')).default;
 
     // Fetch all data
     const users = await User.find({}).select('-password -refreshTokens');
     const projects = await Project.find({});
     const channels = await Channel.find({});
     const dailyTasks = await DailyTask.find({});
+    const courses = await Course.find({}).sort({ createdAt: -1 });
 
     const filteredProjects = filterProjectsForUser(projects || [], context);
 
@@ -80,6 +82,7 @@ export async function GET(request) {
       projects: filteredProjects,
       channels: channels || [],
       dailyTasks: dailyTasks || [],
+      courses: courses || [],
       lastUpdated: new Date()
     }, {
       headers: {

@@ -14,6 +14,7 @@ export default function BoardPage() {
   const [projects, setProjects] = useState([]);
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,7 @@ export default function BoardPage() {
       setProjects(data.projects || []);
       setChannels(data.channels || []);
       setUsers(data.users || []);
+      setCourses(data.courses || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -131,6 +133,7 @@ export default function BoardPage() {
       <ProjectBoard
         projects={projects}
         channels={channels}
+        users={users}
         currentUser={currentUser}
         onSelectProject={setSelectedProject}
         onUpdateProject={handleUpdateProject}
@@ -176,6 +179,7 @@ export default function BoardPage() {
           currentUserRole={currentUser.role}
           channels={channels}
           users={users}
+          courses={courses}
           onClose={() => setSelectedProject(null)}
           onUpdate={handleUpdateProject}
           onCreate={(newProject) => {

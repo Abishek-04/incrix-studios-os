@@ -59,6 +59,7 @@ const UserSchema = new Schema(
         auth: { type: String, required: true }
       }
     }],
+    tags: [{ type: String }],
     refreshTokens: [{ type: String }],
     lastActive: { type: Date, default: Date.now, index: true }
   },

@@ -24,6 +24,7 @@ import {
   Instagram,
   BarChart3,
   Trash2,
+  GraduationCap,
   MoreHorizontal,
   X
 } from 'lucide-react';
@@ -173,6 +174,7 @@ function ProtectedLayoutInner({ children }) {
     '/dev-projects': 'Development Projects',
     '/team': 'User Management',
     '/channels': 'Channel Credentials',
+    '/courses': 'Course Dashboard',
     '/instagram': 'Instagram DM Automation',
     '/settings/notifications': 'Notification Settings',
     '/recycle-bin': 'Recycle Bin',
@@ -206,6 +208,7 @@ function ProtectedLayoutInner({ children }) {
       title: 'Admin',
       items: [
         ...(hasAnyRole(['superadmin']) ? [{ href: '/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+        { href: '/courses', icon: GraduationCap, label: 'Courses' },
         { href: '/instagram', icon: Instagram, label: 'Instagram' },
         ...(hasAnyRole(['superadmin', 'manager']) ? [
           { href: '/team', icon: Users, label: 'Users' },
@@ -267,6 +270,7 @@ function ProtectedLayoutInner({ children }) {
                 <NavItem href="/dev-projects" icon={Code} label="Dev Projects" isActive={isActive('/dev-projects')} collapsed={sidebarCollapsed} />
               )}
 
+              <NavItem href="/courses" icon={GraduationCap} label="Courses" isActive={isActive('/courses')} collapsed={sidebarCollapsed} />
               <NavItem href="/instagram" icon={Instagram} label="Instagram" isActive={isActive('/instagram')} collapsed={sidebarCollapsed} />
 
               {hasAnyRole(['superadmin', 'manager']) && (

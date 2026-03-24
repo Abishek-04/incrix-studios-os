@@ -8,11 +8,12 @@ import { useToast } from '@/contexts/UIContext';
 
 const MISSING_DATE_LABEL = 'No date given';
 
-const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject, currentUser }) => {
+const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreateProject, onUpdateProject, searchQuery, onDeleteProject, currentUser }) => {
     // Local search state removed in favor of global props
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [selectedCreator, setSelectedCreator] = useState('all');
     const [selectedEditor, setSelectedEditor] = useState('all');
+    const [selectedContentType, setSelectedContentType] = useState('all');
     const [projectToDelete, setProjectToDelete] = useState(null);
     const showToast = useToast();
     const activeRole = String(currentUser?.role || '').trim().toLowerCase();
@@ -59,15 +60,35 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
 
     const availableCreators = useMemo(() => {
         const creators = new Set();
+        // Add all users who can be creators (managers + creators)
+        users.forEach((u) => {
+            const name = String(u?.name || '').trim();
+            const role = u?.role || '';
+            const roles = u?.roles || [];
+            if (name && (role === 'manager' || role === 'creator' || roles.includes('manager') || roles.includes('creator'))) {
+                creators.add(name);
+            }
+        });
+        // Also include creators from existing projects (in case user was deleted)
         projects.forEach((project) => {
             const creator = String(project?.creator || '').trim();
             if (creator) creators.add(creator);
         });
         return Array.from(creators).sort((a, b) => a.localeCompare(b));
-    }, [projects]);
+    }, [projects, users]);
 
     const availableEditors = useMemo(() => {
         const editors = new Set();
+        // Add all users who can be editors (managers + editors)
+        users.forEach((u) => {
+            const name = String(u?.name || '').trim();
+            const role = u?.role || '';
+            const roles = u?.roles || [];
+            if (name && (role === 'manager' || role === 'editor' || roles.includes('manager') || roles.includes('editor'))) {
+                editors.add(name);
+            }
+        });
+        // Also include editors from existing projects
         projects.forEach((project) => {
             getProjectEditors(project).forEach((name) => {
                 const editor = String(name || '').trim();
@@ -75,7 +96,7 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
             });
         });
         return Array.from(editors).sort((a, b) => a.localeCompare(b));
-    }, [projects]);
+    }, [projects, users]);
 
     const handleCreateNew = async () => {
         if (!canCreateProject) {
@@ -162,12 +183,19 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                     if (!editorNames.includes(normalizePerson(selectedEditor))) return false;
                 }
 
+                if (selectedContentType !== 'all') {
+                    const format = p.contentFormat || '';
+                    // Support legacy LongForm/ShortForm values
+                    const normalized = format === 'LongForm' ? 'YTLongVideo' : format === 'ShortForm' ? 'YTShorts' : format;
+                    if (normalized !== selectedContentType) return false;
+                }
+
                 return true;
             });
 
             return filtered;
         };
-    }, [projects, searchQuery, selectedMonth, selectedCreator, selectedEditor, canUseTeamFilters]);
+    }, [projects, searchQuery, selectedMonth, selectedCreator, selectedEditor, selectedContentType, canUseTeamFilters]);
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -253,6 +281,26 @@ const ProjectBoard = ({ projects, channels, onSelectProject, onCreateProject, on
                             </div>
                         </div>
                     )}
+
+                    {/* Content Type Filter */}
+                    <div className="relative">
+                        <select
+                            value={selectedContentType}
+                            onChange={(e) => setSelectedContentType(e.target.value)}
+                            className="bg-[#1e1e1e] border border-[#2f2f2f] text-sm text-white rounded-lg px-3 pr-8 py-2 focus:outline-none focus:border-[#444] appearance-none cursor-pointer hover:bg-[#252525] transition-colors"
+                            aria-label="Filter projects by content type"
+                        >
+                            <option value="all">Content: All</option>
+                            <option value="YTLongVideo">YT Long Video</option>
+                            <option value="YTShorts">YT Shorts</option>
+                            <option value="InstaReel">Insta Reel</option>
+                            <option value="InstaPost">Insta Post</option>
+                            <option value="Course">Course</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
                 </div>
 
                 {canCreateProject && (

@@ -40,7 +40,7 @@ const normalizeEditors = (projectData) => {
 const normalizeName = (value) => String(value || '').trim().toLowerCase();
 const getChannelValue = (channel) => String(channel?.id || channel?._id || '').trim();
 
-const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, onClose, onUpdate, onCreate, onDelete, onNotification }) => {
+const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, courses = [], onClose, onUpdate, onCreate, onDelete, onNotification }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [localProject, setLocalProject] = useState({
     ...project,
@@ -202,10 +202,13 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
         textSaveTimerRef.current = null;
       }
 
+      // Reset contentFormat when platform changes
+      const platformChanged = localProject.platform !== selectedChannel.platform;
       const updated = {
         ...localProject,
         channelId: getChannelValue(selectedChannel),
         platform: selectedChannel.platform,
+        ...(platformChanged ? { contentFormat: '' } : {}),
         lastUpdated: Date.now()
       };
       latestProjectRef.current = updated;
@@ -568,10 +571,10 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               )}
             </div>
 
-            {/* YouTube Format Selector */}
-            {localProject.platform === Platform.YouTube && (
+            {/* Content Format Selector (dynamic based on channel platform) */}
+            {(localProject.platform === Platform.YouTube || localProject.platform === Platform.Instagram || localProject.platform === Platform.Course) && (
               <select
-                value={localProject.contentFormat || 'LongForm'}
+                value={localProject.contentFormat || ''}
                 onChange={(e) => {
                   const updated = { ...localProject, contentFormat: e.target.value, lastUpdated: Date.now() };
                   setLocalProject(updated);
@@ -580,8 +583,48 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 aria-label="Content format"
                 className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
               >
-                <option value="LongForm">Long Form</option>
-                <option value="ShortForm">Shorts</option>
+                <option value="" disabled>Select Format</option>
+                {localProject.platform === Platform.YouTube && (
+                  <>
+                    <option value="YTLongVideo">YT Long Video</option>
+                    <option value="YTShorts">YT Shorts</option>
+                  </>
+                )}
+                {localProject.platform === Platform.Instagram && (
+                  <>
+                    <option value="InstaReel">Insta Reel</option>
+                    <option value="InstaPost">Insta Post</option>
+                  </>
+                )}
+                {localProject.platform === Platform.Course && (
+                  <option value="Course">Course</option>
+                )}
+              </select>
+            )}
+
+            {/* Course Selector (when platform is course) */}
+            {localProject.platform === Platform.Course && courses.length > 0 && (
+              <select
+                value={localProject.courseId || ''}
+                onChange={(e) => {
+                  const selectedCourse = courses.find(c => c.id === e.target.value);
+                  const updated = {
+                    ...localProject,
+                    courseId: e.target.value,
+                    contentFormat: 'Course',
+                    lastUpdated: Date.now(),
+                    ...(selectedCourse ? { title: selectedCourse.name || localProject.title } : {})
+                  };
+                  setLocalProject(updated);
+                  onUpdate(updated);
+                }}
+                aria-label="Select course"
+                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+              >
+                <option value="">Select Course</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             )}
 

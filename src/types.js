@@ -82,7 +82,7 @@ export const Priority = Object.freeze({
 
 // Type unions as constant arrays for validation
 export const VALID_ROLES = ['superadmin', 'manager', 'creator', 'editor', 'designer', 'developer'];
-export const CONTENT_FORMATS = ['LongForm', 'ShortForm'];
+export const CONTENT_FORMATS = ['YTLongVideo', 'YTShorts', 'InstaReel', 'InstaPost', 'Course'];
 export const QUOTA_PERIODS = ['weekly', 'monthly'];
 export const NOTIFICATION_TYPES = ['info', 'success', 'warning', 'error'];
 export const TIME_SLOTS = ['AM', 'PM'];
