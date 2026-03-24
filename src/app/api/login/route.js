@@ -92,16 +92,14 @@ export async function POST(request) {
     const jwtAccessToken = generateAccessToken(user.id);
     const jwtRefreshToken = generateRefreshToken(user.id);
 
-    // Store refresh token in user's token list
-    if (!user.refreshTokens) user.refreshTokens = [];
-    user.refreshTokens.push(jwtRefreshToken);
-    // Keep only last 5 refresh tokens to prevent unbounded growth
-    if (user.refreshTokens.length > 5) {
-      user.refreshTokens = user.refreshTokens.slice(-5);
-    }
-
-    user.lastActive = new Date();
-    await user.save();
+    // Store refresh token and update lastActive atomically to avoid version conflicts
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $push: { refreshTokens: { $each: [jwtRefreshToken], $slice: -5 } },
+        $set: { lastActive: new Date() }
+      }
+    );
 
     // Return user without password
     const userResponse = user.toObject();
