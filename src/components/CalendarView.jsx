@@ -27,7 +27,7 @@ const dateToKey = (date) => {
     return `${y}-${m}-${d}`;
 };
 
-const CalendarView = ({ projects, channels = [], onSelectProject }) => {
+const CalendarView = ({ projects, channels = [], reminders = [], onSelectProject, onDateClick, onDeleteReminder }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedChannelId, setSelectedChannelId] = useState('all');
     const [selectedDateKey, setSelectedDateKey] = useState(dateToKey(new Date()));
@@ -107,11 +107,16 @@ const CalendarView = ({ projects, channels = [], onSelectProject }) => {
                         const d = new Date(project.dueDate);
                         return d.setHours(0, 0, 0, 0) === dateTimestamp;
                     });
+                    const dayReminders = reminders.filter((r) => {
+                        const d = new Date(r.scheduledAt);
+                        return d.setHours(0, 0, 0, 0) === dateTimestamp;
+                    });
 
                     week.push({
                         day: dayCounter,
                         key: dateToKey(new Date(year, month, dayCounter)),
-                        projects: dayProjects
+                        projects: dayProjects,
+                        reminders: dayReminders
                     });
                     dayCounter++;
                 }
@@ -120,7 +125,7 @@ const CalendarView = ({ projects, channels = [], onSelectProject }) => {
             if (dayCounter > days) break;
         }
         return grid;
-    }, [currentDate, activeProjects]);
+    }, [currentDate, activeProjects, reminders]);
 
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -204,6 +209,7 @@ const CalendarView = ({ projects, channels = [], onSelectProject }) => {
                                     key={dIdx}
                                     className={`relative border-r border-[#2f2f2f] last:border-0 p-1.5 md:p-2 min-h-[90px] md:min-h-[100px] transition-colors ${!cell ? 'bg-[#151515]' : 'hover:bg-[#252525]'} ${cell && isCurrentMonth && cell.day === today ? 'bg-[#1a1a1a]' : ''} ${cell && selectedDateKey === cell.key ? 'ring-1 ring-sky-500/40 ring-inset' : ''}`}
                                     onClick={() => cell && setSelectedDateKey(cell.key)}
+                                    onDoubleClick={() => cell && onDateClick && onDateClick(cell.key)}
                                 >
                                     {cell && (
                                         <>
@@ -211,9 +217,9 @@ const CalendarView = ({ projects, channels = [], onSelectProject }) => {
                                                 <span className={`text-xs font-mono font-bold block ${isCurrentMonth && cell.day === today ? 'text-indigo-400' : 'text-[#999]'}`}>
                                                     {cell.day}
                                                 </span>
-                                                {cell.projects.length > 0 && (
+                                                {(cell.projects.length > 0 || (cell.reminders && cell.reminders.length > 0)) && (
                                                     <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#2b2b2b] text-[#9ca3af] border border-[#3a3a3a]">
-                                                        {cell.projects.length}
+                                                        {cell.projects.length + (cell.reminders?.length || 0)}
                                                     </span>
                                                 )}
                                             </div>
@@ -235,6 +241,27 @@ const CalendarView = ({ projects, channels = [], onSelectProject }) => {
                                                                 {channelLookup[project.channelId]?.name || 'Unassigned'}
                                                             </span>
                                                         </div>
+                                                    </div>
+                                                ))}
+                                                {cell.reminders && cell.reminders.map((reminder) => (
+                                                    <div
+                                                        key={reminder.id}
+                                                        className="text-[10px] p-1.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-300 truncate cursor-default group relative"
+                                                        title={`${reminder.title}${reminder.message ? ' - ' + reminder.message : ''} (${new Date(reminder.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`}
+                                                    >
+                                                        <div className="truncate flex items-center gap-1">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                                            {reminder.title}
+                                                        </div>
+                                                        {onDeleteReminder && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); onDeleteReminder(reminder.id); }}
+                                                                className="absolute top-0.5 right-0.5 hidden group-hover:block text-rose-400 hover:text-rose-300"
+                                                                title="Delete reminder"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

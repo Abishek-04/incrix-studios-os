@@ -113,7 +113,16 @@ function ProtectedLayoutInner({ children }) {
   useEffect(() => {
     if (!currentUser?.id) return;
     fetchNotifications(currentUser.id);
-    const interval = setInterval(() => fetchNotifications(currentUser.id), 30000);
+
+    // Check due reminders and fetch notifications together
+    const checkRemindersAndNotifications = async () => {
+      try { await fetch('/api/reminders/check'); } catch (_) {}
+      fetchNotifications(currentUser.id);
+    };
+
+    const interval = setInterval(checkRemindersAndNotifications, 30000);
+    // Also check reminders on mount
+    fetch('/api/reminders/check').catch(() => {});
     return () => clearInterval(interval);
   }, [currentUser?.id, fetchNotifications]);
 
