@@ -213,11 +213,20 @@ function AutomationCard({ automation, onToggle, onEdit, onDelete }) {
     <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {automation.targetMediaUrl && (
-          <div className="md:w-48 flex-shrink-0">
-            <img src={automation.targetMediaUrl} alt="" className="w-full h-full object-cover md:aspect-[4/5] aspect-video" />
+          <div className="md:w-48 flex-shrink-0 bg-[#111]">
+            <img
+              src={automation.targetMediaUrl}
+              alt=""
+              className="w-full h-full object-cover md:aspect-[4/5] aspect-video"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
           </div>
         )}
         <div className="flex-1 p-4">
+          {/* Caption */}
+          {automation.targetMediaCaption && (
+            <p className="text-xs text-[#888] mb-2 line-clamp-2 italic">{automation.targetMediaCaption}</p>
+          )}
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div>
