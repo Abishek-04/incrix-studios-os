@@ -7,7 +7,6 @@ async function refreshAccessToken() {
   });
 
   if (!response.ok) {
-    if (typeof window !== 'undefined') window.location.href = '/';
     throw new Error('Session expired');
   }
 

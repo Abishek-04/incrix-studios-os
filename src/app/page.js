@@ -11,14 +11,19 @@ export default function HomePage() {
 
   // If user is already logged in (has valid cookie), redirect to dashboard
   useEffect(() => {
+    let cancelled = false;
     getCurrentUser().then((user) => {
+      if (cancelled) return;
       if (user) {
         router.replace('/dashboard');
       } else {
         setChecked(true);
       }
+    }).catch(() => {
+      if (!cancelled) setChecked(true);
     });
-  }, [router]);
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = () => {
     router.push('/dashboard');
