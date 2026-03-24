@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import InstaAccount from '@/models/InstaAccount';
+import Channel from '@/models/Channel';
 import { InstagramService } from '@/services/instagramService';
 import {
   exchangeCodeForAccessToken,
@@ -90,6 +91,31 @@ export async function GET(request) {
     } else {
       account = await InstaAccount.create(accountPayload);
       console.log('[instagram-callback] Created new account:', account.username);
+    }
+
+    // Also create/update a Channel entry so it appears in Channels page
+    const channelId = `IG-${instagramUserId}`;
+    const existingChannel = await Channel.findOne({ id: channelId });
+    const channelPayload = {
+      id: channelId,
+      platform: 'instagram',
+      name: profile.username || '',
+      link: `https://instagram.com/${profile.username || ''}`,
+      avatarUrl: profile.profile_picture_url || '',
+      email: '',
+      memberId: studioUserId,
+      igUserId: instagramUserId,
+      igUsername: profile.username || '',
+      igProfilePicUrl: profile.profile_picture_url || '',
+      connectionStatus: 'connected',
+    };
+
+    if (existingChannel) {
+      await Channel.findByIdAndUpdate(existingChannel._id, channelPayload);
+      console.log('[instagram-callback] Updated channel:', channelId);
+    } else {
+      await Channel.create(channelPayload);
+      console.log('[instagram-callback] Created channel:', channelId);
     }
 
     // Subscribe to webhook for comments
