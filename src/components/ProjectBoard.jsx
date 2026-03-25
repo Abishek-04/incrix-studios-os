@@ -193,6 +193,13 @@ const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreat
                 return true;
             });
 
+            // Sort by creation date (oldest first — created first goes on top)
+            filtered.sort((a, b) => {
+                const aDate = a.createdAt ? new Date(a.createdAt).getTime() : (a.lastUpdated || 0);
+                const bDate = b.createdAt ? new Date(b.createdAt).getTime() : (b.lastUpdated || 0);
+                return aDate - bDate;
+            });
+
             return filtered;
         };
     }, [projects, searchQuery, selectedMonth, selectedCreator, selectedEditor, selectedContentType, canUseTeamFilters]);
