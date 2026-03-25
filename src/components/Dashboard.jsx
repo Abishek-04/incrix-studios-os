@@ -133,6 +133,20 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
 
         return { pending, completed, nextDeadline, quotaProgress };
     }, [projects, currentUser]);
+
+    const recentActivity = useMemo(() => {
+        return [...projects]
+            .sort((a, b) => b.lastUpdated - a.lastUpdated)
+            .slice(0, 8)
+            .map(p => ({
+                id: p.id,
+                title: p.title,
+                stage: p.stage,
+                creator: p.creator,
+                lastUpdated: p.lastUpdated,
+                priority: p.priority,
+            }));
+    }, [projects]);
     if (projects.length === 0) {
         return (
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col items-center justify-center text-center">
@@ -530,6 +544,36 @@ const Dashboard = ({ projects, currentUser, users, onSelectProject }) => {
                     })}
                 </div>
             </div>
+
+            {/* Recent Activity */}
+            {recentActivity.length > 0 && (
+                <div className="bg-[#151515] border border-[#252525] rounded-2xl p-6">
+                    <h3 className="text-sm font-bold text-[#888] uppercase tracking-wider mb-4">Recent Activity</h3>
+                    <div className="space-y-2">
+                        {recentActivity.map(item => (
+                            <div
+                                key={item.id}
+                                onClick={() => onSelectProject && onSelectProject(projects.find(p => p.id === item.id))}
+                                className="flex items-center justify-between p-3 rounded-xl bg-[#1a1a1a] hover:bg-[#222] transition-colors cursor-pointer"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm text-white truncate">{item.title}</div>
+                                    <div className="text-xs text-[#666] mt-0.5">{item.creator} &bull; {item.stage}</div>
+                                </div>
+                                <div className="text-[10px] text-[#555] ml-3 flex-shrink-0">
+                                    {(() => {
+                                        const mins = Math.floor((Date.now() - item.lastUpdated) / 60000);
+                                        if (mins < 60) return `${mins}m ago`;
+                                        const hrs = Math.floor(mins / 60);
+                                        if (hrs < 24) return `${hrs}h ago`;
+                                        return `${Math.floor(hrs / 24)}d ago`;
+                                    })()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

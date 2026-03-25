@@ -104,8 +104,8 @@ const CalendarView = ({ projects, channels = [], reminders = [], onSelectProject
                 } else {
                     const dateTimestamp = new Date(year, month, dayCounter).setHours(0, 0, 0, 0);
                     const dayProjects = activeProjects.filter((project) => {
-                        const d = new Date(project.dueDate);
-                        return d.setHours(0, 0, 0, 0) === dateTimestamp;
+                        const matchDate = (ts) => ts && new Date(ts).setHours(0, 0, 0, 0) === dateTimestamp;
+                        return matchDate(project.dueDate) || matchDate(project.shootDate) || matchDate(project.editDate);
                     });
                     const dayReminders = reminders.filter((r) => {
                         const d = new Date(r.scheduledAt);

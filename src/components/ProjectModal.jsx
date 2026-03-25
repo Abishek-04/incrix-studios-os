@@ -698,6 +698,33 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               {localProject.archived ? <RefreshCw size={18} /> : <Archive size={18} />}
               <span className="hidden lg:inline">{localProject.archived ? 'Unarchive' : 'Archive'}</span>
             </button>
+            <button
+                onClick={() => {
+                    const duplicated = {
+                        ...localProject,
+                        id: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
+                        title: `${localProject.title} (Copy)`,
+                        stage: 'Backlog',
+                        status: 'Not Started',
+                        lastUpdated: Date.now(),
+                        comments: [],
+                        tasks: localProject.tasks?.map(t => ({ ...t, id: `TSK-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, done: false })) || [],
+                        metrics: undefined,
+                        publishedLink: '',
+                        reviewLink: '',
+                    };
+                    delete duplicated._id;
+                    delete duplicated.createdAt;
+                    delete duplicated.updatedAt;
+                    if (onCreate) {
+                        onCreate(duplicated).then(() => onClose());
+                    }
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#252525] hover:bg-[#333] text-[#ccc] rounded-lg text-xs font-medium transition-colors"
+                title="Duplicate project"
+            >
+                <Copy size={14} />
+            </button>
             <div className="w-px h-6 bg-[#2f2f2f] mx-1 hidden sm:block"></div>
             <button
               onClick={handleSaveAndClose}

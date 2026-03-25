@@ -42,6 +42,13 @@ export default function ProjectsPage() {
 
   // Merge all projects based on type filter
   const allProjects = (() => {
+    if (typeFilter === 'mywork') {
+      return projects.filter(p =>
+        p.creator === currentUser?.name ||
+        p.editor === currentUser?.name ||
+        (Array.isArray(p.editors) && p.editors.includes(currentUser?.name))
+      );
+    }
     if (typeFilter === 'content') return projects;
     if (typeFilter === 'dev') return devDesignProjects.filter(p => p.projectType === 'dev');
     if (typeFilter === 'design') return devDesignProjects.filter(p => p.projectType === 'design');
@@ -191,6 +198,16 @@ export default function ProjectsPage() {
     <>
       {/* Type Filter */}
       <div className="px-4 md:px-8 pt-4 flex gap-2">
+        <button
+            onClick={() => setTypeFilter(typeFilter === 'mywork' ? 'all' : 'mywork')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              typeFilter === 'mywork'
+                ? 'bg-purple-600 text-white'
+                : 'bg-[#1e1e1e] text-[#888] hover:text-white border border-[#333]'
+            }`}
+        >
+            My Work
+        </button>
         {[
           { value: 'all', label: 'All' },
           { value: 'content', label: 'Content' },
@@ -236,7 +253,19 @@ export default function ProjectsPage() {
           onUpdate={handleUpdateProject}
           onCreate={handleCreateProject}
           onDelete={handleDeleteProject}
-          onNotification={() => {}}
+          onNotification={async (notif) => {
+            try {
+              await fetchWithAuth('/api/notifications', {
+                method: 'POST',
+                body: JSON.stringify({
+                  title: notif.type === 'mention' ? `${notif.commenterName} mentioned you` : `New comment on ${notif.projectTitle}`,
+                  message: `${notif.commenterName} ${notif.type === 'mention' ? 'mentioned you in' : 'commented on'} "${notif.projectTitle}"`,
+                  type: 'info',
+                  targetUserIds: [notif.userId],
+                }),
+              });
+            } catch (e) { console.error('Notification failed:', e); }
+          }}
         />
       )}
 

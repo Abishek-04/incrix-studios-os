@@ -15,6 +15,8 @@ const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreat
     const [selectedEditor, setSelectedEditor] = useState('all');
     const [selectedContentType, setSelectedContentType] = useState('all');
     const [projectToDelete, setProjectToDelete] = useState(null);
+    const [draggedProjectId, setDraggedProjectId] = useState(null);
+    const [dragOverStage, setDragOverStage] = useState(null);
     const showToast = useToast();
     const activeRole = String(currentUser?.role || '').trim().toLowerCase();
     const canUseTeamFilters = activeRole === 'manager' || activeRole === 'superadmin';
@@ -203,6 +205,45 @@ const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreat
             return filtered;
         };
     }, [projects, searchQuery, selectedMonth, selectedCreator, selectedEditor, selectedContentType, canUseTeamFilters]);
+
+    // Drag & Drop handlers
+    const handleDragStart = (e, projectId) => {
+        setDraggedProjectId(projectId);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', projectId);
+        // Make the drag ghost slightly transparent
+        if (e.target) e.target.style.opacity = '0.5';
+    };
+
+    const handleDragEnd = (e) => {
+        setDraggedProjectId(null);
+        setDragOverStage(null);
+        if (e.target) e.target.style.opacity = '1';
+    };
+
+    const handleDragOver = (e, stage) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverStage(stage);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverStage(null);
+    };
+
+    const handleDrop = (e, targetStage) => {
+        e.preventDefault();
+        setDragOverStage(null);
+        const projectId = e.dataTransfer.getData('text/plain') || draggedProjectId;
+        if (!projectId) return;
+
+        const project = projects.find(p => p.id === projectId);
+        if (!project || project.stage === targetStage) return;
+
+        const updated = { ...project, stage: targetStage, lastUpdated: Date.now() };
+        onUpdateProject(updated);
+        setDraggedProjectId(null);
+    };
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -402,8 +443,13 @@ const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreat
                                         </button>
                                     </div>
 
-                                    {/* Cards Container */}
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent">
+                                    {/* Cards Container — Drop Zone */}
+                                    <div
+                                        className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#444] scrollbar-track-transparent transition-colors ${dragOverStage === stage ? 'bg-indigo-500/5 ring-2 ring-inset ring-indigo-500/30 rounded-lg' : ''}`}
+                                        onDragOver={(e) => handleDragOver(e, stage)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDrop(e, stage)}
+                                    >
                                         <AnimatePresence mode="popLayout">
                                             {stageProjects.map((project, index) => {
                                                 const stageDate = getProjectStageDate(project);
@@ -426,6 +472,9 @@ const ProjectBoard = ({ projects, channels, users = [], onSelectProject, onCreat
                                                     }}
                                                     whileHover={{ scale: 1.02 }}
                                                     whileTap={{ scale: 0.98 }}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, project.id)}
+                                                    onDragEnd={handleDragEnd}
                                                     onClick={() => onSelectProject(project)}
                                                     role="button"
                                                     tabIndex={0}

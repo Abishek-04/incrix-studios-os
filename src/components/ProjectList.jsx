@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Stage, Status, Priority, Platform, Vertical } from '@/types';
-import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User, Plus } from 'lucide-react';
+import { Filter, CheckCircle, Clock, AlertTriangle, Calendar, Archive, ExternalLink, Globe, Trash2, Film, LayoutGrid, List, User, Plus, Download } from 'lucide-react';
 import { getProjectStageDate, getProjectStageMonthKey } from '@/utils/projectDates';
 import { useToast } from '@/contexts/UIContext';
 
@@ -203,6 +203,29 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
         return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
+    const exportCSV = () => {
+        const headers = ['Title', 'Creator', 'Editor', 'Stage', 'Status', 'Priority', 'Platform', 'Due Date', 'Channel'];
+        const rows = sortedProjects.map(p => [
+            p.title || '',
+            p.creator || '',
+            p.editor || '',
+            p.stage || '',
+            p.status || '',
+            p.priority || '',
+            p.platform || '',
+            p.dueDate ? new Date(p.dueDate).toLocaleDateString() : '',
+            p.channelId || ''
+        ]);
+        const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `projects-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="p-4 md:p-8 md:h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -309,6 +332,15 @@ const ProjectList = ({ projects, channels, onSelectProject, onCreateProject, sea
                             Archived
                         </button>
                     </div>
+
+                    {/* Export CSV */}
+                    <button
+                        onClick={exportCSV}
+                        className="p-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-[#888] hover:text-white transition-colors"
+                        title="Export to CSV"
+                    >
+                        <Download size={16} />
+                    </button>
 
                     {/* View Mode Toggle */}
                     <div className="flex bg-[#1e1e1e] p-1 rounded-lg border border-[#2f2f2f]">

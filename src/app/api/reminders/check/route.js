@@ -63,6 +63,39 @@ export async function GET() {
       { $set: { notified: true, notifiedAt: now } }
     );
 
+    // Check for approaching deadlines (within 24 hours)
+    try {
+      const Project = (await import('@/models/Project')).default;
+      const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const upcomingProjects = await Project.find({
+        dueDate: { $lte: oneDayFromNow.getTime(), $gte: now.getTime() },
+        stage: { $ne: 'Done' },
+        archived: { $ne: true },
+        _deadlineNotified: { $ne: true },
+      });
+
+      if (upcomingProjects.length > 0) {
+        const deadlineNotifs = upcomingProjects.map((p) => ({
+          id: uuidv4(),
+          userId: p.creator,
+          title: 'Deadline approaching',
+          message: `"${p.title}" is due ${p.dueDate - Date.now() < 3600000 ? 'in less than 1 hour' : 'tomorrow'}`,
+          type: 'warning',
+          read: false,
+        }));
+        await Notification.insertMany(deadlineNotifs);
+
+        // Mark projects as notified to avoid duplicate alerts
+        const projectIds = upcomingProjects.map(p => p._id);
+        await Project.updateMany(
+          { _id: { $in: projectIds } },
+          { $set: { _deadlineNotified: true } }
+        );
+      }
+    } catch (err) {
+      console.error('[deadline-check] Error:', err);
+    }
+
     return NextResponse.json({ success: true, processed: dueReminders.length });
   } catch (error) {
     console.error('[API] Error checking reminders:', error);

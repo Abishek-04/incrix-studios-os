@@ -198,7 +198,19 @@ export default function BoardPage() {
             });
           }}
           onDelete={handleDeleteProject}
-          onNotification={() => {}}
+          onNotification={async (notif) => {
+            try {
+              await fetchWithAuth('/api/notifications', {
+                method: 'POST',
+                body: JSON.stringify({
+                  title: notif.type === 'mention' ? `${notif.commenterName} mentioned you` : `New comment on ${notif.projectTitle}`,
+                  message: `${notif.commenterName} ${notif.type === 'mention' ? 'mentioned you in' : 'commented on'} "${notif.projectTitle}"`,
+                  type: 'info',
+                  targetUserIds: [notif.userId],
+                }),
+              });
+            } catch (e) { console.error('Notification failed:', e); }
+          }}
         />
       )}
 
