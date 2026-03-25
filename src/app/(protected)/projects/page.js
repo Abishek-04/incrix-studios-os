@@ -12,12 +12,14 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function ProjectsPage() {
   const { user: currentUser } = useAuth();
   const [projects, setProjects] = useState([]);
+  const [devDesignProjects, setDevDesignProjects] = useState([]);
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState('all');
   const showToast = useToast();
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export default function ProjectsPage() {
       try {
         const data = await fetchState();
         setProjects(data.projects || []);
+        setDevDesignProjects(data.devDesignProjects || []);
         setChannels(data.channels || []);
         setUsers(data.users || []);
       } catch (error) {
@@ -36,6 +39,25 @@ export default function ProjectsPage() {
 
     loadData();
   }, []);
+
+  // Merge all projects based on type filter
+  const allProjects = (() => {
+    if (typeFilter === 'content') return projects;
+    if (typeFilter === 'dev') return devDesignProjects.filter(p => p.projectType === 'dev');
+    if (typeFilter === 'design') return devDesignProjects.filter(p => p.projectType === 'design');
+    // 'all' — merge content + dev + design, normalize dev/design to look like content projects
+    return [
+      ...projects,
+      ...devDesignProjects.map(p => ({
+        ...p,
+        creator: p.assignedTo || p.assignedDeveloper || p.assignedDesigner || '',
+        editor: '',
+        platform: p.projectType === 'dev' ? 'dev' : 'design',
+        contentFormat: p.projectType,
+        _isDevDesign: true,
+      }))
+    ];
+  })();
 
   const handleUpdateProject = async (updatedProject) => {
     setProjects((prevProjects) =>
@@ -167,10 +189,36 @@ export default function ProjectsPage() {
 
   return (
     <>
+      {/* Type Filter */}
+      <div className="px-4 md:px-8 pt-4 flex gap-2">
+        {[
+          { value: 'all', label: 'All' },
+          { value: 'content', label: 'Content' },
+          { value: 'dev', label: 'Dev' },
+          { value: 'design', label: 'Design' },
+        ].map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => setTypeFilter(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              typeFilter === opt.value
+                ? 'bg-indigo-600 text-white'
+                : 'bg-[#1e1e1e] text-[#888] hover:text-white border border-[#333]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       <ProjectList
-        projects={projects}
+        projects={allProjects}
         channels={channels}
-        onSelectProject={setSelectedProject}
+        onSelectProject={(project) => {
+          // Only open modal for content projects (dev/design have their own pages)
+          if (project._isDevDesign) return;
+          setSelectedProject(project);
+        }}
         onCreateProject={handleCreateProject}
         currentUser={currentUser}
         searchQuery={searchQuery}
