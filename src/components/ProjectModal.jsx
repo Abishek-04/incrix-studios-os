@@ -3,6 +3,7 @@ import { Stage, Status, Priority, Platform, Vertical } from '@/types';
 import { fetchSocialMetrics } from '@/services/socialService';
 import { X, Sparkles, CheckSquare, MessageSquare, FileText, Send, Loader2, Plus, Archive, RefreshCw, Link as LinkIcon, ExternalLink, ChevronDown, Globe, Share2, MessageCircle, BarChart2, TrendingUp, Copy, RefreshCcw, Info, Trash2, Files, Save, Check, AlertCircle } from 'lucide-react';
 import ConfirmationModal from './ui/ConfirmationModal';
+import ChannelSelect from './ui/ChannelSelect';
 import Toast from './ui/Toast';
 import { MentionInput } from './ui/MentionInput';
 import { extractMentions } from '@/utils/mentions';
@@ -430,27 +431,11 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
           <div className="flex-1 mr-4 sm:mr-8 min-w-0">
             <div className="flex items-center flex-wrap gap-2 mb-3">
               {/* Channel Selector */}
-              <div className="relative group min-w-[160px] sm:min-w-[200px]">
-                <div className="absolute left-2.5 top-2 text-[#999] pointer-events-none">
-                  <Globe size={14} />
-                </div>
-                <select
-                  value={localProject.channelId || ''}
-                  onChange={(e) => handleChannelChange(e.target.value)}
-                  aria-label="Select channel"
-                  className="w-full appearance-none bg-[#252525] border border-[#333] text-white text-xs font-medium rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-[#1e1e1e] cursor-pointer hover:bg-[#2a2a2a] transition-colors uppercase tracking-wide"
-                >
-                  <option value="" disabled>Select Channel</option>
-                  {channels.map(c => (
-                    <option key={getChannelValue(c) || c.name} value={getChannelValue(c)}>
-                      {c.name} ({c.platform})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-2.5 top-2 pointer-events-none text-[#999]">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
+              <ChannelSelect
+                channels={channels}
+                value={localProject.channelId || ''}
+                onChange={(val) => handleChannelChange(val)}
+              />
 
               {/* Creator Assessment */}
               <select
