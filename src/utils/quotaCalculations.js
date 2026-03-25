@@ -1,100 +1,142 @@
 import { Stage, Platform } from '@/types';
 
 /**
- * Calculate quota progress for a single user
- * @param {Object} user - User object with quota field
- * @param {Array} allProjects - All projects in the system
- * @returns {Object|null} Progress data or null if no quota
+ * Get the start and end dates for a quota period.
+ */
+export const getDateRangeForPeriod = (period) => {
+  const now = new Date();
+  let startDate = new Date();
+  let endDate = new Date();
+
+  if (period === 'weekly') {
+    const day = startDate.getDay();
+    const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+    startDate.setDate(diff);
+    startDate.setHours(0, 0, 0, 0);
+
+    // End of week = next Sunday 23:59:59
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+  } else {
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  return { startDate, endDate };
+};
+
+/**
+ * Determine the content type of a project based on platform + contentFormat.
+ * Returns one of: 'youtubeLong', 'youtubeShort', 'instagramReel', 'instagramPost', 'course', 'other'
+ */
+function getContentType(project) {
+  const platform = project.platform;
+  const format = project.contentFormat;
+
+  if (platform === Platform.YouTube) {
+    if (format === 'YTShorts' || format === 'ShortForm') return 'youtubeShort';
+    if (format === 'YTLongVideo' || format === 'LongForm') return 'youtubeLong';
+    // If no format set, check if it looks like a short based on other signals
+    return 'youtubeLong'; // default for YouTube
+  }
+
+  if (platform === Platform.Instagram) {
+    if (format === 'InstaPost') return 'instagramPost';
+    return 'instagramReel'; // default for Instagram
+  }
+
+  if (platform === Platform.Course || platform === 'course') {
+    return 'course';
+  }
+
+  return 'other';
+}
+
+/**
+ * Match a project to a user.
+ * Checks both name and ID for backward compatibility.
+ */
+function isProjectByUser(project, user, field = 'creator') {
+  const value = project[field];
+  if (!value) return false;
+  // Match by name (legacy) or by user ID
+  return value === user.name || value === user.id || value === String(user._id || '');
+}
+
+/**
+ * Calculate quota progress for a single user.
  */
 export const calculateProgress = (user, allProjects) => {
   if (!user.quota) return null;
 
-  const now = new Date();
-  let startDate = new Date();
+  const { startDate, endDate } = getDateRangeForPeriod(user.quota.period || 'weekly');
 
-  // Set start date based on period
-  if (user.quota.period === 'weekly') {
-    const day = startDate.getDay();
-    const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    startDate.setDate(diff);
-    startDate.setHours(0, 0, 0, 0);
-  } else {
-    startDate.setDate(1); // 1st of month
-    startDate.setHours(0, 0, 0, 0);
-  }
-
-  const userProjects = allProjects.filter(p =>
-    p.creator === user.name &&
+  // Completed projects in current period
+  const completedProjects = allProjects.filter(p =>
+    isProjectByUser(p, user) &&
     p.stage === Stage.Done &&
     p.lastUpdated >= startDate.getTime()
   );
 
-  // In Progress for "Pipeline" check
+  // In-progress projects (pipeline)
   const pipelineProjects = allProjects.filter(p =>
-    p.creator === user.name &&
+    isProjectByUser(p, user) &&
     p.stage !== Stage.Done &&
-    p.stage !== Stage.Backlog
+    p.stage !== Stage.Backlog &&
+    !p.archived
   );
 
-  const ytLongActual = userProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
-  const ytShortActual = userProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
-  const instaReelActual = userProjects.filter(p => p.platform === Platform.Instagram).length;
-  const courseActual = userProjects.filter(p => p.platform === Platform.Course).length;
+  // Count by content type
+  const count = (projects, type) => projects.filter(p => getContentType(p) === type).length;
 
-  const ytLongPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
-  const ytShortPipeline = pipelineProjects.filter(p => p.platform === Platform.YouTube && p.contentFormat === 'ShortForm').length;
-  const instaReelPipeline = pipelineProjects.filter(p => p.platform === Platform.Instagram).length;
-  const coursePipeline = pipelineProjects.filter(p => p.platform === Platform.Course).length;
+  const q = user.quota || {};
 
-  // Default quotas to 0 if undefined (migration safety)
-  const q = user.quota || { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0 };
-
-  // Calculate days remaining in period
-  let endDate = new Date();
-  if (user.quota.period === 'weekly') {
-    const dayOfWeek = endDate.getDay();
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    endDate = new Date(endDate.getTime() + daysUntilSunday * 86400000);
-  } else {
-    endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
-  }
+  // Calculate days remaining
   const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000));
+  const totalDays = user.quota.period === 'weekly' ? 7 : new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0).getDate();
+
+  const makeMetric = (actual, target, pipeline) => ({
+    actual,
+    target: target || 0,
+    pipeline,
+    percent: target > 0 ? Math.min(100, (actual / target) * 100) : 0
+  });
 
   return {
     daysRemaining,
-    period: user.quota.period,
-    youtubeLong: {
-      actual: ytLongActual,
-      target: q.youtubeLong || 0,
-      pipeline: ytLongPipeline,
-      percent: q.youtubeLong > 0 ? Math.min(100, (ytLongActual / q.youtubeLong) * 100) : 0
-    },
-    youtubeShort: {
-      actual: ytShortActual,
-      target: q.youtubeShort || 0,
-      pipeline: ytShortPipeline,
-      percent: q.youtubeShort > 0 ? Math.min(100, (ytShortActual / q.youtubeShort) * 100) : 0
-    },
-    instagramReel: {
-      actual: instaReelActual,
-      target: q.instagramReel || 0,
-      pipeline: instaReelPipeline,
-      percent: q.instagramReel > 0 ? Math.min(100, (instaReelActual / q.instagramReel) * 100) : 0
-    },
-    course: {
-      actual: courseActual,
-      target: q.course || 0,
-      pipeline: coursePipeline,
-      percent: q.course > 0 ? Math.min(100, (courseActual / q.course) * 100) : 0
-    }
+    totalDays,
+    period: user.quota.period || 'weekly',
+    youtubeLong: makeMetric(count(completedProjects, 'youtubeLong'), q.youtubeLong, count(pipelineProjects, 'youtubeLong')),
+    youtubeShort: makeMetric(count(completedProjects, 'youtubeShort'), q.youtubeShort, count(pipelineProjects, 'youtubeShort')),
+    instagramReel: makeMetric(count(completedProjects, 'instagramReel'), q.instagramReel, count(pipelineProjects, 'instagramReel')),
+    course: makeMetric(count(completedProjects, 'course'), q.course, count(pipelineProjects, 'course')),
   };
 };
 
 /**
- * Calculate team-wide aggregated metrics
- * @param {Array} users - Array of content creator users
- * @param {Array} projects - All projects
- * @returns {Object} Aggregated team metrics
+ * Get completion status based on progress vs time elapsed.
+ * Now correctly handles both weekly and monthly periods.
+ */
+export const getCompletionStatus = (actual, target, daysRemaining, totalDays) => {
+  if (target === 0) return 'No Target';
+  if (actual >= target) return 'Complete';
+
+  const daysElapsed = totalDays - daysRemaining;
+  const percentComplete = (actual / target) * 100;
+  const percentTimeElapsed = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 100;
+
+  if (percentComplete >= percentTimeElapsed) return 'On Track';
+  if (percentComplete >= percentTimeElapsed * 0.7) return 'Behind';
+  return 'At Risk';
+};
+
+/**
+ * Calculate team-wide aggregated metrics.
+ * Evaluates status per-creator independently, then aggregates.
  */
 export const calculateTeamAggregate = (users, projects) => {
   const contentCreators = users.filter(u =>
@@ -118,19 +160,25 @@ export const calculateTeamAggregate = (users, projects) => {
     const progress = calculateProgress(user, projects);
     if (!progress) return;
 
-    // Aggregate totals
+    // Per-creator totals for status evaluation
+    let creatorActual = 0;
+    let creatorTarget = 0;
+
     ['youtubeLong', 'youtubeShort', 'instagramReel', 'course'].forEach(type => {
       totalActual += progress[type].actual;
       totalTarget += progress[type].target;
       totalPipeline += progress[type].pipeline;
+
+      creatorActual += progress[type].actual;
+      creatorTarget += progress[type].target;
 
       contentTypeBreakdown[type].actual += progress[type].actual;
       contentTypeBreakdown[type].target += progress[type].target;
       contentTypeBreakdown[type].pipeline += progress[type].pipeline;
     });
 
-    // Track creator status
-    const status = getCompletionStatus(totalActual, totalTarget, progress.daysRemaining);
+    // Evaluate status per-creator independently
+    const status = getCompletionStatus(creatorActual, creatorTarget, progress.daysRemaining, progress.totalDays);
     if (status === 'At Risk' || status === 'Behind') atRiskCount++;
     if (status === 'On Track' || status === 'Complete') onTrackCount++;
   });
@@ -148,63 +196,12 @@ export const calculateTeamAggregate = (users, projects) => {
 };
 
 /**
- * Get date range for a quota period
- * @param {string} period - 'weekly' or 'monthly'
- * @returns {Object} {startDate, endDate}
- */
-export const getDateRangeForPeriod = (period) => {
-  const now = new Date();
-  let startDate = new Date();
-  let endDate = new Date();
-
-  if (period === 'weekly') {
-    const day = startDate.getDay();
-    const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
-    startDate.setDate(diff);
-    startDate.setHours(0, 0, 0, 0);
-
-    const dayOfWeek = endDate.getDay();
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    endDate = new Date(endDate.getTime() + daysUntilSunday * 86400000);
-  } else {
-    startDate.setDate(1);
-    startDate.setHours(0, 0, 0, 0);
-    endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
-  }
-
-  return { startDate, endDate };
-};
-
-/**
- * Calculate completion velocity (rate per day)
- * @param {number} actual - Completed count
- * @param {number} target - Target count
- * @param {number} daysRemaining - Days left in period
- * @returns {number} Completions per day needed
+ * Calculate completion velocity (completions per day needed to meet target).
  */
 export const calculateVelocity = (actual, target, daysRemaining) => {
   if (daysRemaining === 0) return 0;
   const remaining = Math.max(0, target - actual);
   return remaining / daysRemaining;
-};
-
-/**
- * Get completion status based on progress
- * @param {number} actual - Completed count
- * @param {number} target - Target count
- * @param {number} daysRemaining - Days left in period
- * @returns {string} 'Complete' | 'On Track' | 'Behind' | 'At Risk'
- */
-export const getCompletionStatus = (actual, target, daysRemaining) => {
-  if (target === 0) return 'No Target';
-  if (actual >= target) return 'Complete';
-
-  const percentComplete = (actual / target) * 100;
-  const percentTimeElapsed = daysRemaining === 0 ? 100 : ((7 - daysRemaining) / 7) * 100; // Assuming weekly for simplicity
-
-  if (percentComplete >= percentTimeElapsed) return 'On Track';
-  if (percentComplete >= percentTimeElapsed * 0.7) return 'Behind';
-  return 'At Risk';
 };
 
 export default {
