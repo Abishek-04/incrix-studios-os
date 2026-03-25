@@ -43,6 +43,19 @@ export async function GET() {
       await Notification.insertMany(notifications);
     }
 
+    // Send push notifications (fire & forget)
+    const { sendPushToUser } = await import('@/lib/webPush');
+    Promise.allSettled(
+      dueReminders.map((reminder) =>
+        sendPushToUser(reminder.userId, {
+          title: `Reminder: ${reminder.title}`,
+          body: reminder.message || reminder.title,
+          icon: '/icons/icon-192.png',
+          tag: `reminder-${reminder.id}`,
+        })
+      )
+    ).catch(() => {});
+
     // Mark reminders as notified
     const reminderIds = dueReminders.map((r) => r.id);
     await Reminder.updateMany(

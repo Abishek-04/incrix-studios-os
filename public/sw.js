@@ -37,10 +37,11 @@ self.addEventListener('push', (event) => {
   }
 
   const options = {
-    body: data.message || '',
-    icon: '/icons/icon-192.png',
+    body: data.body || data.message || '',
+    icon: data.icon || '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     vibrate: [100, 50, 100],
+    tag: data.tag || undefined,
     data: { url: data.url || '/dashboard' },
     actions: [{ action: 'open', title: 'Open' }]
   };
