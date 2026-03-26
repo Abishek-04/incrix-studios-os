@@ -30,7 +30,7 @@ const AvatarPreview = ({ user, className }) => {
   }
 
   return (
-    <div className={`${className} ${user?.avatarColor || 'bg-indigo-500'} flex items-center justify-center text-white font-bold`}>
+    <div className={`${className} ${user?.avatarColor || 'bg-indigo-500'} flex items-center justify-center text-[var(--text)] font-bold`}>
       {user?.name?.charAt(0).toUpperCase() || '?'}
     </div>
   );
@@ -95,21 +95,21 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0d0d0d]">
+    <div className="h-full flex flex-col bg-[var(--bg)]">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-[#1f1f1f] bg-[#151515] p-4 sm:p-6">
+      <div className="flex-shrink-0 border-b border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:p-6">
         <div className="flex items-start sm:items-center justify-between mb-4 gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-1 flex items-center gap-2">
               <Shield className="text-indigo-400" size={24} />
               User Management
             </h1>
-            <p className="text-sm text-[#999]">Manage team members, roles & permissions</p>
+            <p className="text-sm text-[var(--text-muted)]">Manage team members, roles & permissions</p>
           </div>
 
           <button
             onClick={() => setShowNewUserModal(true)}
-            className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
+            className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] rounded-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
           >
             <UserPlus size={18} />
             <span className="hidden sm:inline">Add User</span>
@@ -120,13 +120,13 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search users by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg pl-10 pr-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg-input)] text-[var(--text)] text-sm border border-[#2f2f2f] rounded-lg pl-10 pr-4 py-2 outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -135,7 +135,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full sm:w-auto bg-[var(--bg-input)] text-[var(--text)] text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
             >
               <option value="all">All Roles</option>
               {Object.values(ROLES).map(role => {
@@ -148,7 +148,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full sm:w-auto bg-[var(--bg-input)] text-[var(--text)] text-sm border border-[#2f2f2f] rounded-lg px-3 sm:px-4 py-2 outline-none focus:border-indigo-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -164,30 +164,30 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
             animate={{ opacity: 1, y: 0 }}
             className="mt-4 flex items-center gap-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3"
           >
-            <span className="text-sm text-white font-medium">
+            <span className="text-sm text-[var(--text)] font-medium">
               {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
             </span>
             <button
               onClick={() => handleBulkAction('activate')}
-              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded transition-colors"
+              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-[var(--text)] text-xs rounded transition-colors"
             >
               Activate
             </button>
             <button
               onClick={() => handleBulkAction('deactivate')}
-              className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded transition-colors"
+              className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-[var(--text)] text-xs rounded transition-colors"
             >
               Deactivate
             </button>
             <button
               onClick={() => handleBulkAction('delete')}
-              className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs rounded transition-colors"
+              className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-[var(--text)] text-xs rounded transition-colors"
             >
               Delete
             </button>
             <button
               onClick={() => setSelectedUsers([])}
-              className="ml-auto text-xs text-[#999] hover:text-white"
+              className="ml-auto text-xs text-[var(--text-muted)] hover:text-[var(--text)]"
             >
               Clear selection
             </button>
@@ -198,8 +198,8 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
       {/* Content */}
       <div className="flex-1 overflow-hidden flex">
         {/* Role Stats Sidebar */}
-        <div className="hidden lg:block w-64 border-r border-[#1f1f1f] bg-[#151515] p-4 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-white mb-3">Team by Role</h3>
+        <div className="hidden lg:block w-64 border-r border-[var(--border-light)] bg-[var(--bg-card)] p-4 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Team by Role</h3>
           <div className="space-y-2">
             {roleStats.map(stat => (
               <div
@@ -209,17 +209,17 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-sm font-medium ${stat.color}`}>{stat.label}</span>
-                  <span className="text-lg font-bold text-white">{stat.count}</span>
+                  <span className="text-lg font-bold text-[var(--text)]">{stat.count}</span>
                 </div>
-                <p className="text-xs text-[#999]">{stat.description}</p>
+                <p className="text-xs text-[var(--text-muted)]">{stat.description}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 p-3 bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg">
-            <div className="text-sm text-white font-medium mb-1">Total Users</div>
+          <div className="mt-6 p-3 bg-[var(--bg-input)] border border-[#2f2f2f] rounded-lg">
+            <div className="text-sm text-[var(--text)] font-medium mb-1">Total Users</div>
             <div className="text-2xl font-bold text-indigo-400">{users.length}</div>
-            <div className="text-xs text-[#999] mt-1">
+            <div className="text-xs text-[var(--text-muted)] mt-1">
               {users.filter(u => u.isActive !== false).length} active
             </div>
           </div>
@@ -229,7 +229,7 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
         <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           <div className="max-w-5xl mx-auto">
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-12 text-[#666]">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 No users found matching your filters
               </div>
             ) : (
@@ -323,7 +323,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className={`bg-[#151515] border ${isSelected ? 'border-indigo-500' : 'border-[#1f1f1f]'} rounded-lg p-4 hover:border-[#2f2f2f] transition-all ${!isActive ? 'opacity-60' : ''}`}
+      className={`bg-[var(--bg-card)] border ${isSelected ? 'border-indigo-500' : 'border-[var(--border-light)]'} rounded-lg p-4 hover:border-[#2f2f2f] transition-all ${!isActive ? 'opacity-60' : ''}`}
     >
       <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
@@ -332,7 +332,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
             type="checkbox"
             checked={isSelected}
             onChange={(e) => onSelect(e.target.checked)}
-            className="w-4 h-4 mt-1 rounded bg-[#1a1a1a] border-[#333] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+            className="w-4 h-4 mt-1 rounded bg-[var(--bg-input)] border-[var(--border)] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
           />
 
           {/* Avatar */}
@@ -341,7 +341,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
           {/* User Info */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-white">{user.name}</h3>
+              <h3 className="text-sm font-semibold text-[var(--text)]">{user.name}</h3>
               <span className={`px-2 py-0.5 text-xs rounded ${roleInfo.bgColor} ${roleInfo.color}`}>
                 {roleInfo.label} (Primary)
               </span>
@@ -365,7 +365,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
                   })}
               </div>
             )}
-            <div className="space-y-1 text-xs text-[#999]">
+            <div className="space-y-1 text-xs text-[var(--text-muted)]">
               {user.email && (
                 <div className="flex items-center gap-1 min-w-0">
                   <Mail size={12} className="flex-shrink-0" />
@@ -387,7 +387,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
           <select
             value={user.role}
             onChange={(e) => onChangeRole(e.target.value)}
-            className="bg-[#1a1a1a] text-white text-xs border border-[#2f2f2f] rounded px-2 py-1 outline-none focus:border-indigo-500"
+            className="bg-[var(--bg-input)] text-[var(--text)] text-xs border border-[#2f2f2f] rounded px-2 py-1 outline-none focus:border-indigo-500"
             onClick={(e) => e.stopPropagation()}
           >
             {Object.values(ROLES).map(role => {
@@ -409,7 +409,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
 
           <button
             onClick={onEdit}
-            className="p-2 bg-[#1a1a1a] hover:bg-[#252525] text-[#999] hover:text-white rounded transition-colors"
+            className="p-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text)] rounded transition-colors"
             title="Edit User"
           >
             <Edit2 size={16} />
@@ -417,7 +417,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
 
           <button
             onClick={onChangePassword}
-            className="p-2 bg-[#1a1a1a] hover:bg-indigo-500/20 text-[#999] hover:text-indigo-300 rounded transition-colors"
+            className="p-2 bg-[var(--bg-input)] hover:bg-indigo-500/20 text-[var(--text-muted)] hover:text-indigo-300 rounded transition-colors"
             title="Change Password"
           >
             <Lock size={16} />
@@ -425,7 +425,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
 
           <button
             onClick={onDelete}
-            className="p-2 bg-[#1a1a1a] hover:bg-rose-500/20 text-[#999] hover:text-rose-400 rounded transition-colors"
+            className="p-2 bg-[var(--bg-input)] hover:bg-rose-500/20 text-[var(--text-muted)] hover:text-rose-400 rounded transition-colors"
           >
             <Trash2 size={16} />
           </button>
@@ -488,45 +488,45 @@ const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md"
+        className="bg-[var(--bg-input)] border border-[#2f2f2f] rounded-lg w-full max-w-md"
       >
         <div className="p-6 border-b border-[#2f2f2f]">
-          <h2 className="text-xl font-bold text-white">Change Password</h2>
-          <p className="text-sm text-[#999] mt-1">Update password for {user.name}</p>
+          <h2 className="text-xl font-bold text-[var(--text)]">Change Password</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Update password for {user.name}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {isSelf && (
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Current Password</label>
+              <label className="block text-sm font-medium text-[var(--text)] mb-2">Current Password</label>
               <input
                 type="password"
                 value={formData.currentPassword}
                 onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+                className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
                 placeholder="Enter current password"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">New Password</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">New Password</label>
             <input
               type="password"
               value={formData.newPassword}
               onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="Minimum 8 characters"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Confirm Password</label>
             <input
               type="password"
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="Re-enter new password"
             />
           </div>
@@ -541,14 +541,14 @@ const ChangePasswordModal = ({ user, onClose, onSubmit }) => {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-[var(--text)] rounded-lg transition-colors"
             >
               {saving ? 'Saving...' : 'Update Password'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[#333] text-[var(--text)] rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -622,77 +622,77 @@ const NewUserModal = ({ onClose, onCreate }) => {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2rem)] flex flex-col my-auto"
+        className="bg-[var(--bg-input)] border border-[#2f2f2f] rounded-lg w-full max-w-md max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2rem)] flex flex-col my-auto"
       >
         <div className="p-5 sm:p-6 border-b border-[#2f2f2f] flex-shrink-0">
-          <h2 className="text-xl font-bold text-white">Add New User</h2>
-          <p className="text-sm text-[#999] mt-1">Create a new team member account</p>
+          <h2 className="text-xl font-bold text-[var(--text)]">Add New User</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Create a new team member account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Full Name *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Full Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="John Doe"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Email *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Email *</label>
             <input
               type="email"
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="john@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Phone Number</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Phone Number</label>
             <input
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="+1 234 567 8900"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Password *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Password *</label>
             <input
               type="password"
               required
               minLength={8}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="Minimum 8 characters"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Confirm Password *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Confirm Password *</label>
             <input
               type="password"
               required
               minLength={8}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="Re-enter password"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Role *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Role *</label>
             <select
               value={formData.role}
               onChange={(e) => {
@@ -703,7 +703,7 @@ const NewUserModal = ({ onClose, onCreate }) => {
                   roles: Array.from(new Set([nextRole, ...formData.roles]))
                 });
               }}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             >
               {ALL_ROLES.map(role => {
                 const info = getRoleInfo(role);
@@ -717,13 +717,13 @@ const NewUserModal = ({ onClose, onCreate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Additional Roles</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Additional Roles</label>
             <div className="grid grid-cols-2 gap-2">
               {ALL_ROLES.map((role) => {
                 const info = getRoleInfo(role);
                 const checked = formData.roles.includes(role);
                 return (
-                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[#111] border border-[#2f2f2f] rounded px-2 py-1.5">
+                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[var(--bg-card)] border border-[#2f2f2f] rounded px-2 py-1.5">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -747,7 +747,7 @@ const NewUserModal = ({ onClose, onCreate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Avatar Color</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Avatar Color</label>
             <div className="flex flex-wrap gap-2">
               {avatarColors.map(color => (
                 <button
@@ -763,16 +763,16 @@ const NewUserModal = ({ onClose, onCreate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Profile Photo</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Profile Photo</label>
             <input
               type="url"
               value={formData.profilePhoto}
               onChange={(e) => setFormData({ ...formData, profilePhoto: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="https://example.com/photo.jpg"
             />
             <div className="mt-2 flex items-center gap-2">
-              <label className="text-xs text-[#999]">or upload</label>
+              <label className="text-xs text-[var(--text-muted)]">or upload</label>
               <input
                 type="file"
                 accept="image/*"
@@ -786,7 +786,7 @@ const NewUserModal = ({ onClose, onCreate }) => {
                     console.error('Failed to read image:', err);
                   }
                 }}
-                className="text-xs text-[#aaa] file:mr-2 file:rounded file:border-0 file:bg-[#252525] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
+                className="text-xs text-[var(--text-secondary)] file:mr-2 file:rounded file:border-0 file:bg-[var(--bg-input)] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
               />
               {formData.profilePhoto && (
                 <button
@@ -802,7 +802,7 @@ const NewUserModal = ({ onClose, onCreate }) => {
               <img
                 src={formData.profilePhoto}
                 alt="Profile preview"
-                className="mt-3 w-14 h-14 rounded-full object-cover border border-[#333]"
+                className="mt-3 w-14 h-14 rounded-full object-cover border border-[var(--border)]"
               />
             )}
           </div>
@@ -813,9 +813,9 @@ const NewUserModal = ({ onClose, onCreate }) => {
               id="isActive"
               checked={formData.isActive}
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="w-4 h-4 rounded bg-[#0d0d0d] border-[#333] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+              className="w-4 h-4 rounded bg-[var(--bg)] border-[var(--border)] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
             />
-            <label htmlFor="isActive" className="text-sm text-white">
+            <label htmlFor="isActive" className="text-sm text-[var(--text)]">
               Set as active user
             </label>
           </div>
@@ -829,14 +829,14 @@ const NewUserModal = ({ onClose, onCreate }) => {
           <div className="flex items-center gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] rounded-lg transition-colors"
             >
               Create User
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[#333] text-[var(--text)] rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -892,48 +892,48 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg w-full max-w-md"
+        className="bg-[var(--bg-input)] border border-[#2f2f2f] rounded-lg w-full max-w-md"
       >
         <div className="p-6 border-b border-[#2f2f2f]">
-          <h2 className="text-xl font-bold text-white">Edit User</h2>
-          <p className="text-sm text-[#999] mt-1">Update user information and permissions</p>
+          <h2 className="text-xl font-bold text-[var(--text)]">Edit User</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Update user information and permissions</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Full Name *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Full Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Email *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Email *</label>
             <input
               type="email"
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Phone Number</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Phone Number</label>
             <input
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Role *</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Role *</label>
             <select
               value={formData.role}
               onChange={(e) => {
@@ -944,7 +944,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                   roles: Array.from(new Set([nextRole, ...formData.roles]))
                 });
               }}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
             >
               {ALL_ROLES.map(role => {
                 const info = getRoleInfo(role);
@@ -958,13 +958,13 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Additional Roles</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Additional Roles</label>
             <div className="grid grid-cols-2 gap-2">
               {ALL_ROLES.map((role) => {
                 const info = getRoleInfo(role);
                 const checked = formData.roles.includes(role);
                 return (
-                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[#111] border border-[#2f2f2f] rounded px-2 py-1.5">
+                  <label key={role} className="flex items-center gap-2 text-xs text-[#ddd] bg-[var(--bg-card)] border border-[#2f2f2f] rounded px-2 py-1.5">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -988,7 +988,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Avatar Color</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Avatar Color</label>
             <div className="flex flex-wrap gap-2">
               {avatarColors.map(color => (
                 <button
@@ -1004,16 +1004,16 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Profile Photo</label>
+            <label className="block text-sm font-medium text-[var(--text)] mb-2">Profile Photo</label>
             <input
               type="url"
               value={formData.profilePhoto}
               onChange={(e) => setFormData({ ...formData, profilePhoto: e.target.value })}
-              className="w-full bg-[#0d0d0d] text-white border border-[#333] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-indigo-500"
               placeholder="https://example.com/photo.jpg"
             />
             <div className="mt-2 flex items-center gap-2">
-              <label className="text-xs text-[#999]">or upload</label>
+              <label className="text-xs text-[var(--text-muted)]">or upload</label>
               <input
                 type="file"
                 accept="image/*"
@@ -1027,7 +1027,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                     console.error('Failed to read image:', err);
                   }
                 }}
-                className="text-xs text-[#aaa] file:mr-2 file:rounded file:border-0 file:bg-[#252525] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
+                className="text-xs text-[var(--text-secondary)] file:mr-2 file:rounded file:border-0 file:bg-[var(--bg-input)] file:px-2 file:py-1 file:text-[#ddd] hover:file:bg-[#333]"
               />
               {formData.profilePhoto && (
                 <button
@@ -1043,7 +1043,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
               <img
                 src={formData.profilePhoto}
                 alt="Profile preview"
-                className="mt-3 w-14 h-14 rounded-full object-cover border border-[#333]"
+                className="mt-3 w-14 h-14 rounded-full object-cover border border-[var(--border)]"
               />
             )}
           </div>
@@ -1054,9 +1054,9 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
               id="isActive"
               checked={formData.isActive}
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="w-4 h-4 rounded bg-[#0d0d0d] border-[#333] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+              className="w-4 h-4 rounded bg-[var(--bg)] border-[var(--border)] text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
             />
-            <label htmlFor="isActive" className="text-sm text-white">
+            <label htmlFor="isActive" className="text-sm text-[var(--text)]">
               Active user
             </label>
           </div>
@@ -1070,14 +1070,14 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
           <div className="flex items-center gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] rounded-lg transition-colors"
             >
               Save Changes
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[#333] text-[var(--text)] rounded-lg transition-colors"
             >
               Cancel
             </button>

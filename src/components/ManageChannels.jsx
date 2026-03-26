@@ -123,12 +123,12 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
         <div className="p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Channels & Integrations</h1>
-                    <p className="text-[#666]">Manage social accounts and notification gateways.</p>
+                    <h1 className="text-3xl font-bold text-[var(--text)] mb-2">Channels & Integrations</h1>
+                    <p className="text-[var(--text-muted)]">Manage social accounts and notification gateways.</p>
                 </div>
                 <button
                     onClick={() => setShowDialog(true)}
-                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20"
+                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20"
                 >
                     <Plus size={16} /> <span>Add Channel</span>
                 </button>
@@ -137,16 +137,16 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
             {/* ── Add Channel Dialog ── */}
             {showDialog && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={resetForm}>
-                    <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[var(--bg-input)] border border-[var(--border)] rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
                         {/* Dialog Header */}
-                        <div className="flex items-center justify-between p-5 border-b border-[#2a2a2a]">
+                        <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
                             <div className="flex items-center gap-3">
                                 <div className="bg-indigo-500/10 p-2 rounded-lg text-indigo-400">
                                     <LinkIcon size={20} />
                                 </div>
                                 <h3 className="text-white font-semibold text-lg">Add New Channel</h3>
                             </div>
-                            <button onClick={resetForm} className="text-[#666] hover:text-white transition-colors p-1">
+                            <button onClick={resetForm} className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors p-1">
                                 <X size={20} />
                             </button>
                         </div>
@@ -155,16 +155,16 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                         <div className="p-5 space-y-5">
                             {/* URL Input */}
                             <div>
-                                <label className="text-xs font-medium text-[#888] uppercase tracking-wide mb-2 block">Channel URL</label>
+                                <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2 block">Channel URL</label>
                                 <div className="relative">
                                     <input
-                                        className="w-full bg-[#111] border border-[#333] rounded-xl p-3.5 pl-11 text-sm text-white focus:border-indigo-500 outline-none transition-all placeholder-[#666]"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-3.5 pl-11 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-all placeholder-[var(--text-muted)]"
                                         value={urlInput}
                                         onChange={e => analyzeLink(e.target.value)}
                                         placeholder="Paste social media URL or email..."
                                         autoFocus
                                     />
-                                    <div className="absolute left-3.5 top-3.5 text-[#666]">
+                                    <div className="absolute left-3.5 top-3.5 text-[var(--text-muted)]">
                                         {isDetecting ? <Loader2 size={18} className="animate-spin text-indigo-500" /> : <Globe size={18} />}
                                     </div>
                                 </div>
@@ -173,8 +173,8 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                             {/* Detected Platform */}
                             {detectedInfo && (
                                 <div className="animate-in fade-in duration-200 space-y-4">
-                                    <div className="bg-[#222] border border-[#333] rounded-xl p-4 flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-inner ${getPlatformColor(detectedInfo.platform)}`}>
+                                    <div className="bg-[#222] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-[var(--text)] shadow-inner ${getPlatformColor(detectedInfo.platform)}`}>
                                             {getPlatformIcon(detectedInfo.platform)}
                                         </div>
                                         <div>
@@ -182,30 +182,30 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                                                 <h4 className="text-white font-semibold">{detectedInfo.name}</h4>
                                                 <CheckCircle2 size={14} className="text-emerald-500" />
                                             </div>
-                                            <p className="text-xs text-[#888] capitalize">{detectedInfo.platform}</p>
+                                            <p className="text-xs text-[var(--text-muted)] capitalize">{detectedInfo.platform}</p>
                                         </div>
                                     </div>
 
                                     {/* Credentials */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-xs font-medium text-[#888] uppercase tracking-wide mb-1.5 block">
+                                            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-1.5 block">
                                                 {detectedInfo.platform === Platform.WhatsApp ? 'Bot Name' : 'Login Email / ID'}
                                             </label>
                                             <input
-                                                className="w-full bg-[#111] border border-[#333] rounded-lg p-2.5 text-sm text-white focus:border-indigo-500 outline-none"
+                                                className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[var(--text)] focus:border-indigo-500 outline-none"
                                                 value={formData.email}
                                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                                                 placeholder={detectedInfo.platform === Platform.WhatsApp ? "Bot Name" : "email@example.com"}
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-medium text-[#888] uppercase tracking-wide mb-1.5 block">
+                                            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-1.5 block">
                                                 {detectedInfo.platform === Platform.WhatsApp ? 'API Token' : 'Password'}
                                             </label>
                                             <input
                                                 type="password"
-                                                className="w-full bg-[#111] border border-[#333] rounded-lg p-2.5 text-sm text-white focus:border-indigo-500 outline-none"
+                                                className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[var(--text)] focus:border-indigo-500 outline-none"
                                                 value={formData.credentials}
                                                 onChange={e => setFormData({ ...formData, credentials: e.target.value })}
                                                 placeholder="••••••••"
@@ -215,13 +215,13 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
 
                                     {/* Owner */}
                                     <div>
-                                        <label className="text-xs font-medium text-[#888] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                                        <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                                             <UserIcon size={12} /> Assign Owner (Optional)
                                         </label>
                                         <select
                                             value={formData.memberId}
                                             onChange={e => setFormData({ ...formData, memberId: e.target.value })}
-                                            className="w-full bg-[#111] border border-[#333] rounded-lg p-2.5 text-sm text-white focus:border-indigo-500 outline-none appearance-none"
+                                            className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[var(--text)] focus:border-indigo-500 outline-none appearance-none"
                                         >
                                             <option value="">No specific owner</option>
                                             {users.map(u => (
@@ -233,19 +233,19 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                             )}
 
                             {!detectedInfo && urlInput && !isDetecting && (
-                                <p className="text-center text-[#666] text-sm py-2">Could not detect platform. Check the URL.</p>
+                                <p className="text-center text-[var(--text-muted)] text-sm py-2">Could not detect platform. Check the URL.</p>
                             )}
                         </div>
 
                         {/* Dialog Footer */}
-                        <div className="flex justify-end gap-3 p-5 border-t border-[#2a2a2a]">
-                            <button onClick={resetForm} className="px-4 py-2 text-sm text-[#999] hover:text-white transition-colors">
+                        <div className="flex justify-end gap-3 p-5 border-t border-[var(--border)]">
+                            <button onClick={resetForm} className="px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={!detectedInfo}
-                                className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="px-5 py-2 bg-indigo-600 text-[var(--text)] text-sm font-medium rounded-lg hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 Add Channel
                             </button>
@@ -256,9 +256,9 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
 
             {/* ── Channel Cards ── */}
             {channels.length === 0 && (
-                <div className="text-center py-20 text-[#666]">
+                <div className="text-center py-20 text-[var(--text-muted)]">
                     <Globe size={48} className="mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium text-[#888]">No channels yet</p>
+                    <p className="text-lg font-medium text-[var(--text-muted)]">No channels yet</p>
                     <p className="text-sm mt-1">Add a channel or connect an Instagram account to get started.</p>
                 </div>
             )}
@@ -269,14 +269,14 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                     const autoConnected = isAutoConnected(channel);
 
                     return (
-                        <div key={channel.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#444] transition-all group">
+                        <div key={channel.id} className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-5 hover:border-[var(--border)] transition-all group">
                             {/* Header */}
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
                                     {channel.avatarUrl ? (
                                         <img src={channel.avatarUrl} alt="" className="w-11 h-11 rounded-xl object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                     ) : (
-                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold ${getPlatformColor(channel.platform)}`}>
+                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-[var(--text)] text-lg font-bold ${getPlatformColor(channel.platform)}`}>
                                             {channel.platform === Platform.WhatsApp || channel.platform === Platform.Email
                                                 ? getPlatformIcon(channel.platform)
                                                 : channel.name?.charAt(0).toUpperCase()
@@ -285,12 +285,12 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                                     )}
                                     <div className="min-w-0">
                                         <h3 className="text-white font-semibold text-sm truncate">{channel.name}</h3>
-                                        <p className="text-[10px] text-[#666] capitalize">{channel.platform}</p>
+                                        <p className="text-[10px] text-[var(--text-muted)] capitalize">{channel.platform}</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => deleteChannel(channel.id)}
-                                    className="text-[#666] hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-rose-500/10"
+                                    className="text-[var(--text-muted)] hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-rose-500/10"
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -299,21 +299,21 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
                             {/* Info rows */}
                             <div className="space-y-2">
                                 {channel.email && (
-                                    <div className="flex items-center justify-between p-2.5 bg-[#111] rounded-lg text-xs">
-                                        <span className="text-[#666]">ID</span>
-                                        <span className="text-[#ccc] font-mono truncate max-w-[160px]">{channel.email}</span>
+                                    <div className="flex items-center justify-between p-2.5 bg-[var(--bg-card)] rounded-lg text-xs">
+                                        <span className="text-[var(--text-muted)]">ID</span>
+                                        <span className="text-[var(--text-secondary)] font-mono truncate max-w-[160px]">{channel.email}</span>
                                     </div>
                                 )}
 
                                 {channel.credentials && (
-                                    <div className="p-2.5 bg-[#111] rounded-lg text-xs">
+                                    <div className="p-2.5 bg-[var(--bg-card)] rounded-lg text-xs">
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-[#666]">{channel.platform === Platform.WhatsApp ? 'API Token' : 'Password'}</span>
-                                            <button onClick={() => toggleCredentials(channel.id)} className="text-[#666] hover:text-indigo-400 transition-colors">
+                                            <span className="text-[var(--text-muted)]">{channel.platform === Platform.WhatsApp ? 'API Token' : 'Password'}</span>
+                                            <button onClick={() => toggleCredentials(channel.id)} className="text-[var(--text-muted)] hover:text-indigo-400 transition-colors">
                                                 {showCredentials[channel.id] ? <EyeOff size={12} /> : <Eye size={12} />}
                                             </button>
                                         </div>
-                                        <div className={`text-[#ccc] font-mono break-all ${showCredentials[channel.id] ? '' : 'blur-[6px] select-none opacity-50'}`}>
+                                        <div className={`text-[var(--text-secondary)] font-mono break-all ${showCredentials[channel.id] ? '' : 'blur-[6px] select-none opacity-50'}`}>
                                             {channel.credentials}
                                         </div>
                                     </div>
@@ -321,19 +321,19 @@ const ManageChannels = ({ channels, users, onCreateChannel, onUpdateChannelMembe
 
                                 {/* Owner — read-only for auto-connected, hidden if no owner */}
                                 {ownerName && (
-                                    <div className="flex items-center gap-2 pt-2 border-t border-[#222]">
-                                        <UserIcon size={12} className="text-[#666]" />
-                                        <span className="text-[10px] text-[#666] uppercase tracking-wide">Owner</span>
-                                        <span className="text-xs text-[#ccc] ml-auto">{ownerName}</span>
+                                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-light)]">
+                                        <UserIcon size={12} className="text-[var(--text-muted)]" />
+                                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide">Owner</span>
+                                        <span className="text-xs text-[var(--text-secondary)] ml-auto">{ownerName}</span>
                                     </div>
                                 )}
 
                                 {/* Connection status for Instagram */}
                                 {autoConnected && channel.connectionStatus && (
-                                    <div className="flex items-center gap-2 pt-2 border-t border-[#222]">
+                                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-light)]">
                                         <div className={`w-1.5 h-1.5 rounded-full ${channel.connectionStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                        <span className="text-[10px] text-[#888] capitalize">{channel.connectionStatus.replace(/_/g, ' ')}</span>
-                                        <span className="text-[10px] text-[#555] ml-auto">via Instagram OAuth</span>
+                                        <span className="text-[10px] text-[var(--text-muted)] capitalize">{channel.connectionStatus.replace(/_/g, ' ')}</span>
+                                        <span className="text-[10px] text-[var(--text-muted)] ml-auto">via Instagram OAuth</span>
                                     </div>
                                 )}
                             </div>

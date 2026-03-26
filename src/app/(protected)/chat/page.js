@@ -18,7 +18,7 @@ function Avatar({ user, size = 8 }) {
     return <img src={user.profilePhoto} alt={user.name} className={`${s} rounded-full object-cover flex-shrink-0`} />;
   }
   return (
-    <div className={`${s} rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs ${user?.senderColor || user?.avatarColor || 'bg-indigo-600'}`}>
+    <div className={`${s} rounded-full flex-shrink-0 flex items-center justify-center text-[var(--text)] font-bold text-xs ${user?.senderColor || user?.avatarColor || 'bg-indigo-600'}`}>
       {(user?.senderName || user?.name || '?').charAt(0).toUpperCase()}
     </div>
   );
@@ -55,15 +55,15 @@ function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId })
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-left transition-colors group ${
-        isActive ? 'bg-[#1e1e1e] text-white' : 'text-[#888] hover:text-white hover:bg-[#181818]'
+        isActive ? 'bg-[var(--bg-input)] text-[var(--text)]' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card-hover)]'
       }`}
     >
       {isDM ? (
         <div className="relative flex-shrink-0">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[var(--text)] font-bold text-xs ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
             {dmUser?.name?.charAt(0) || '?'}
           </div>
-          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0a0a0a]"></span>
+          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[var(--bg)]"></span>
         </div>
       ) : (
         <span className="text-base leading-none flex-shrink-0 w-5 text-center">
@@ -74,7 +74,7 @@ function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId })
         {isDM ? (dmUser?.name || channel.name) : channel.name}
       </span>
       {unreadCount > 0 && (
-        <span className="flex-shrink-0 bg-indigo-600 text-white text-[10px] font-bold rounded-full w-4.5 h-4.5 flex items-center justify-center px-1">
+        <span className="flex-shrink-0 bg-indigo-600 text-[var(--text)] text-[10px] font-bold rounded-full w-4.5 h-4.5 flex items-center justify-center px-1">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
@@ -89,21 +89,21 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
   if (msg.isDeleted) {
     return (
       <div className="px-4 py-1">
-        <span className="text-xs text-[#555] italic">This message was deleted</span>
+        <span className="text-xs text-[var(--text-muted)] italic">This message was deleted</span>
       </div>
     );
   }
 
   return (
     <div
-      className={`group flex gap-3 px-4 py-1 hover:bg-[#161616] relative ${showActions ? 'bg-[#161616]' : ''}`}
+      className={`group flex gap-3 px-4 py-1 hover:bg-[var(--bg-card)] relative ${showActions ? 'bg-[var(--bg-card)]' : ''}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
     >
       {/* Avatar */}
       <div className="w-9 flex-shrink-0 flex items-start pt-0.5">
         {showAvatar && (
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${msg.senderColor || 'bg-indigo-600'}`}>
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[var(--text)] font-bold text-sm ${msg.senderColor || 'bg-indigo-600'}`}>
             {msg.senderName?.charAt(0) || '?'}
           </div>
         )}
@@ -113,23 +113,23 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
         {/* Header */}
         {showAvatar && (
           <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-sm font-semibold text-white">{msg.senderName}</span>
-            <span className="text-[11px] text-[#555]">{formatTime(msg.createdAt)}</span>
-            {msg.editedAt && <span className="text-[10px] text-[#444] italic">(edited)</span>}
+            <span className="text-sm font-semibold text-[var(--text)]">{msg.senderName}</span>
+            <span className="text-[11px] text-[var(--text-muted)]">{formatTime(msg.createdAt)}</span>
+            {msg.editedAt && <span className="text-[10px] text-[var(--text-muted)] italic">(edited)</span>}
           </div>
         )}
 
         {/* Reply context */}
         {msg.replyToId && (
-          <div className="flex items-center gap-2 mb-1 pl-3 border-l-2 border-[#444]">
-            <span className="text-[11px] text-[#666] truncate">
-              <span className="text-[#888] font-medium">{msg.replyToSender}</span>: {msg.replyToContent}
+          <div className="flex items-center gap-2 mb-1 pl-3 border-l-2 border-[var(--border)]">
+            <span className="text-[11px] text-[var(--text-muted)] truncate">
+              <span className="text-[var(--text-muted)] font-medium">{msg.replyToSender}</span>: {msg.replyToContent}
             </span>
           </div>
         )}
 
         {/* Content */}
-        <p className="text-sm text-[#d1d5db] leading-relaxed whitespace-pre-wrap break-words">
+        <p className="text-sm text-[var(--text)] leading-relaxed whitespace-pre-wrap break-words">
           {msg.content}
         </p>
 
@@ -140,10 +140,10 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
               <button
                 key={i}
                 onClick={() => onReact(msg.id, r.emoji)}
-                className="flex items-center gap-1 bg-[#1e1e1e] hover:bg-[#252525] border border-[#333] rounded-full px-2 py-0.5 text-xs transition-colors"
+                className="flex items-center gap-1 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border)] rounded-full px-2 py-0.5 text-xs transition-colors"
               >
                 <span>{r.emoji}</span>
-                <span className="text-[#888]">{r.userIds?.length || 0}</span>
+                <span className="text-[var(--text-muted)]">{r.userIds?.length || 0}</span>
               </button>
             ))}
           </div>
@@ -152,7 +152,7 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
 
       {/* Action bar */}
       {showActions && (
-        <div className="absolute right-4 top-0 -translate-y-1/2 flex items-center gap-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-1.5 py-1 shadow-xl">
+        <div className="absolute right-4 top-0 -translate-y-1/2 flex items-center gap-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-1.5 py-1 shadow-xl">
           {/* Quick emoji reactions */}
           {QUICK_EMOJIS.map(emoji => (
             <button
@@ -164,10 +164,10 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
               {emoji}
             </button>
           ))}
-          <div className="w-px h-4 bg-[#333] mx-0.5" />
+          <div className="w-px h-4 bg-[var(--border)] mx-0.5" />
           <button
             onClick={() => onReply(msg)}
-            className="p-1 text-[#888] hover:text-white transition-colors rounded"
+            className="p-1 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors rounded"
             title="Reply"
           >
             <Reply size={13} />
@@ -187,12 +187,12 @@ function TypingIndicator({ typingUsers }) {
         {[0, 1, 2].map(i => (
           <span
             key={i}
-            className="w-1.5 h-1.5 bg-[#666] rounded-full animate-bounce"
+            className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce"
             style={{ animationDelay: `${i * 0.15}s` }}
           />
         ))}
       </div>
-      <span className="text-xs text-[#666]">
+      <span className="text-xs text-[var(--text-muted)]">
         {names} {typingUsers.length === 1 ? 'is' : 'are'} typing…
       </span>
     </div>
@@ -462,16 +462,16 @@ export default function ChatPage() {
   const dmUser = activeChannel?.dmUser;
 
   return (
-    <div className="flex h-full bg-[#0d0d0d]">
+    <div className="flex h-full bg-[var(--bg)]">
       {/* ── Chat Sidebar ─────────────────────────────────────────────────── */}
-      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-64 border-r border-[#1f1f1f] bg-[#0a0a0a] flex-shrink-0`}>
-        <div className="p-4 border-b border-[#1f1f1f] flex-shrink-0">
-          <div className="flex items-center gap-2 bg-[#151515] border border-[#222] rounded-xl px-3 py-2">
-            <Search size={13} className="text-[#666]" />
+      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-64 border-r border-[var(--border-light)] bg-[var(--bg)] flex-shrink-0`}>
+        <div className="p-4 border-b border-[var(--border-light)] flex-shrink-0">
+          <div className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl px-3 py-2">
+            <Search size={13} className="text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search channels..."
-              className="bg-transparent text-sm text-white outline-none w-full placeholder-[#555]"
+              className="bg-transparent text-sm text-[var(--text)] outline-none w-full placeholder-[var(--text-muted)]"
             />
           </div>
         </div>
@@ -480,7 +480,7 @@ export default function ChatPage() {
           {/* Channels */}
           <div>
             <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-[11px] font-semibold text-[#555] uppercase tracking-wider">Channels</span>
+              <span className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Channels</span>
             </div>
             <div className="space-y-0.5">
               {channels.map(ch => (
@@ -499,10 +499,10 @@ export default function ChatPage() {
           {/* Direct Messages */}
           <div>
             <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-[11px] font-semibold text-[#555] uppercase tracking-wider">Direct Messages</span>
+              <span className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Direct Messages</span>
               <button
                 onClick={() => setShowDMSearch(!showDMSearch)}
-                className="text-[#555] hover:text-white transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
                 title="New DM"
               >
                 <Plus size={14} />
@@ -517,27 +517,27 @@ export default function ChatPage() {
                   placeholder="Search people..."
                   value={dmSearchQuery}
                   onChange={e => setDmSearchQuery(e.target.value)}
-                  className="w-full bg-[#151515] border border-[#333] rounded-lg px-3 py-1.5 text-sm text-white placeholder-[#555] outline-none focus:border-indigo-500/50"
+                  className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text)] placeholder-[var(--text-muted)] outline-none focus:border-[var(--primary)]"
                 />
                 {dmSearchQuery && (
-                  <div className="mt-1 bg-[#151515] border border-[#222] rounded-lg overflow-hidden">
+                  <div className="mt-1 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg overflow-hidden">
                     {filteredDMUsers.slice(0, 6).map(u => (
                       <button
                         key={u.id}
                         onClick={() => startDM(u)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#1e1e1e] transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[var(--bg-input)] transition-colors text-left"
                       >
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${u.avatarColor || 'bg-indigo-600'}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[var(--text)] text-xs font-bold ${u.avatarColor || 'bg-indigo-600'}`}>
                           {u.name?.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-sm text-white">{u.name}</div>
-                          <div className="text-[10px] text-[#666] capitalize">{u.role}</div>
+                          <div className="text-sm text-[var(--text)]">{u.name}</div>
+                          <div className="text-[10px] text-[var(--text-muted)] capitalize">{u.role}</div>
                         </div>
                       </button>
                     ))}
                     {filteredDMUsers.length === 0 && (
-                      <div className="px-3 py-2 text-xs text-[#555]">No users found</div>
+                      <div className="px-3 py-2 text-xs text-[var(--text-muted)]">No users found</div>
                     )}
                   </div>
                 )}
@@ -566,8 +566,8 @@ export default function ChatPage() {
           <div className="flex-1 flex items-center justify-center text-center px-8">
             <div>
               <div className="text-4xl mb-4">💬</div>
-              <h2 className="text-xl font-bold text-white mb-2">Welcome to Incrix Chat</h2>
-              <p className="text-[#666] text-sm max-w-sm">
+              <h2 className="text-xl font-bold text-[var(--text)] mb-2">Welcome to Incrix Chat</h2>
+              <p className="text-[var(--text-muted)] text-sm max-w-sm">
                 Select a channel from the sidebar to start chatting with your team. All conversations are organized by team and project.
               </p>
             </div>
@@ -575,11 +575,11 @@ export default function ChatPage() {
         ) : (
           <>
             {/* Channel Header */}
-            <div className="h-14 border-b border-[#1f1f1f] flex items-center justify-between px-4 flex-shrink-0 bg-[#0d0d0d]">
+            <div className="h-14 border-b border-[var(--border-light)] flex items-center justify-between px-4 flex-shrink-0 bg-[var(--bg)]">
               <div className="flex items-center gap-3">
                 {/* Mobile back button */}
                 <button
-                  className="md:hidden text-[#666] hover:text-white"
+                  className="md:hidden text-[var(--text-muted)] hover:text-[var(--text)]"
                   onClick={() => setShowSidebar(true)}
                 >
                   <ArrowLeft size={18} />
@@ -587,21 +587,21 @@ export default function ChatPage() {
 
                 {isDMChannel ? (
                   <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[var(--text)] font-bold text-sm ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
                       {dmUser?.name?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-white">{dmUser?.name || activeChannel.name}</div>
-                      <div className="text-[11px] text-[#666] capitalize">{dmUser?.role}</div>
+                      <div className="text-sm font-semibold text-[var(--text)]">{dmUser?.name || activeChannel.name}</div>
+                      <div className="text-[11px] text-[var(--text-muted)] capitalize">{dmUser?.role}</div>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{activeChannel.emoji || '#'}</span>
                     <div>
-                      <div className="text-sm font-semibold text-white">{activeChannel.name}</div>
+                      <div className="text-sm font-semibold text-[var(--text)]">{activeChannel.name}</div>
                       {activeChannel.description && (
-                        <div className="text-[11px] text-[#555] truncate max-w-xs">{activeChannel.description}</div>
+                        <div className="text-[11px] text-[var(--text-muted)] truncate max-w-xs">{activeChannel.description}</div>
                       )}
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export default function ChatPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button className="p-2 text-[#666] hover:text-white rounded-lg hover:bg-[#1a1a1a] transition-colors">
+                <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text)] rounded-lg hover:bg-[var(--bg-input)] transition-colors">
                   <Users size={16} />
                 </button>
               </div>
@@ -631,7 +631,7 @@ export default function ChatPage() {
                 <div className="flex justify-center py-2">
                   <button
                     onClick={() => loadMessages(activeChannel.id, oldestCursor)}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 px-4 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#222] transition-colors"
+                    className="text-xs text-indigo-400 hover:text-indigo-300 px-4 py-1.5 rounded-lg bg-[var(--bg-input)] hover:bg-[#222] transition-colors"
                     disabled={loadingMessages}
                   >
                     {loadingMessages ? 'Loading…' : 'Load older messages'}
@@ -642,10 +642,10 @@ export default function ChatPage() {
               {messages.length === 0 && !loadingMessages && (
                 <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
                   <div className="text-4xl mb-4">{activeChannel.emoji || (isDMChannel ? '👤' : '#')}</div>
-                  <h3 className="text-lg font-bold text-white mb-1">
+                  <h3 className="text-lg font-bold text-[var(--text)] mb-1">
                     {isDMChannel ? `Start a conversation with ${dmUser?.name}` : `Welcome to ${activeChannel.name}`}
                   </h3>
-                  <p className="text-sm text-[#555]">
+                  <p className="text-sm text-[var(--text-muted)]">
                     {activeChannel.description || 'This is the beginning of this conversation.'}
                   </p>
                 </div>
@@ -656,7 +656,7 @@ export default function ChatPage() {
                   {showDateDivider && (
                     <div className="flex items-center gap-3 px-4 py-3">
                       <div className="flex-1 h-px bg-[#222]" />
-                      <span className="text-[11px] text-[#555] font-medium">{formatDateDivider(msg.createdAt)}</span>
+                      <span className="text-[11px] text-[var(--text-muted)] font-medium">{formatDateDivider(msg.createdAt)}</span>
                       <div className="flex-1 h-px bg-[#222]" />
                     </div>
                   )}
@@ -676,13 +676,13 @@ export default function ChatPage() {
 
             {/* Reply Preview */}
             {replyTo && (
-              <div className="mx-4 mb-0 px-3 py-2 bg-[#151515] border border-[#2a2a2a] rounded-t-xl flex items-center justify-between">
+              <div className="mx-4 mb-0 px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-t-xl flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <Reply size={13} className="text-indigo-400 flex-shrink-0" />
-                  <span className="text-xs text-[#888]">Replying to <span className="text-white font-medium">{replyTo.senderName}</span></span>
-                  <span className="text-xs text-[#555] truncate ml-1">— {replyTo.content}</span>
+                  <span className="text-xs text-[var(--text-muted)]">Replying to <span className="text-white font-medium">{replyTo.senderName}</span></span>
+                  <span className="text-xs text-[var(--text-muted)] truncate ml-1">— {replyTo.content}</span>
                 </div>
-                <button onClick={() => setReplyTo(null)} className="text-[#666] hover:text-white ml-2 flex-shrink-0">
+                <button onClick={() => setReplyTo(null)} className="text-[var(--text-muted)] hover:text-[var(--text)] ml-2 flex-shrink-0">
                   <X size={13} />
                 </button>
               </div>
@@ -690,9 +690,9 @@ export default function ChatPage() {
 
             {/* Input Bar */}
             <div className={`px-4 pb-4 flex-shrink-0 ${replyTo ? 'pt-0' : 'pt-2'}`}>
-              <div className={`flex items-end gap-2 bg-[#151515] border border-[#2a2a2a] ${replyTo ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'} px-3 py-2.5 focus-within:border-indigo-500/40 transition-colors`}>
+              <div className={`flex items-end gap-2 bg-[var(--bg-card)] border border-[var(--border)] ${replyTo ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'} px-3 py-2.5 focus-within:border-indigo-500/40 transition-colors`}>
                 {activeChannel.isReadOnly ? (
-                  <p className="flex-1 text-sm text-[#555] py-1 text-center">
+                  <p className="flex-1 text-sm text-[var(--text-muted)] py-1 text-center">
                     <Lock size={13} className="inline mr-1" />
                     This channel is read-only
                   </p>
@@ -705,7 +705,7 @@ export default function ChatPage() {
                       onKeyDown={handleKeyDown}
                       placeholder={`Message ${isDMChannel ? dmUser?.name : '#' + activeChannel.slug}…`}
                       rows={1}
-                      className="flex-1 bg-transparent text-sm text-white placeholder-[#555] outline-none resize-none max-h-32 leading-relaxed"
+                      className="flex-1 bg-transparent text-sm text-[var(--text)] placeholder-[var(--text-muted)] outline-none resize-none max-h-32 leading-relaxed"
                       style={{ minHeight: '24px' }}
                     />
                     <button
@@ -713,8 +713,8 @@ export default function ChatPage() {
                       disabled={!input.trim() || sending}
                       className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${
                         input.trim() && !sending
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                          : 'text-[#444] cursor-not-allowed'
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-[var(--text)]'
+                          : 'text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                     >
                       <Send size={15} />
@@ -722,7 +722,7 @@ export default function ChatPage() {
                   </>
                 )}
               </div>
-              <div className="mt-1 text-[10px] text-[#444] text-right pr-1">
+              <div className="mt-1 text-[10px] text-[var(--text-muted)] text-right pr-1">
                 Enter to send · Shift+Enter for new line
               </div>
             </div>

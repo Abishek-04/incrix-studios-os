@@ -152,8 +152,8 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
 
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Team Management</h1>
-                    <p className="text-[#666]">Manage access, roles, and profiles for your creative team.</p>
+                    <h1 className="text-3xl font-bold text-[var(--text)] mb-2">Team Management</h1>
+                    <p className="text-[var(--text-muted)]">Manage access, roles, and profiles for your creative team.</p>
                 </div>
                 <button
                     onClick={() => {
@@ -170,41 +170,41 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                             quota: { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0, period: 'weekly' }
                         });
                     }}
-                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
+                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
                     <Plus size={16} /> <span>Add Member</span>
                 </button>
             </div>
 
             {isAdding && (
-                <div className="mb-8 bg-[#1e1e1e] border border-[#2f2f2f] p-6 rounded-xl relative overflow-hidden animate-in slide-in-from-top-2 duration-300">
+                <div className="mb-8 bg-[var(--bg-input)] border border-[#2f2f2f] p-6 rounded-xl relative overflow-hidden animate-in slide-in-from-top-2 duration-300">
                     <h3 className="text-white font-medium mb-4">{editingId ? 'Edit User' : 'New User Details'}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                         <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-[#666] uppercase tracking-wider border-b border-[#333] pb-2">Profile</h4>
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border)] pb-2">Profile</h4>
                             <div className="space-y-1">
-                                <label className="text-xs text-[#666]">Full Name</label>
+                                <label className="text-xs text-[var(--text-muted)]">Full Name</label>
                                 <input
-                                    className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="e.g. Abishek"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-[#666]">Email (Login ID)</label>
+                                <label className="text-xs text-[var(--text-muted)]">Email (Login ID)</label>
                                 <input
-                                    className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                     value={formData.email}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                                     placeholder="email@incrix.com"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-[#666]">Phone Number (WhatsApp)</label>
-                                <div className="flex items-center bg-[#151515] border border-[#333] rounded-lg px-2 focus-within:border-indigo-500 transition-colors">
-                                    <Phone size={14} className="text-[#666]" />
+                                <label className="text-xs text-[var(--text-muted)]">Phone Number (WhatsApp)</label>
+                                <div className="flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 focus-within:border-indigo-500 transition-colors">
+                                    <Phone size={14} className="text-[var(--text-muted)]" />
                                     <input
-                                        className="w-full bg-transparent border-none p-2 text-sm text-white focus:outline-none"
+                                        className="w-full bg-transparent border-none p-2 text-sm text-[var(--text)] focus:outline-none"
                                         value={formData.phoneNumber}
                                         onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
                                         placeholder="+1 234 567 890"
@@ -220,7 +220,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         onChange={e => setFormData({ ...formData, notifyViaWhatsapp: e.target.checked })}
                                         className="w-4 h-4 rounded bg-[#333] border-[#444] text-indigo-500 focus:ring-offset-0 focus:ring-0"
                                     />
-                                    <span className="text-xs text-[#ccc] group-hover:text-white transition-colors flex items-center gap-1"><MessageCircle size={12} /> WhatsApp Alerts</span>
+                                    <span className="text-xs text-[var(--text-secondary)] group-hover:text-[var(--text)] transition-colors flex items-center gap-1"><MessageCircle size={12} /> WhatsApp Alerts</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer group">
                                     <input
@@ -229,15 +229,15 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                         onChange={e => setFormData({ ...formData, notifyViaEmail: e.target.checked })}
                                         className="w-4 h-4 rounded bg-[#333] border-[#444] text-indigo-500 focus:ring-offset-0 focus:ring-0"
                                     />
-                                    <span className="text-xs text-[#ccc] group-hover:text-white transition-colors flex items-center gap-1"><Mail size={12} /> Email Reports</span>
+                                    <span className="text-xs text-[var(--text-secondary)] group-hover:text-[var(--text)] transition-colors flex items-center gap-1"><Mail size={12} /> Email Reports</span>
                                 </label>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">Role</label>
+                                    <label className="text-xs text-[var(--text-muted)]">Role</label>
                                     <select
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none cursor-pointer"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none cursor-pointer"
                                         value={formData.role}
                                         onChange={e => setFormData({ ...formData, role: e.target.value })}
                                     >
@@ -248,9 +248,9 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">Niche</label>
+                                    <label className="text-xs text-[var(--text-muted)]">Niche</label>
                                     <input
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                         value={formData.niche || ''}
                                         onChange={e => setFormData({ ...formData, niche: e.target.value })}
                                         placeholder="Tech"
@@ -261,13 +261,13 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
 
                         {/* Quota Settings */}
                         <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-[#666] uppercase tracking-wider border-b border-[#333] pb-2 flex items-center"><Target size={12} className="mr-1" /> Output Targets</h4>
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border)] pb-2 flex items-center"><Target size={12} className="mr-1" /> Output Targets</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">YT Long</label>
+                                    <label className="text-xs text-[var(--text-muted)]">YT Long</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                         value={formData.quota?.youtubeLong || 0}
                                         onChange={e => setFormData({
                                             ...formData,
@@ -276,10 +276,10 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">YT Shorts</label>
+                                    <label className="text-xs text-[var(--text-muted)]">YT Shorts</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                         value={formData.quota?.youtubeShort || 0}
                                         onChange={e => setFormData({
                                             ...formData,
@@ -288,10 +288,10 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">IG Reels</label>
+                                    <label className="text-xs text-[var(--text-muted)]">IG Reels</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                         value={formData.quota?.instagramReel || 0}
                                         onChange={e => setFormData({
                                             ...formData,
@@ -300,10 +300,10 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-[#666]">Course</label>
+                                    <label className="text-xs text-[var(--text-muted)]">Course</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none transition-colors"
                                         value={formData.quota?.course || 0}
                                         onChange={e => setFormData({
                                             ...formData,
@@ -313,9 +313,9 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-[#666]">Frequency</label>
+                                <label className="text-xs text-[var(--text-muted)]">Frequency</label>
                                 <select
-                                    className="w-full bg-[#151515] border border-[#333] rounded-lg p-2 text-sm text-white focus:border-indigo-500 outline-none cursor-pointer"
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text)] focus:border-indigo-500 outline-none cursor-pointer"
                                     value={formData.quota?.period || 'weekly'}
                                     onChange={e => setFormData({
                                         ...formData,
@@ -329,26 +329,26 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                         </div>
                     </div>
                     <div className="flex space-x-3 pt-2 border-t border-[#2f2f2f]">
-                        <button onClick={handleSave} className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/20">
+                        <button onClick={handleSave} className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-[var(--text)] text-sm rounded-lg hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/20">
                             <Save size={14} /> <span>Save Profile</span>
                         </button>
-                        <button onClick={() => setIsAdding(false)} className="px-4 py-2 bg-[#252525] text-[#ccc] text-sm rounded-lg hover:bg-[#333] transition-colors border border-[#333]">Cancel</button>
+                        <button onClick={() => setIsAdding(false)} className="px-4 py-2 bg-[var(--bg-input)] text-[var(--text-secondary)] text-sm rounded-lg hover:bg-[#333] transition-colors border border-[var(--border)]">Cancel</button>
                     </div>
                 </div>
             )}
 
-            <div className="bg-[#1e1e1e] border border-[#2f2f2f] rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-[var(--bg-input)] border border-[#2f2f2f] rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-[#191919] border-b border-[#2f2f2f]">
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">User</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">Contact</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider">Role</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">YT Long</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">YT Shorts</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">IG Reels</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-center">Course</th>
-                            <th className="p-4 text-xs font-bold text-[#666] uppercase tracking-wider text-right">Actions</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">User</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Contact</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Role</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">YT Long</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">YT Shorts</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">IG Reels</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Course</th>
+                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#2f2f2f]">
@@ -357,15 +357,15 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                             const q = user.quota || { youtubeLong: 0, youtubeShort: 0, instagramReel: 0, course: 0 };
 
                             return (
-                                <tr key={user.id} className="group hover:bg-[#252525] transition-colors duration-150">
+                                <tr key={user.id} className="group hover:bg-[var(--bg-input)] transition-colors duration-150">
                                     <td className="p-4">
                                         <div className="flex items-center space-x-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${user.avatarColor} shadow-md`}>
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[var(--text)] ${user.avatarColor} shadow-md`}>
                                                 {user.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <div className="text-sm font-medium text-white">{user.name}</div>
-                                                <div className="text-xs text-[#666]">{user.email}</div>
+                                                <div className="text-sm font-medium text-[var(--text)]">{user.name}</div>
+                                                <div className="text-xs text-[var(--text-muted)]">{user.email}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -382,7 +382,7 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                                 </div>
                                             )}
                                             {!user.notifyViaEmail && !user.notifyViaWhatsapp && (
-                                                <span className="text-[#999] text-xs italic">No alerts</span>
+                                                <span className="text-[var(--text-muted)] text-xs italic">No alerts</span>
                                             )}
                                         </div>
                                     </td>
@@ -399,34 +399,34 @@ const TeamManagement = ({ users, projects, onUpdateUsers }) => {
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.ytLong >= (q.youtubeLong || 0) && (q.youtubeLong || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytLong}</span>
-                                            <span className="text-[#999]">/{q.youtubeLong || 0}</span>
+                                            <span className="text-[var(--text-muted)]">/{q.youtubeLong || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.ytShort >= (q.youtubeShort || 0) && (q.youtubeShort || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.ytShort}</span>
-                                            <span className="text-[#999]">/{q.youtubeShort || 0}</span>
+                                            <span className="text-[var(--text-muted)]">/{q.youtubeShort || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.igReel >= (q.instagramReel || 0) && (q.instagramReel || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.igReel}</span>
-                                            <span className="text-[#999]">/{q.instagramReel || 0}</span>
+                                            <span className="text-[var(--text-muted)]">/{q.instagramReel || 0}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="text-xs font-mono">
                                             <span className={metrics.course >= (q.course || 0) && (q.course || 0) > 0 ? "text-emerald-400" : "text-white"}>{metrics.course}</span>
-                                            <span className="text-[#999]">/{q.course || 0}</span>
+                                            <span className="text-[var(--text-muted)]">/{q.course || 0}</span>
                                         </div>
                                     </td>
 
                                     <td className="p-4 text-right">
                                         <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => startEdit(user)} className="p-1.5 text-[#666] hover:text-white bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-[#444] transition-all">
+                                            <button onClick={() => startEdit(user)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text)] bg-[var(--bg-input)] hover:bg-[#333] rounded border border-transparent hover:border-[var(--border)] transition-all">
                                                 <Edit2 size={14} />
                                             </button>
-                                            <button onClick={() => confirmDelete(user.id)} className="p-1.5 text-[#666] hover:text-rose-500 bg-[#2a2a2a] hover:bg-[#333] rounded border border-transparent hover:border-rose-900/30 transition-all">
+                                            <button onClick={() => confirmDelete(user.id)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 bg-[var(--bg-input)] hover:bg-[#333] rounded border border-transparent hover:border-rose-900/30 transition-all">
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
