@@ -7,13 +7,13 @@ import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const STAGE_COLORS = {
-  Backlog: { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' },
-  Scripting: { bg: '#eff6ff', text: '#2563eb', dot: '#3b82f6' },
-  Shooting: { bg: '#f5f3ff', text: '#7c3aed', dot: '#8b5cf6' },
-  Editing: { bg: '#fffbeb', text: '#b45309', dot: '#f59e0b' },
-  Review: { bg: '#fff7ed', text: '#c2410c', dot: '#f97316' },
-  Publishing: { bg: '#ecfeff', text: '#0e7490', dot: '#06b6d4' },
-  Done: { bg: '#ecfdf5', text: '#047857', dot: '#10b981' },
+  Backlog: { bg: 'rgba(100,116,139,0.08)', text: '#64748b', dot: '#94a3b8', glow: '0 0 8px rgba(100,116,139,0.2)' },
+  Scripting: { bg: 'rgba(59,130,246,0.08)', text: '#2563eb', dot: '#3b82f6', glow: '0 0 8px rgba(59,130,246,0.2)' },
+  Shooting: { bg: 'rgba(59,130,246,0.08)', text: '#2563eb', dot: '#3b82f6', glow: '0 0 8px rgba(59,130,246,0.2)' },
+  Editing: { bg: 'rgba(234,179,8,0.1)', text: '#ca8a04', dot: '#eab308', glow: '0 0 8px rgba(234,179,8,0.25)' },
+  Review: { bg: 'rgba(234,179,8,0.1)', text: '#ca8a04', dot: '#eab308', glow: '0 0 8px rgba(234,179,8,0.25)' },
+  Publishing: { bg: 'rgba(59,130,246,0.08)', text: '#2563eb', dot: '#3b82f6', glow: '0 0 8px rgba(59,130,246,0.2)' },
+  Done: { bg: 'rgba(34,197,94,0.08)', text: '#16a34a', dot: '#22c55e', glow: '0 0 8px rgba(34,197,94,0.2)' },
 };
 
 export default function CalendarView({ projects = [], onSelectProject }) {
@@ -163,11 +163,13 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                       return (
                         <div key={p.id}
                           onClick={e => { e.stopPropagation(); onSelectProject?.(p); }}
-                          className="text-[10px] font-semibold px-2 py-1 rounded-lg truncate cursor-pointer transition-all hover:scale-[1.02]"
+                          className="text-[10px] font-semibold px-2 py-1.5 rounded-lg truncate cursor-pointer transition-all hover:scale-[1.02]"
                           style={{
-                            background: overdue ? '#fef2f2' : sc.bg,
+                            background: overdue ? 'rgba(239,68,68,0.08)' : sc.bg,
                             color: overdue ? '#dc2626' : sc.text,
                             borderLeft: `3px solid ${overdue ? '#ef4444' : sc.dot}`,
+                            boxShadow: overdue ? '0 0 8px rgba(239,68,68,0.15)' : sc.glow,
+                            backdropFilter: 'blur(4px)',
                           }}>
                           {p.title}
                         </div>
@@ -221,9 +223,9 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                         transition={{ delay: i * 0.05, duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                         onClick={() => onSelectProject?.(p)}
                         className="rounded-xl border p-4 cursor-pointer transition-all"
-                        style={{ borderColor: 'var(--border)', borderLeft: `4px solid ${overdue ? '#ef4444' : sc.dot}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        style={{ borderColor: 'var(--border)', borderLeft: `4px solid ${overdue ? '#ef4444' : sc.dot}`, boxShadow: overdue ? '0 0 12px rgba(239,68,68,0.1)' : sc.glow }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.boxShadow = overdue ? '0 0 16px rgba(239,68,68,0.2)' : (sc.glow || '').replace('8px', '16px').replace('0.2', '0.35'); }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = overdue ? '0 0 12px rgba(239,68,68,0.1)' : sc.glow; }}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h4 className="text-[13px] font-bold leading-snug" style={{ color: p.stage === 'Done' ? 'var(--success)' : 'var(--text)' }}>
