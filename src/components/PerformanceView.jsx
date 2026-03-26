@@ -1,210 +1,164 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Users as UsersIcon, SplitSquareVertical, Filter } from 'lucide-react';
-import CreatorCard from './performance/CreatorCard';
-import TeamOverview from './performance/TeamOverview';
-import { calculateProgress, calculateTeamAggregate } from '@/utils/quotaCalculations';
 
-/**
- * Main Performance View Component
- * Shows quota tracking for content creators with team/individual toggle
- */
-const PerformanceView = ({ users, projects, currentUser }) => {
-  const [viewMode, setViewMode] = useState('split'); // 'team' | 'individual' | 'split'
-  const [filterRole, setFilterRole] = useState('all');
-  const [sortBy, setSortBy] = useState('name'); // 'name' | 'completion' | 'status'
+const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
+const stagger = { show: { transition: { staggerChildren: 0.08 } } };
 
-  // Filter to content creators only (manager, creator, editor)
-  const contentCreators = useMemo(() => {
-    return users.filter(u =>
-      ['manager', 'creator', 'editor'].includes(u.role) &&
-      u.isActive !== false &&
-      u.quota
-    );
-  }, [users]);
-
-  // Calculate progress for each creator
-  const creatorsWithProgress = useMemo(() => {
-    return contentCreators.map(user => ({
-      user,
-      progress: calculateProgress(user, projects)
-    })).filter(item => item.progress !== null);
-  }, [contentCreators, projects]);
-
-  // Calculate team aggregate metrics
-  const teamMetrics = useMemo(() => {
-    return calculateTeamAggregate(contentCreators, projects);
-  }, [contentCreators, projects]);
-
-  // Apply filters
-  const filteredCreators = useMemo(() => {
-    let filtered = [...creatorsWithProgress];
-
-    // Role filter
-    if (filterRole !== 'all') {
-      filtered = filtered.filter(item => item.user.role === filterRole);
-    }
-
-    // Sort
-    if (sortBy === 'name') {
-      filtered.sort((a, b) => a.user.name.localeCompare(b.user.name));
-    } else if (sortBy === 'completion') {
-      filtered.sort((a, b) => {
-        const aTotal = a.progress.youtubeLong.actual + a.progress.youtubeShort.actual +
-                      a.progress.instagramReel.actual + a.progress.course.actual;
-        const bTotal = b.progress.youtubeLong.actual + b.progress.youtubeShort.actual +
-                      b.progress.instagramReel.actual + b.progress.course.actual;
-        return bTotal - aTotal;
-      });
-    }
-
-    return filtered;
-  }, [creatorsWithProgress, filterRole, sortBy]);
-
-  // Access check - only content roles can view this page
-  if (!currentUser || !['manager', 'creator', 'editor'].includes(currentUser.role)) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="text-rose-400 text-lg font-bold mb-2">Access Denied</div>
-          <div className="text-[#666]">Only content creators can access performance metrics</div>
-        </div>
-      </div>
-    );
-  }
+function QuotaRing({ label, actual, target, color }) {
+  const pct = target > 0 ? Math.min(100, (actual / target) * 100) : 0;
+  const r = 24;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  const colors = { indigo: '#4f46e5', rose: '#e11d48', pink: '#db2777', violet: '#7c3aed' };
+  const stroke = actual >= target && target > 0 ? '#059669' : (colors[color] || '#4f46e5');
 
   return (
-    <div className="h-full overflow-auto bg-[#0d0d0d] p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Team Performance</h1>
-            <p className="text-sm text-[#999]">
-              Track quota progress and content output across your team
-            </p>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-2 bg-[#1a1a1a] p-1 rounded-lg border border-[#2f2f2f]">
-            <button
-              onClick={() => setViewMode('team')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'team'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-[#999] hover:text-white hover:bg-[#252525]'
-              }`}
-            >
-              <LayoutGrid size={16} />
-              Team
-            </button>
-            <button
-              onClick={() => setViewMode('individual')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'individual'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-[#999] hover:text-white hover:bg-[#252525]'
-              }`}
-            >
-              <UsersIcon size={16} />
-              Individual
-            </button>
-            <button
-              onClick={() => setViewMode('split')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'split'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-[#999] hover:text-white hover:bg-[#252525]'
-              }`}
-            >
-              <SplitSquareVertical size={16} />
-              Split
-            </button>
-          </div>
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-14 h-14">
+        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r={r} fill="none" stroke="#f0ede8" strokeWidth="4" />
+          <motion.circle cx="28" cy="28" r={r} fill="none" stroke={stroke} strokeWidth="4" strokeLinecap="round"
+            strokeDasharray={circ} initial={{ strokeDashoffset: circ }} animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }} />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[11px] font-bold text-stone-700">{actual}/{target}</span>
         </div>
-
-        {/* Filters Bar */}
-        {(viewMode === 'individual' || viewMode === 'split') && (
-          <div className="flex items-center gap-4 p-4 bg-[#1a1a1a] border border-[#2f2f2f] rounded-lg">
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-[#666]" />
-              <span className="text-sm text-[#999]">Filters:</span>
-            </div>
-
-            {/* Role Filter */}
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="px-3 py-1.5 bg-[#151515] border border-[#2f2f2f] rounded-lg text-sm text-white outline-none focus:border-indigo-500"
-            >
-              <option value="all">All Roles</option>
-              <option value="manager">Manager</option>
-              <option value="creator">Creator</option>
-              <option value="editor">Editor</option>
-            </select>
-
-            {/* Sort By */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-1.5 bg-[#151515] border border-[#2f2f2f] rounded-lg text-sm text-white outline-none focus:border-indigo-500"
-            >
-              <option value="name">Sort by Name</option>
-              <option value="completion">Sort by Completion</option>
-            </select>
-
-            <div className="ml-auto text-xs text-[#666]">
-              {filteredCreators.length} creator{filteredCreators.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-        )}
-
-        {/* Team Overview Section */}
-        {(viewMode === 'team' || viewMode === 'split') && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <TeamOverview
-              teamMetrics={teamMetrics}
-              contentCreators={contentCreators}
-            />
-          </motion.div>
-        )}
-
-        {/* Individual Creators Section */}
-        {(viewMode === 'individual' || viewMode === 'split') && (
-          <div className="space-y-4">
-            {viewMode === 'split' && (
-              <div className="text-xs font-bold text-[#999] uppercase tracking-wider mt-8">
-                Individual Creators
-              </div>
-            )}
-
-            {filteredCreators.length === 0 ? (
-              <div className="text-center py-12 text-[#666]">
-                <UsersIcon size={48} className="mx-auto mb-3 opacity-50" />
-                <div>No content creators with quotas found</div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {filteredCreators.map((item, index) => (
-                  <CreatorCard
-                    key={item.user.id}
-                    user={item.user}
-                    progress={item.progress}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+      <span className="text-[10px] font-medium text-stone-500">{label}</span>
     </div>
   );
-};
+}
 
-export default PerformanceView;
+function CreatorCard({ user, projects, now }) {
+  const q = user.quota || {};
+  let startDate = new Date(now);
+  if (q.period === 'monthly') { startDate = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else { const d = startDate.getDay(); startDate.setDate(startDate.getDate() - d + (d === 0 ? -6 : 1)); startDate.setHours(0, 0, 0, 0); }
+
+  const done = projects.filter(p => p.creator === user.name && p.stage === 'Done' && p.lastUpdated >= startDate.getTime());
+  const active = projects.filter(p => p.creator === user.name && p.stage !== 'Done' && p.stage !== 'Backlog');
+
+  const ytLong = done.filter(p => p.platform === 'youtube' && (p.contentFormat === 'LongForm' || !p.contentFormat)).length;
+  const ytShort = done.filter(p => p.platform === 'youtube' && p.contentFormat === 'ShortForm').length;
+  const igReels = done.filter(p => p.platform === 'instagram').length;
+  const courses = done.filter(p => p.platform === 'course').length;
+
+  const totalTarget = (q.youtubeLong || 0) + (q.youtubeShort || 0) + (q.instagramReel || 0) + (q.course || 0);
+  const totalActual = ytLong + ytShort + igReels + courses;
+  const allDone = totalActual >= totalTarget && totalTarget > 0;
+
+  const endDate = new Date(now);
+  if (q.period === 'monthly') { endDate.setMonth(endDate.getMonth() + 1, 0); }
+  else { const dayOfWeek = endDate.getDay(); endDate.setDate(endDate.getDate() + (dayOfWeek === 0 ? 0 : 7 - dayOfWeek)); }
+  const daysLeft = Math.max(0, Math.ceil((endDate - now) / 86400000));
+
+  return (
+    <motion.div variants={fade} className="bg-white rounded-2xl border border-stone-200/80 p-5 hover:shadow-md transition-all">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm ${user.avatarColor || 'bg-orange-500'}`}>
+          {user.profilePhoto ? <img src={user.profilePhoto} className="w-11 h-11 rounded-full object-cover" /> : user.name?.charAt(0)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-stone-800 truncate">{user.name}</span>
+            {allDone && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✅ Done</span>}
+            {!allDone && totalTarget > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">⏳ Behind</span>}
+          </div>
+          <span className="text-[11px] text-stone-400">{q.period === 'monthly' ? 'Monthly' : 'Weekly'} · {daysLeft}d left</span>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-extrabold text-stone-800">{active.length}</div>
+          <div className="text-[10px] text-stone-400">active</div>
+        </div>
+      </div>
+
+      {/* Quota rings */}
+      <div className="flex justify-center gap-5">
+        {(q.youtubeLong || 0) > 0 && <QuotaRing label="YT Long" actual={ytLong} target={q.youtubeLong} color="indigo" />}
+        {(q.youtubeShort || 0) > 0 && <QuotaRing label="YT Short" actual={ytShort} target={q.youtubeShort} color="rose" />}
+        {(q.instagramReel || 0) > 0 && <QuotaRing label="IG Reel" actual={igReels} target={q.instagramReel} color="pink" />}
+        {(q.course || 0) > 0 && <QuotaRing label="Course" actual={courses} target={q.course} color="violet" />}
+      </div>
+    </motion.div>
+  );
+}
+
+export default function PerformanceView({ projects = [], users = [] }) {
+  const now = useMemo(() => new Date(), []);
+
+  const quotaUsers = useMemo(() => {
+    return users.filter(u => {
+      const q = u.quota;
+      return q && ((q.youtubeLong || 0) + (q.youtubeShort || 0) + (q.instagramReel || 0) + (q.course || 0) > 0);
+    });
+  }, [users]);
+
+  // Team-wide totals
+  const totals = useMemo(() => {
+    let target = 0, actual = 0;
+    quotaUsers.forEach(u => {
+      const q = u.quota || {};
+      target += (q.youtubeLong || 0) + (q.youtubeShort || 0) + (q.instagramReel || 0) + (q.course || 0);
+      let startDate = new Date(now);
+      if (q.period === 'monthly') { startDate = new Date(now.getFullYear(), now.getMonth(), 1); }
+      else { const d = startDate.getDay(); startDate.setDate(startDate.getDate() - d + (d === 0 ? -6 : 1)); startDate.setHours(0, 0, 0, 0); }
+      actual += projects.filter(p => p.creator === u.name && p.stage === 'Done' && p.lastUpdated >= startDate.getTime()).length;
+    });
+    const pct = target > 0 ? Math.round((actual / target) * 100) : 0;
+    return { target, actual, pct };
+  }, [quotaUsers, projects, now]);
+
+  return (
+    <div className="min-h-full bg-[#f5f3ef] p-4 md:p-6 lg:p-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-extrabold text-stone-800">Team Performance</h1>
+        <p className="text-sm text-stone-400 mt-0.5">Track each creator's progress toward their goals</p>
+      </div>
+
+      {/* Summary bar */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl border border-stone-200/80 p-5 flex flex-col sm:flex-row items-center gap-5">
+        <div className="flex-1">
+          <span className="text-sm font-bold text-stone-800">Overall Completion</span>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${totals.pct}%` }} transition={{ duration: 1, ease: 'easeOut' }}
+                className={`h-full rounded-full ${totals.pct >= 100 ? 'bg-emerald-500' : totals.pct >= 50 ? 'bg-orange-500' : 'bg-rose-500'}`} />
+            </div>
+            <span className={`text-lg font-extrabold ${totals.pct >= 100 ? 'text-emerald-600' : 'text-stone-800'}`}>{totals.pct}%</span>
+          </div>
+          <p className="text-[11px] text-stone-400 mt-1">{totals.actual} of {totals.target} deliverables completed this period</p>
+        </div>
+        <div className="flex gap-6 text-center">
+          <div>
+            <div className="text-2xl font-extrabold text-stone-800">{quotaUsers.length}</div>
+            <div className="text-[10px] text-stone-400 font-medium">Creators</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-emerald-600">{totals.actual}</div>
+            <div className="text-[10px] text-stone-400 font-medium">Done</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-amber-600">{totals.target - totals.actual}</div>
+            <div className="text-[10px] text-stone-400 font-medium">Remaining</div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Creator Cards */}
+      {quotaUsers.length > 0 ? (
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {quotaUsers.map(u => <CreatorCard key={u.id} user={u} projects={projects} now={now} />)}
+        </motion.div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center">
+          <p className="text-stone-400">No creators with quotas set up. Go to Team → edit a user to add quotas.</p>
+        </div>
+      )}
+    </div>
+  );
+}
