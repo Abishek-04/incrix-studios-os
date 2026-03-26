@@ -22,12 +22,12 @@ function urlB64(s) { const p = '='.repeat((4 - (s.length % 4)) % 4); const b = (
 async function subPush(uid) { if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return; try { const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { if ((await Notification.requestPermission()) !== 'granted') return; sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) }); } await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: uid, subscription: sub.toJSON() }) }); } catch (_) {} }
 
 const TEAMS = [
-  { id: 'content', label: 'Content', emoji: '🎬', href: '/performance?team=content', gradient: 'from-indigo-500 to-blue-500' },
-  { id: 'editing', label: 'Editing', emoji: '✂️', href: '/performance?team=editing', gradient: 'from-violet-500 to-purple-500' },
-  { id: 'design', label: 'Design', emoji: '🎨', href: '/design-projects', gradient: 'from-pink-500 to-rose-500' },
-  { id: 'dev', label: 'Dev', emoji: '💻', href: '/dev-projects', gradient: 'from-cyan-500 to-teal-500' },
-  { id: 'marketing', label: 'Marketing', emoji: '📣', href: '/marketing', gradient: 'from-amber-500 to-orange-500' },
-  { id: 'hardware', label: 'Hardware', emoji: '🔧', href: '/clients?service=hardware', gradient: 'from-emerald-500 to-green-500' },
+  { id: 'content', label: 'Content', emoji: '🎬', href: '/team-view/content', gradient: 'from-indigo-500 to-blue-500' },
+  { id: 'editing', label: 'Editing', emoji: '✂️', href: '/team-view/editing', gradient: 'from-violet-500 to-purple-500' },
+  { id: 'design', label: 'Design', emoji: '🎨', href: '/team-view/design', gradient: 'from-pink-500 to-rose-500' },
+  { id: 'dev', label: 'Dev', emoji: '💻', href: '/team-view/dev', gradient: 'from-cyan-500 to-teal-500' },
+  { id: 'marketing', label: 'Marketing', emoji: '📣', href: '/team-view/marketing', gradient: 'from-amber-500 to-orange-500' },
+  { id: 'hardware', label: 'Hardware', emoji: '🔧', href: '/team-view/hardware', gradient: 'from-emerald-500 to-green-500' },
 ];
 
 function ProtectedLayoutInner({ children }) {
@@ -60,7 +60,9 @@ function ProtectedLayoutInner({ children }) {
   const isMgr = hasRole(['superadmin', 'manager']);
   const unread = notifications.filter(n => !n.read).length;
 
-  const titles = { '/dashboard': 'Home', '/projects': 'Projects', '/board': 'Board', '/calendar': 'Calendar', '/daily': 'My Tasks', '/performance': 'Performance', '/analytics': 'Analytics', '/design-projects': 'Design', '/dev-projects': 'Development', '/team': 'Team', '/channels': 'Channels', '/courses': 'Classory', '/instagram': 'Instagram', '/chat': 'Messages', '/clients': 'Clients', '/revenue': 'Revenue', '/marketing': 'Marketing', '/settings/notifications': 'Settings', '/recycle-bin': 'Recycle Bin', '/admin/notifications': 'Notifications' };
+  const teamName = pathname.startsWith('/team-view/') ? pathname.split('/')[2] : null;
+  const teamLabels = { content: 'Content Team', editing: 'Editing Team', design: 'Design Team', dev: 'Dev Team', marketing: 'Marketing', hardware: 'Hardware' };
+  const titles = { '/dashboard': 'Home', '/projects': 'Projects', '/board': 'Board', '/calendar': 'Calendar', '/daily': 'My Tasks', '/performance': 'Overview', '/analytics': 'Analytics', '/design-projects': 'Design', '/dev-projects': 'Development', '/team': 'Team', '/channels': 'Channels', '/courses': 'Classory', '/instagram': 'Instagram', '/chat': 'Messages', '/clients': 'Clients', '/revenue': 'Revenue', '/marketing': 'Marketing', '/settings/notifications': 'Settings', '/recycle-bin': 'Recycle Bin', '/admin/notifications': 'Notifications', ...(teamName ? { [pathname]: teamLabels[teamName] || teamName } : {}) };
 
   const isDark = theme === 'dark';
 
@@ -86,6 +88,7 @@ function ProtectedLayoutInner({ children }) {
               <NavLink href="/calendar" icon={CalendarIcon} label="Calendar" active={isActive('/calendar')} collapsed={collapsed} />
               <NavLink href="/daily" icon={CheckSquare} label="My Tasks" active={isActive('/daily')} collapsed={collapsed} />
               <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} />
+              <NavLink href="/performance" icon={TrendingUp} label="Overview" active={isActive('/performance')} collapsed={collapsed} />
             </div>
 
             {/* TEAMS */}

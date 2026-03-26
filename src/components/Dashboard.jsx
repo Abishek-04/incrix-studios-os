@@ -10,12 +10,12 @@ const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 
 const TEAMS = {
-  content: { label: 'Content', emoji: '🎬', href: '/performance?team=content', ring: '#6366f1', track: 'var(--border-light)', gradient: 'from-indigo-500 to-blue-500' },
-  editing: { label: 'Editing', emoji: '✂️', href: '/performance?team=editing', ring: '#8b5cf6', track: 'var(--border-light)', gradient: 'from-violet-500 to-purple-500' },
-  design: { label: 'Design', emoji: '🎨', href: '/design-projects', ring: '#ec4899', track: 'var(--border-light)', gradient: 'from-pink-500 to-rose-500' },
-  dev: { label: 'Dev', emoji: '💻', href: '/dev-projects', ring: '#06b6d4', track: 'var(--border-light)', gradient: 'from-cyan-500 to-teal-500' },
-  marketing: { label: 'Marketing', emoji: '📣', href: '/marketing', ring: '#f59e0b', track: 'var(--border-light)', gradient: 'from-amber-500 to-orange-500' },
-  hardware: { label: 'Hardware', emoji: '🔧', href: '/clients?service=hardware', ring: '#10b981', track: 'var(--border-light)', gradient: 'from-emerald-500 to-green-500' },
+  content: { label: 'Content', emoji: '🎬', href: '/team-view/content', ring: '#6366f1', track: 'var(--border-light)', gradient: 'from-indigo-500 to-blue-500' },
+  editing: { label: 'Editing', emoji: '✂️', href: '/team-view/editing', ring: '#8b5cf6', track: 'var(--border-light)', gradient: 'from-violet-500 to-purple-500' },
+  design: { label: 'Design', emoji: '🎨', href: '/team-view/design', ring: '#ec4899', track: 'var(--border-light)', gradient: 'from-pink-500 to-rose-500' },
+  dev: { label: 'Dev', emoji: '💻', href: '/team-view/dev', ring: '#06b6d4', track: 'var(--border-light)', gradient: 'from-cyan-500 to-teal-500' },
+  marketing: { label: 'Marketing', emoji: '📣', href: '/team-view/marketing', ring: '#f59e0b', track: 'var(--border-light)', gradient: 'from-amber-500 to-orange-500' },
+  hardware: { label: 'Hardware', emoji: '🔧', href: '/team-view/hardware', ring: '#10b981', track: 'var(--border-light)', gradient: 'from-emerald-500 to-green-500' },
 };
 
 function TeamRing({ teamKey, active, done, total }) {
