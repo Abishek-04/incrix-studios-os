@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { DollarSign, Briefcase, CheckCircle, AlertTriangle, Plus, X, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { fetchWithAuth } from '@/services/api';
 
-const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
-const stagger = { show: { transition: { staggerChildren: 0.07 } } };
+// Emil Kowalski: ease-out for entering, keep under 300ms, stagger 40-60ms
+const fade = { hidden: { opacity: 0, transform: 'translateY(8px)' }, show: { opacity: 1, transform: 'translateY(0px)', transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] } } };
+const stagger = { show: { transition: { staggerChildren: 0.05 } } };
 
 const TEAMS = {
   content: { label: 'Content', emoji: '🎬', href: '/team-view/content', ring: '#6366f1', track: 'var(--border-light)', gradient: 'from-indigo-500 to-blue-500' },
@@ -26,7 +27,7 @@ function TeamRing({ teamKey, active, done, total }) {
 
   return (
     <Link href={t.href}>
-      <motion.div variants={fade} whileHover={{ scale: 1.06, y: -4 }} className="flex flex-col items-center gap-3 cursor-pointer group">
+      <motion.div variants={fade} whileHover={{ transform: 'scale(1.04) translateY(-3px)' }} transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }} className="flex flex-col items-center gap-3 cursor-pointer group">
         <div className="relative w-28 h-28">
           <svg className="w-28 h-28 -rotate-90" viewBox="0 0 96 96">
             <circle cx="48" cy="48" r={r} fill="none" stroke="var(--border-light)" strokeWidth="7" />
@@ -86,7 +87,7 @@ function ProjectRow({ project }) {
 
 function KPI({ label, value, icon: Icon, gradient, sub }) {
   return (
-    <motion.div variants={fade} whileHover={{ y: -3, scale: 1.02 }} className="rounded-3xl p-5 border transition-all cursor-default" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+    <motion.div variants={fade} whileHover={{ transform: 'translateY(-2px)' }} transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }} className="rounded-3xl p-5 border cursor-default card-hover" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
       <div className="flex items-start justify-between mb-3">
         <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
         <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>

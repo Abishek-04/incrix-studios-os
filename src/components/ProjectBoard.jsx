@@ -52,8 +52,8 @@ function BoardCard({ project, onSelect, onDragStart, stageColor, onMoveLeft, onM
       layout
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.15 }}
+      whileHover={{ transform: 'translateY(-2px)' }}
+      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
       draggable
       onDragStart={e => onDragStart(e, project)}
       onClick={() => onSelect?.(project)}

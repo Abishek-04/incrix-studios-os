@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Instagram, Radio, TrendingUp, Target, BarChart3, ArrowUpRight, Megaphone } from 'lucide-react';
 
-const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
-const stagger = { show: { transition: { staggerChildren: 0.08 } } };
+const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] } } };
+const stagger = { show: { transition: { staggerChildren: 0.05 } } };
 
 export default function MarketingPage() {
   return (

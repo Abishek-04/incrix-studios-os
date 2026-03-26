@@ -69,7 +69,7 @@ function ProtectedLayoutInner({ children }) {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* SIDEBAR */}
-      <aside className={`${collapsed ? 'w-[72px]' : 'w-[240px]'} hidden md:flex flex-col transition-all duration-200 relative border-r`}
+      <aside className={`${collapsed ? 'w-[72px]' : 'w-[240px]'} hidden md:flex flex-col relative border-r`} style={{ transition: 'width 250ms cubic-bezier(0.23,1,0.32,1)' }}
         style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
         <div className="flex flex-col min-h-0 flex-1">
           {/* Logo */}

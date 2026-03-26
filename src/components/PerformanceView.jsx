@@ -3,8 +3,8 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
-const stagger = { show: { transition: { staggerChildren: 0.08 } } };
+const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] } } };
+const stagger = { show: { transition: { staggerChildren: 0.05 } } };
 
 function QuotaRing({ label, actual, target, color }) {
   const pct = target > 0 ? Math.min(100, (actual / target) * 100) : 0;

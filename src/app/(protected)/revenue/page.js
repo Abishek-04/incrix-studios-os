@@ -14,8 +14,8 @@ const STREAMS = {
   classory_saas: { label: 'Classory SaaS', emoji: '🖥️', bar: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
 };
 
-const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
-const stagger = { show: { transition: { staggerChildren: 0.06 } } };
+const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] } } };
+const stagger = { show: { transition: { staggerChildren: 0.05 } } };
 
 export default function RevenuePage() {
   const [entries, setEntries] = useState([]);
