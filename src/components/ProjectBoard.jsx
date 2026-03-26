@@ -7,7 +7,6 @@ import { Plus, Eye, ChevronLeft, ChevronRight, Filter, Check, ChevronDown, Users
 // ─── Stage config ─────────────────────────────────────────────────────────────
 const STAGES = [
   { key: 'Backlog',    label: 'Ideas',      icon: '💡', color: '#64748b', glow: 'rgba(100,116,139,0.15)' },
-  { key: 'Scripting',  label: 'Planning',   icon: '📋', color: '#3b82f6', glow: 'rgba(59,130,246,0.15)' },
   { key: 'Shooting',   label: 'Creating',   icon: '🎬', color: '#8b5cf6', glow: 'rgba(139,92,246,0.15)' },
   { key: 'Editing',    label: 'Editing',     icon: '✂️', color: '#f59e0b', glow: 'rgba(245,158,11,0.15)' },
   { key: 'Review',     label: 'Review',      icon: '👁', color: '#f97316', glow: 'rgba(249,115,22,0.15)' },
@@ -96,7 +95,7 @@ function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, 
         <div className="flex">
           <div className="w-1 shrink-0 rounded-l-2xl" style={{ background: stage.color }} />
 
-          <div className="flex-1 p-4 space-y-2.5">
+          <div className="flex-1 p-5 space-y-3">
             {/* Top: Platform + Due */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -195,7 +194,7 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
 
   return (
     <div
-      className="flex flex-col min-w-[280px] shrink-0 lg:min-w-0 lg:shrink rounded-2xl overflow-hidden"
+      className="flex flex-col min-w-[300px] shrink-0 lg:min-w-0 lg:shrink rounded-2xl overflow-hidden"
       style={{
         background: over ? stage.glow : 'var(--bg-card)',
         border: `1px solid ${over ? stage.color + '60' : 'var(--border)'}`,
@@ -206,24 +205,24 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
       onDrop={e => { setOver(false); onDrop(e, stage.key); }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
+      <div className="flex items-center gap-3 px-4 py-4">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
           style={{ background: stage.glow }}>
           {stage.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>{stage.label}</div>
+          <div className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{stage.label}</div>
         </div>
-        <div className="text-[20px] font-black tabular-nums" style={{ color: stage.color }}>
+        <div className="text-[22px] font-black tabular-nums" style={{ color: stage.color }}>
           {projects.length}
         </div>
       </div>
 
-      {/* Thin accent line */}
-      <div className="h-[2px] mx-3" style={{ background: `linear-gradient(90deg, ${stage.color}, transparent)`, opacity: 0.3 }} />
+      {/* Accent line */}
+      <div className="h-[2px] mx-4" style={{ background: `linear-gradient(90deg, ${stage.color}, transparent)`, opacity: 0.25 }} />
 
       {/* Cards */}
-      <div className="flex-1 p-2.5 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+      <div className="flex-1 p-3 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         <AnimatePresence mode="popLayout">
           {visible.map((p, i) => (
             <Card
@@ -342,7 +341,7 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
 
   const columns = useMemo(() => STAGES.map(s => ({
     ...s,
-    projects: filtered.filter(p => p.stage === s.key).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    projects: filtered.filter(p => p.stage === s.key || (s.key === 'Backlog' && p.stage === 'Scripting')).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
   })), [filtered]);
 
   const move = useCallback((project, toStage) => {
@@ -378,8 +377,8 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 md:p-4">
-        <div className="flex lg:grid lg:grid-cols-7 gap-2.5 h-full">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-5">
+        <div className="flex lg:grid lg:grid-cols-6 gap-4 h-full">
           {columns.map((col, i) => (
             <Column
               key={col.key} stage={col} idx={i} projects={col.projects} isDone={col.key === 'Done'} channels={channels}
