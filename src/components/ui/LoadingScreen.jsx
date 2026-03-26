@@ -2,20 +2,15 @@
 
 export default function LoadingScreen({ message }) {
   return (
-    <div className="flex items-center justify-center h-full w-full">
+    <div className="flex items-center justify-center h-full w-full" style={{ background: 'var(--bg)' }}>
       <div className="flex flex-col items-center gap-6">
-        {/* Animated logo pulse */}
         <div className="relative">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center animate-pulse shadow-lg shadow-indigo-500/20">
-            <span className="text-white font-bold text-2xl">I</span>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center animate-pulse shadow-xl shadow-indigo-500/25">
+            <span className="text-white font-black text-3xl">I</span>
           </div>
-          {/* Orbit ring */}
-          <div className="absolute inset-[-8px] rounded-3xl border-2 border-transparent border-t-indigo-500/60 animate-spin" style={{ animationDuration: '1.2s' }} />
+          <div className="absolute inset-[-10px] rounded-3xl border-2 border-transparent border-t-indigo-400/50 animate-spin" style={{ animationDuration: '1.2s' }} />
         </div>
-
-        {message && (
-          <p className="text-sm text-[#666] animate-pulse">{message}</p>
-        )}
+        {message && <p className="text-sm animate-pulse" style={{ color: 'var(--text-muted)' }}>{message}</p>}
       </div>
     </div>
   );
