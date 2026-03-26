@@ -135,38 +135,25 @@ export default function BoardPage() {
         channels={channels}
         onSelectProject={setSelectedProject}
         onUpdateProject={handleUpdateProject}
-        onCreateProject={async (newProject) => {
-          setProjects((prevProjects) => [...prevProjects, newProject]);
-
-          try {
-            const response = await createProject(newProject);
-            if (!response?.success) {
-              console.error('Project create failed:', response?.error);
-              showToast(response?.error || 'Failed to create project');
-              setProjects((prevProjects) => prevProjects.filter((p) => p.id !== newProject.id));
-              setSelectedProject(null);
-              return { success: false, error: response?.error || 'Create failed' };
-            }
-
-            if (response.project) {
-              const createdProject = response.project;
-              setProjects((prevProjects) =>
-                prevProjects.map((p) => (p.id === newProject.id ? createdProject : p))
-              );
-              setSelectedProject(createdProject);
-            }
-            await loadData();
-            return { success: true, project: response.project || newProject };
-          } catch (error) {
-            console.error('Project create error:', error);
-            showToast('Failed to create project');
-            await loadData();
-            setSelectedProject(null);
-            return { success: false, error: 'Create failed' };
-          }
+        onDeleteProject={handleDeleteProject}
+        onCreateProject={() => {
+          const newProject = {
+            id: `PRJ-${Date.now().toString().slice(-6)}`,
+            title: 'New Untitled Project',
+            topic: 'To be decided',
+            vertical: 'software',
+            platform: 'youtube',
+            creator: 'Unassigned',
+            editors: [],
+            stage: 'Backlog',
+            status: 'Not Started',
+            priority: 'Medium',
+            dueDate: Date.now() + 7 * 86400000,
+            lastUpdated: Date.now(),
+            role: currentUser?.role || 'creator',
+          };
+          setSelectedProject(newProject);
         }}
-        searchQuery=""
-        selectedMonth="all"
       />
 
       {selectedProject && currentUser && (

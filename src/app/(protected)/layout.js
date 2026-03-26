@@ -125,6 +125,7 @@ function ProtectedLayoutInner({ children }) {
                 {!collapsed && <SectionLabel>Admin</SectionLabel>}
                 <NavLink href="/team" icon={Users} label="Team" active={isActive('/team')} collapsed={collapsed} />
                 <NavLink href="/instagram" icon={Instagram} label="Instagram" active={isActive('/instagram')} collapsed={collapsed} />
+                <NavLink href="/recycle-bin" icon={Trash2} label="Recycle Bin" active={isActive('/recycle-bin')} collapsed={collapsed} />
                 <NavLink href="/settings/notifications" icon={SettingsIcon} label="Settings" active={isActive('/settings/notifications')} collapsed={collapsed} />
               </div>
             )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Eye, ChevronLeft, ChevronRight, Filter, Check, ChevronDown, Users } from 'lucide-react';
+import { Plus, Eye, ChevronLeft, ChevronRight, Filter, Check, ChevronDown, Users, Trash2 } from 'lucide-react';
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
 const STAGES = [
@@ -59,7 +59,7 @@ function PipelineBar({ columns, total }) {
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
-function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, canLeft, canRight, channels, index }) {
+function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, canLeft, canRight, channels, index, onDelete }) {
   const due = relativeDate(project.dueDate);
   const avatar = channelAvatar(project, channels);
   const isDone = project.stage === 'Done';
@@ -159,7 +159,7 @@ function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, 
         </div>
       </div>
 
-      {/* Move arrows — float outside card on hover */}
+      {/* Hover actions — move arrows + delete */}
       <div className="absolute inset-y-0 -left-4 -right-4 flex items-center justify-between pointer-events-none opacity-0 group-hover:opacity-100"
         style={{ transition: 'opacity 150ms cubic-bezier(0.23,1,0.32,1)' }}>
         {canLeft ? (
@@ -181,12 +181,22 @@ function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, 
           </button>
         ) : <div />}
       </div>
+      {/* Delete button — top right on hover */}
+      {onDelete && (
+        <button onClick={e => { e.stopPropagation(); if (confirm(`Delete "${project.title}"?`)) onDelete(project.id); }}
+          className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity"
+          style={{ background: 'var(--danger-light)', color: 'var(--danger)', transition: 'opacity 150ms, transform 160ms cubic-bezier(0.23,1,0.32,1)' }}
+          onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
+          onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
+          <Trash2 size={13} />
+        </button>
+      )}
     </motion.div>
   );
 }
 
 // ─── Column ───────────────────────────────────────────────────────────────────
-function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, isDone, channels }) {
+function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, isDone, channels, onDelete }) {
   const [over, setOver] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const visible = isDone && !expanded ? projects.slice(0, MAX_DONE) : projects;
@@ -227,7 +237,7 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
           {visible.map((p, i) => (
             <Card
               key={p.id} project={p} stage={stage} index={i} channels={channels}
-              onSelect={() => onSelect?.(p)} onDragStart={onDragStart}
+              onSelect={() => onSelect?.(p)} onDragStart={onDragStart} onDelete={onDelete}
               canLeft={idx > 0} canRight={idx < STAGES.length - 1}
               onMoveLeft={() => onMove(p, STAGE_KEYS[idx - 1])}
               onMoveRight={() => onMove(p, STAGE_KEYS[idx + 1])}
@@ -324,7 +334,7 @@ function DropdownItem({ label, icon, selected, onClick }) {
 }
 
 // ─── Board ────────────────────────────────────────────────────────────────────
-export default function ProjectBoard({ projects = [], channels = [], onSelectProject, onUpdateProject, onCreateProject, filterType }) {
+export default function ProjectBoard({ projects = [], channels = [], onSelectProject, onUpdateProject, onCreateProject, onDeleteProject, filterType }) {
   const [dragged, setDragged] = useState(null);
   const [creator, setCreator] = useState('all');
 
@@ -382,7 +392,7 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
           {columns.map((col, i) => (
             <Column
               key={col.key} stage={col} idx={i} projects={col.projects} isDone={col.key === 'Done'} channels={channels}
-              onSelect={onSelectProject}
+              onSelect={onSelectProject} onDelete={onDeleteProject}
               onDragStart={(e, p) => { setDragged(p); e.dataTransfer.effectAllowed = 'move'; }}
               onDrop={(e, stage) => { e.preventDefault(); if (dragged && dragged.stage !== stage) onUpdateProject?.({ ...dragged, stage }); setDragged(null); }}
               onMove={move}

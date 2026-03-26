@@ -101,8 +101,8 @@ export default function NotionDailyTasks({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Daily Tasks</h1>
-          <p className="text-sm text-[#666] mt-1">
+          <h1 className="text-2xl font-bold text-[var(--text)]">Daily Tasks</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
             {viewMode === 'team' ? 'Team overview' : (users.find((u) => u.id === selectedUserId)?.name || currentUser?.name || 'Track daily work') + "'s tasks"}
           </p>
         </div>
@@ -110,11 +110,11 @@ export default function NotionDailyTasks({
         <div className="flex items-center gap-2">
           {/* View Toggle — managers only */}
           {canViewAllUsers && (
-            <div className="flex bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] p-1">
+            <div className="flex bg-[var(--bg-input)] rounded-lg border border-[var(--border)] p-1">
               <button
                 onClick={() => setViewMode('personal')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  viewMode === 'personal' ? 'bg-indigo-600 text-white' : 'text-[#999] hover:text-white'
+                  viewMode === 'personal' ? 'bg-indigo-600 text-[var(--text)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
               >
                 <User size={13} />
@@ -123,7 +123,7 @@ export default function NotionDailyTasks({
               <button
                 onClick={() => setViewMode('team')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  viewMode === 'team' ? 'bg-indigo-600 text-white' : 'text-[#999] hover:text-white'
+                  viewMode === 'team' ? 'bg-indigo-600 text-[var(--text)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
               >
                 <LayoutGrid size={13} />
@@ -136,12 +136,12 @@ export default function NotionDailyTasks({
           {canViewAllUsers && viewMode === 'personal' && users.length > 1 && (
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Users size={14} className="text-[#666]" />
+                <Users size={14} className="text-[var(--text-muted)]" />
               </div>
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="bg-[#1e1e1e] border border-[#2a2a2a] text-sm text-white rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:border-[#333] transition-colors"
+                className="bg-[var(--bg-input)] border border-[var(--border)] text-sm text-[var(--text)] rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:border-[var(--border)] transition-colors"
               >
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -150,7 +150,7 @@ export default function NotionDailyTasks({
                 ))}
               </select>
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <svg className="w-3 h-3 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -163,25 +163,25 @@ export default function NotionDailyTasks({
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigateDate(-1)}
-          className="p-2 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg text-[#999] hover:text-white hover:border-[#333] transition-colors"
+          className="p-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border)] transition-colors"
           title="Previous day"
         >
           <ChevronLeft size={16} />
         </button>
         <div className="flex-1 flex items-center justify-center gap-3">
-          <Calendar size={16} className="text-[#666]" />
-          <span className="text-white font-semibold text-lg">{formatDateLabel(selectedDate)}</span>
+          <Calendar size={16} className="text-[var(--text-muted)]" />
+          <span className="text-[var(--text)] font-semibold text-lg">{formatDateLabel(selectedDate)}</span>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-            className="bg-transparent text-[#666] text-xs border-none outline-none cursor-pointer w-5 opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
+            className="bg-transparent text-[var(--text-muted)] text-xs border-none outline-none cursor-pointer w-5 opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
             title="Pick a date"
           />
         </div>
         <button
           onClick={() => navigateDate(1)}
-          className="p-2 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg text-[#999] hover:text-white hover:border-[#333] transition-colors"
+          className="p-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border)] transition-colors"
           title="Next day"
         >
           <ChevronRight size={16} />
@@ -189,7 +189,7 @@ export default function NotionDailyTasks({
         {selectedDate !== todayStr && (
           <button
             onClick={() => setSelectedDate(todayStr)}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors"
+            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] text-xs font-medium rounded-lg transition-colors"
           >
             Today
           </button>
@@ -247,7 +247,7 @@ function PersonalView({ tasks, users, currentUser, selectedDate, selectedUserId,
     <>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard value={stats.total} label="Total" color="text-white" />
+        <StatCard value={stats.total} label="Total" color="text-[var(--text)]" />
         <StatCard value={stats.completed} label="Done" color="text-emerald-400" />
         <StatCard value={stats.pending} label="Pending" color="text-amber-400" />
       </div>
@@ -277,11 +277,11 @@ function PersonalView({ tasks, users, currentUser, selectedDate, selectedUserId,
 
       {dayTasks.length === 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center">
-            <ClipboardList size={28} className="text-[#444]" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border)] flex items-center justify-center">
+            <ClipboardList size={28} className="text-[var(--text-muted)]" />
           </div>
-          <h3 className="text-base font-semibold text-[#999] mb-1">No tasks for this day</h3>
-          <p className="text-sm text-[#555]">Add tasks using the Morning or Afternoon sections above</p>
+          <h3 className="text-base font-semibold text-[var(--text-muted)] mb-1">No tasks for this day</h3>
+          <p className="text-sm text-[var(--text-muted)]">Add tasks using the Morning or Afternoon sections above</p>
         </motion.div>
       )}
     </>
@@ -317,7 +317,7 @@ function TeamDashboard({ tasks, users, selectedDate, onAdd, onToggle, onUpdate, 
     <>
       {/* Team-wide Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard value={users.length} label="Team Members" color="text-white" />
+        <StatCard value={users.length} label="Team Members" color="text-[var(--text)]" />
         <StatCard value={teamStats.total} label="Total Tasks" color="text-indigo-400" />
         <StatCard value={teamStats.done} label="Completed" color="text-emerald-400" />
         <StatCard value={`${teamStats.rate}%`} label="Completion Rate" color="text-amber-400" />
@@ -346,8 +346,8 @@ function TeamDashboard({ tasks, users, selectedDate, onAdd, onToggle, onUpdate, 
 
       {users.length === 0 && (
         <div className="text-center py-16">
-          <Users size={32} className="mx-auto mb-3 text-[#444]" />
-          <p className="text-[#666] text-sm">No team members found</p>
+          <Users size={32} className="mx-auto mb-3 text-[var(--text-muted)]" />
+          <p className="text-[var(--text-muted)] text-sm">No team members found</p>
         </div>
       )}
     </>
@@ -364,10 +364,10 @@ function UserCard({ user, users, amTasks, pmTasks, done, total, rate, selectedDa
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-[#161616] border border-[#222] rounded-xl overflow-hidden flex flex-col"
+      className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl overflow-hidden flex flex-col"
     >
       {/* User Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#222] bg-[#1a1a1a]">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-light)] bg-[var(--bg-input)]">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
           style={{ backgroundColor: user.avatarColor || '#444', color: '#fff' }}
@@ -375,13 +375,13 @@ function UserCard({ user, users, amTasks, pmTasks, done, total, rate, selectedDa
           {user.name?.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white truncate">{user.name}</div>
-          <div className="text-[10px] text-[#666] capitalize">{user.role}</div>
+          <div className="text-sm font-semibold text-[var(--text)] truncate">{user.name}</div>
+          <div className="text-[10px] text-[var(--text-muted)] capitalize">{user.role}</div>
         </div>
         {/* Progress Ring */}
         <div className="flex items-center gap-2">
           {hasAny && (
-            <span className={`text-xs font-semibold ${rate === 100 ? 'text-emerald-400' : rate >= 50 ? 'text-amber-400' : 'text-[#666]'}`}>
+            <span className={`text-xs font-semibold ${rate === 100 ? 'text-emerald-400' : rate >= 50 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
               {done}/{total}
             </span>
           )}
@@ -420,7 +420,7 @@ function UserCard({ user, users, amTasks, pmTasks, done, total, rate, selectedDa
       {/* Empty state */}
       {!hasAny && (
         <div className="px-4 py-6 text-center">
-          <p className="text-xs text-[#555]">No tasks assigned</p>
+          <p className="text-xs text-[var(--text-muted)]">No tasks assigned</p>
         </div>
       )}
     </motion.div>
@@ -446,12 +446,12 @@ function CompactSlot({ label, icon, tasks, isExpanded, onToggleExpand, onAddTask
       {/* Slot Header */}
       <button
         onClick={onToggleExpand}
-        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#1a1a1a] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[var(--bg-input)] transition-colors text-left"
       >
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-xs font-medium text-[#999]">{label}</span>
-          <span className="text-[10px] text-[#555] bg-[#252525] px-1.5 py-0.5 rounded font-mono">
+          <span className="text-xs font-medium text-[var(--text-muted)]">{label}</span>
+          <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-input)] px-1.5 py-0.5 rounded font-mono">
             {tasks.length}
           </span>
         </div>
@@ -484,7 +484,7 @@ function CompactSlot({ label, icon, tasks, isExpanded, onToggleExpand, onAddTask
 
               {/* Inline Add */}
               <div className="flex items-center gap-2 px-2 py-1.5">
-                <Plus size={12} className="text-[#555] flex-shrink-0" />
+                <Plus size={12} className="text-[var(--text-muted)] flex-shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -494,7 +494,7 @@ function CompactSlot({ label, icon, tasks, isExpanded, onToggleExpand, onAddTask
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
                   }}
                   placeholder="Add task..."
-                  className="flex-1 bg-transparent text-white text-xs placeholder-[#444] focus:outline-none"
+                  className="flex-1 bg-transparent text-[var(--text)] text-xs placeholder-[#444] focus:outline-none"
                 />
                 {newText.trim() && (
                   <button onClick={handleSubmit} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium">
@@ -532,14 +532,14 @@ function CompactTaskRow({ task, users, onToggle, onUpdate, onDelete }) {
   };
 
   return (
-    <div className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#1e1e1e] transition-colors">
+    <div className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--bg-input)] transition-colors">
       <button onClick={onToggle} className="flex-shrink-0" aria-label={task.done ? 'Mark incomplete' : 'Mark complete'}>
         {task.done ? (
           <div className="w-4 h-4 rounded bg-emerald-500 flex items-center justify-center">
-            <Check size={10} className="text-white" strokeWidth={3} />
+            <Check size={10} className="text-[var(--text)]" strokeWidth={3} />
           </div>
         ) : (
-          <Circle size={16} className="text-[#444] group-hover:text-[#666] transition-colors" />
+          <Circle size={16} className="text-[var(--text-muted)] group-hover:text-[var(--text-muted)] transition-colors" />
         )}
       </button>
       <div className="flex-1 min-w-0">
@@ -554,12 +554,12 @@ function CompactTaskRow({ task, users, onToggle, onUpdate, onDelete }) {
               if (e.key === 'Enter') { e.preventDefault(); handleSave(); }
               if (e.key === 'Escape') { setEditText(task.task); setIsEditing(false); }
             }}
-            className="w-full bg-transparent text-white text-xs focus:outline-none"
+            className="w-full bg-transparent text-[var(--text)] text-xs focus:outline-none"
           />
         ) : (
           <span
             onClick={() => setIsEditing(true)}
-            className={`text-xs cursor-text block truncate ${task.done ? 'text-[#555] line-through' : 'text-[#ccc]'}`}
+            className={`text-xs cursor-text block truncate ${task.done ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-secondary)]'}`}
           >
             {task.task}
           </span>
@@ -583,9 +583,9 @@ function CompactTaskRow({ task, users, onToggle, onUpdate, onDelete }) {
 
 function StatCard({ value, label, color }) {
   return (
-    <div className="bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-4 text-center hover:border-[#333] transition-colors">
+    <div className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-4 text-center hover:border-[var(--border)] transition-colors">
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-[#666] mt-1">{label}</div>
+      <div className="text-xs text-[var(--text-muted)] mt-1">{label}</div>
     </div>
   );
 }
@@ -634,12 +634,12 @@ function TaskSection({ label, icon, timeSlot, tasks, onAdd, onToggle, onUpdate, 
   const completedCount = tasks.filter((t) => t.done).length;
 
   return (
-    <div className="bg-[#161616] border border-[#222] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#222] bg-[#1a1a1a]">
+    <div className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border-light)] bg-[var(--bg-input)]">
         <div className="flex items-center gap-2.5">
           {icon}
-          <h2 className="text-sm font-semibold text-white">{label}</h2>
-          <span className="text-xs text-[#666] bg-[#252525] px-2 py-0.5 rounded-md font-mono">{tasks.length}</span>
+          <h2 className="text-sm font-semibold text-[var(--text)]">{label}</h2>
+          <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-input)] px-2 py-0.5 rounded-md font-mono">{tasks.length}</span>
         </div>
         {tasks.length > 0 && (
           <span className="text-xs text-emerald-400/70">{completedCount}/{tasks.length} done</span>
@@ -661,8 +661,8 @@ function TaskSection({ label, icon, timeSlot, tasks, onAdd, onToggle, onUpdate, 
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-3 px-5 py-3 border-t border-[#222] bg-[#141414]">
-        <Plus size={16} className="text-[#555] flex-shrink-0" />
+      <div className="flex items-center gap-3 px-5 py-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]">
+        <Plus size={16} className="text-[var(--text-muted)] flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -672,10 +672,10 @@ function TaskSection({ label, icon, timeSlot, tasks, onAdd, onToggle, onUpdate, 
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
           }}
           placeholder={`Add ${label.toLowerCase()} task...`}
-          className="flex-1 bg-transparent text-white text-sm placeholder-[#555] focus:outline-none"
+          className="flex-1 bg-transparent text-[var(--text)] text-sm placeholder-[#555] focus:outline-none"
         />
         {newText.trim() && (
-          <button onClick={handleSubmit} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-md transition-colors">
+          <button onClick={handleSubmit} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] text-xs font-medium rounded-md transition-colors">
             Add
           </button>
         )}
@@ -712,15 +712,15 @@ function TaskRow({ task, users, onToggle, onUpdate, onDelete }) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="group flex items-center gap-3 px-5 py-3 hover:bg-[#1a1a1a] transition-colors"
+      className="group flex items-center gap-3 px-5 py-3 hover:bg-[var(--bg-input)] transition-colors"
     >
       <button onClick={onToggle} className="flex-shrink-0" aria-label={task.done ? 'Mark incomplete' : 'Mark complete'}>
         {task.done ? (
           <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center">
-            <Check size={12} className="text-white" strokeWidth={3} />
+            <Check size={12} className="text-[var(--text)]" strokeWidth={3} />
           </div>
         ) : (
-          <Circle size={20} className="text-[#444] group-hover:text-[#666] transition-colors" />
+          <Circle size={20} className="text-[var(--text-muted)] group-hover:text-[var(--text-muted)] transition-colors" />
         )}
       </button>
 
@@ -736,12 +736,12 @@ function TaskRow({ task, users, onToggle, onUpdate, onDelete }) {
               if (e.key === 'Enter') { e.preventDefault(); handleSave(); }
               if (e.key === 'Escape') { setEditText(task.task); setIsEditing(false); }
             }}
-            className="w-full bg-transparent text-white text-sm focus:outline-none"
+            className="w-full bg-transparent text-[var(--text)] text-sm focus:outline-none"
           />
         ) : (
           <span
             onClick={() => setIsEditing(true)}
-            className={`text-sm cursor-text block truncate transition-colors ${task.done ? 'text-[#555] line-through' : 'text-white'}`}
+            className={`text-sm cursor-text block truncate transition-colors ${task.done ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text)]'}`}
           >
             {task.task}
           </span>
