@@ -5,62 +5,67 @@
     --font-inter: system-ui, -apple-system, sans-serif;
     --font-jetbrains: 'Courier New', monospace;
 
-    /* Light Theme - "Prism" */
-    --bg: #f0f2f7;
+    /* Light Theme — Pure White + Violet */
+    --bg: #ffffff;
     --bg-card: #ffffff;
-    --bg-card-hover: #f7f8fc;
-    --bg-sidebar: #ffffff;
-    --bg-header: rgba(255,255,255,0.85);
-    --bg-input: #f5f6fa;
-    --border: #e2e5ee;
-    --border-light: #eef0f5;
-    --text: #0f172a;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --primary-light: #eef2ff;
-    --accent: #f43f5e;
-    --accent-light: #fff1f2;
+    --bg-card-hover: #fafafa;
+    --bg-sidebar: #f8f8fa;
+    --bg-header: rgba(255,255,255,0.92);
+    --bg-input: #f4f4f6;
+    --border: #e4e4e8;
+    --border-light: #f0f0f3;
+    --text: #000000;
+    --text-secondary: #52525b;
+    --text-muted: #a1a1aa;
+    --primary: #7c3aed;
+    --primary-hover: #6d28d9;
+    --primary-light: #f5f3ff;
+    --primary-text: #6d28d9;
+    --accent: #ec4899;
+    --accent-light: #fdf2f8;
     --success: #10b981;
     --success-light: #ecfdf5;
     --warning: #f59e0b;
     --warning-light: #fffbeb;
     --danger: #ef4444;
     --danger-light: #fef2f2;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-    --scrollbar-track: #f0f2f7;
-    --scrollbar-thumb: #c9cdd6;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.04);
+    --scrollbar-track: #f4f4f6;
+    --scrollbar-thumb: #d4d4d8;
   }
 
   [data-theme="dark"] {
-    --bg: #0c0c1d;
-    --bg-card: #151530;
-    --bg-card-hover: #1c1c40;
-    --bg-sidebar: #111128;
-    --bg-header: rgba(17,17,40,0.85);
-    --bg-input: #1a1a38;
-    --border: #2a2a50;
-    --border-light: #1e1e40;
-    --text: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted: #4a5568;
-    --primary: #818cf8;
-    --primary-hover: #6366f1;
-    --primary-light: #1e1b4b;
+    /* Dark Theme — Pure Black + Violet */
+    --bg: #000000;
+    --bg-card: #111111;
+    --bg-card-hover: #1a1a1a;
+    --bg-sidebar: #0a0a0a;
+    --bg-header: rgba(0,0,0,0.92);
+    --bg-input: #1a1a1a;
+    --border: #262626;
+    --border-light: #1a1a1a;
+    --text: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #a78bfa;
+    --primary-hover: #8b5cf6;
+    --primary-light: #1a1025;
+    --primary-text: #c4b5fd;
     --accent: #f472b6;
     --accent-light: #2d1a2e;
     --success: #34d399;
-    --success-light: #0d2818;
+    --success-light: #052e16;
     --warning: #fbbf24;
-    --warning-light: #2d2505;
+    --warning-light: #1c1a05;
     --danger: #f87171;
     --danger-light: #2d1515;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-    --scrollbar-track: #0c0c1d;
-    --scrollbar-thumb: #2a2a50;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 6px 16px rgba(0,0,0,0.2);
+    --scrollbar-track: #0a0a0a;
+    --scrollbar-thumb: #333333;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -69,9 +74,8 @@
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
-    transition: background 0.3s ease, color 0.3s ease;
+    transition: background 0.25s ease, color 0.25s ease;
   }
   #__next { height: 100%; }
 }
@@ -82,11 +86,9 @@
   .scrollbar-none::-webkit-scrollbar { display: none; }
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-.animate-in { animation: fadeIn 0.3s ease-out; }
-.animate-float { animation: float 3s ease-in-out infinite; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn 0.25s ease-out; }

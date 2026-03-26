@@ -51,24 +51,24 @@ export default function CalendarView({ projects = [], onSelectProject }) {
   const todayStr = new Date().toDateString();
 
   return (
-    <div className="min-h-full bg-[#f5f3ef] p-4 md:p-6 lg:p-8">
+    <div className="min-h-full bg-[var(--bg)] p-4 md:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-stone-800">Calendar</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--text)]">Calendar</h1>
         <div className="flex items-center gap-2">
-          <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium text-stone-600 bg-white border border-stone-200 rounded-xl hover:bg-stone-50">Today</button>
-          <button onClick={prev} className="p-2 text-stone-400 hover:text-stone-800 hover:bg-white rounded-xl transition-colors"><ChevronLeft size={18} /></button>
-          <span className="text-[15px] font-bold text-stone-800 min-w-[160px] text-center">{monthLabel}</span>
-          <button onClick={next} className="p-2 text-stone-400 hover:text-stone-800 hover:bg-white rounded-xl transition-colors"><ChevronRight size={18} /></button>
+          <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border)] rounded-xl hover:bg-[var(--bg-input)]">Today</button>
+          <button onClick={prev} className="p-2 text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card)] rounded-xl transition-colors"><ChevronLeft size={18} /></button>
+          <span className="text-[15px] font-bold text-[var(--text)] min-w-[160px] text-center">{monthLabel}</span>
+          <button onClick={next} className="p-2 text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card)] rounded-xl transition-colors"><ChevronRight size={18} /></button>
         </div>
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-stone-100">
+        <div className="grid grid-cols-7 border-b border-[var(--border-light)]">
           {DAYS.map(d => (
-            <div key={d} className="px-3 py-2.5 text-center text-[10px] font-bold text-stone-400 uppercase tracking-wider">{d}</div>
+            <div key={d} className="px-3 py-2.5 text-center text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{d}</div>
           ))}
         </div>
 
@@ -80,11 +80,11 @@ export default function CalendarView({ projects = [], onSelectProject }) {
             const isToday = key === todayStr;
 
             return (
-              <div key={i} className={`min-h-[90px] md:min-h-[110px] border-b border-r border-stone-100/80 p-1.5 transition-colors ${
-                !day.inMonth ? 'bg-stone-50/50' : 'hover:bg-orange-50/20'
+              <div key={i} className={`min-h-[90px] md:min-h-[110px] border-b border-r border-[var(--border-light)] p-1.5 transition-colors ${
+                !day.inMonth ? 'bg-[var(--bg-card-hover)]' : 'hover:bg-[var(--primary-light)]/20'
               }`}>
                 <div className={`text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
-                  isToday ? 'bg-orange-500 text-white font-bold' : day.inMonth ? 'text-stone-700' : 'text-stone-300'
+                  isToday ? 'bg-[var(--primary)] text-white font-bold' : day.inMonth ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'
                 }`}>
                   {day.date.getDate()}
                 </div>
@@ -103,7 +103,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                     );
                   })}
                   {dayProjects.length > 3 && (
-                    <span className="text-[9px] text-stone-400 px-1">+{dayProjects.length - 3} more</span>
+                    <span className="text-[9px] text-[var(--text-muted)] px-1">+{dayProjects.length - 3} more</span>
                   )}
                 </div>
               </div>

@@ -74,7 +74,7 @@ function ProtectedLayoutInner({ children }) {
         <div className="flex flex-col min-h-0 flex-1">
           {/* Logo */}
           <div className="h-16 flex items-center px-4 border-b shrink-0" style={{ borderColor: 'var(--border-light)' }}>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-500/20">I</div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-violet-500/25">I</div>
             {!collapsed && <span className="ml-3 font-black text-lg" style={{ color: 'var(--text)' }}>Incrix</span>}
           </div>
 

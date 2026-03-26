@@ -24,10 +24,10 @@ function QuotaRing({ label, actual, target, color }) {
             transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }} />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[11px] font-bold text-stone-700">{actual}/{target}</span>
+          <span className="text-[11px] font-bold text-[var(--text)]">{actual}/{target}</span>
         </div>
       </div>
-      <span className="text-[10px] font-medium text-stone-500">{label}</span>
+      <span className="text-[10px] font-medium text-[var(--text-secondary)]">{label}</span>
     </div>
   );
 }
@@ -56,23 +56,23 @@ function CreatorCard({ user, projects, now }) {
   const daysLeft = Math.max(0, Math.ceil((endDate - now) / 86400000));
 
   return (
-    <motion.div variants={fade} className="bg-white rounded-2xl border border-stone-200/80 p-5 hover:shadow-md transition-all">
+    <motion.div variants={fade} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] p-5 hover:shadow-md transition-all">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm ${user.avatarColor || 'bg-orange-500'}`}>
+        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm ${user.avatarColor || 'bg-[var(--primary)]'}`}>
           {user.profilePhoto ? <img src={user.profilePhoto} className="w-11 h-11 rounded-full object-cover" /> : user.name?.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-stone-800 truncate">{user.name}</span>
+            <span className="text-sm font-bold text-[var(--text)] truncate">{user.name}</span>
             {allDone && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✅ Done</span>}
             {!allDone && totalTarget > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">⏳ Behind</span>}
           </div>
-          <span className="text-[11px] text-stone-400">{q.period === 'monthly' ? 'Monthly' : 'Weekly'} · {daysLeft}d left</span>
+          <span className="text-[11px] text-[var(--text-muted)]">{q.period === 'monthly' ? 'Monthly' : 'Weekly'} · {daysLeft}d left</span>
         </div>
         <div className="text-right">
-          <div className="text-lg font-extrabold text-stone-800">{active.length}</div>
-          <div className="text-[10px] text-stone-400">active</div>
+          <div className="text-lg font-extrabold text-[var(--text)]">{active.length}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">active</div>
         </div>
       </div>
 
@@ -113,38 +113,38 @@ export default function PerformanceView({ projects = [], users = [] }) {
   }, [quotaUsers, projects, now]);
 
   return (
-    <div className="min-h-full bg-[#f5f3ef] p-4 md:p-6 lg:p-8 space-y-6">
+    <div className="min-h-full bg-[var(--bg)] p-4 md:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-stone-800">Team Performance</h1>
-        <p className="text-sm text-stone-400 mt-0.5">Track each creator's progress toward their goals</p>
+        <h1 className="text-2xl font-extrabold text-[var(--text)]">Team Performance</h1>
+        <p className="text-sm text-[var(--text-muted)] mt-0.5">Track each creator's progress toward their goals</p>
       </div>
 
       {/* Summary bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl border border-stone-200/80 p-5 flex flex-col sm:flex-row items-center gap-5">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] p-5 flex flex-col sm:flex-row items-center gap-5">
         <div className="flex-1">
-          <span className="text-sm font-bold text-stone-800">Overall Completion</span>
+          <span className="text-sm font-bold text-[var(--text)]">Overall Completion</span>
           <div className="flex items-center gap-3 mt-2">
-            <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-3 bg-[var(--bg-input)] rounded-full overflow-hidden">
               <motion.div initial={{ width: 0 }} animate={{ width: `${totals.pct}%` }} transition={{ duration: 1, ease: 'easeOut' }}
-                className={`h-full rounded-full ${totals.pct >= 100 ? 'bg-emerald-500' : totals.pct >= 50 ? 'bg-orange-500' : 'bg-rose-500'}`} />
+                className={`h-full rounded-full ${totals.pct >= 100 ? 'bg-emerald-500' : totals.pct >= 50 ? 'bg-[var(--primary)]' : 'bg-rose-500'}`} />
             </div>
-            <span className={`text-lg font-extrabold ${totals.pct >= 100 ? 'text-emerald-600' : 'text-stone-800'}`}>{totals.pct}%</span>
+            <span className={`text-lg font-extrabold ${totals.pct >= 100 ? 'text-emerald-600' : 'text-[var(--text)]'}`}>{totals.pct}%</span>
           </div>
-          <p className="text-[11px] text-stone-400 mt-1">{totals.actual} of {totals.target} deliverables completed this period</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1">{totals.actual} of {totals.target} deliverables completed this period</p>
         </div>
         <div className="flex gap-6 text-center">
           <div>
-            <div className="text-2xl font-extrabold text-stone-800">{quotaUsers.length}</div>
-            <div className="text-[10px] text-stone-400 font-medium">Creators</div>
+            <div className="text-2xl font-extrabold text-[var(--text)]">{quotaUsers.length}</div>
+            <div className="text-[10px] text-[var(--text-muted)] font-medium">Creators</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-emerald-600">{totals.actual}</div>
-            <div className="text-[10px] text-stone-400 font-medium">Done</div>
+            <div className="text-[10px] text-[var(--text-muted)] font-medium">Done</div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-amber-600">{totals.target - totals.actual}</div>
-            <div className="text-[10px] text-stone-400 font-medium">Remaining</div>
+            <div className="text-[10px] text-[var(--text-muted)] font-medium">Remaining</div>
           </div>
         </div>
       </motion.div>
@@ -155,8 +155,8 @@ export default function PerformanceView({ projects = [], users = [] }) {
           {quotaUsers.map(u => <CreatorCard key={u.id} user={u} projects={projects} now={now} />)}
         </motion.div>
       ) : (
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center">
-          <p className="text-stone-400">No creators with quotas set up. Go to Team → edit a user to add quotas.</p>
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] p-12 text-center">
+          <p className="text-[var(--text-muted)]">No creators with quotas set up. Go to Team → edit a user to add quotas.</p>
         </div>
       )}
     </div>

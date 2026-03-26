@@ -14,7 +14,7 @@ const TEAMS = {
   editing: { label: 'Editing', emoji: '✂️', href: '/team-view/editing', ring: '#8b5cf6', track: 'var(--border-light)', gradient: 'from-violet-500 to-purple-500' },
   design: { label: 'Design', emoji: '🎨', href: '/team-view/design', ring: '#ec4899', track: 'var(--border-light)', gradient: 'from-pink-500 to-rose-500' },
   dev: { label: 'Dev', emoji: '💻', href: '/team-view/dev', ring: '#06b6d4', track: 'var(--border-light)', gradient: 'from-cyan-500 to-teal-500' },
-  marketing: { label: 'Marketing', emoji: '📣', href: '/team-view/marketing', ring: '#f59e0b', track: 'var(--border-light)', gradient: 'from-amber-500 to-orange-500' },
+  marketing: { label: 'Marketing', emoji: '📣', href: '/team-view/marketing', ring: '#f59e0b', track: 'var(--border-light)', gradient: 'from-amber-500 to-yellow-500' },
   hardware: { label: 'Hardware', emoji: '🔧', href: '/team-view/hardware', ring: '#10b981', track: 'var(--border-light)', gradient: 'from-emerald-500 to-green-500' },
 };
 
@@ -59,7 +59,7 @@ function ProjectRow({ project }) {
     <motion.div variants={fade} className="flex items-center gap-4 px-5 py-4 rounded-2xl transition-all group cursor-pointer" style={{ ':hover': { background: 'var(--bg-card-hover)' } }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md shadow-indigo-500/15">
+      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md shadow-violet-500/15">
         {project.creator?.charAt(0) || '?'}
       </div>
       <div className="flex-1 min-w-0">
@@ -150,7 +150,7 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
           <button onClick={() => setShowAddClient(true)} className="px-4 py-2 rounded-2xl border text-sm font-bold transition-all hover:scale-105" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
             <Plus size={14} className="inline mr-1" />Client
           </button>
-          <button onClick={() => setShowAddRevenue(true)} className="px-4 py-2 rounded-2xl text-sm font-bold text-white transition-all hover:scale-105 bg-gradient-to-r from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/20">
+          <button onClick={() => setShowAddRevenue(true)} className="px-4 py-2 rounded-2xl text-sm font-bold text-white transition-all hover:scale-105 bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/20">
             <Plus size={14} className="inline mr-1" />Revenue
           </button>
         </div>
@@ -158,7 +158,7 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
 
       {/* KPIs */}
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI label="Revenue" value={`₹${data.revMTD.toLocaleString()}`} icon={DollarSign} gradient="from-amber-500 to-orange-500" sub="This month" />
+        <KPI label="Revenue" value={`₹${data.revMTD.toLocaleString()}`} icon={DollarSign} gradient="from-amber-500 to-yellow-500" sub="This month" />
         <KPI label="Clients" value={data.activeClients} icon={Briefcase} gradient="from-cyan-500 to-teal-500" sub={`${data.leads} leads`} />
         <KPI label="In Progress" value={data.topProjects.length} icon={CheckCircle} gradient="from-emerald-500 to-green-500" sub={`${projects.filter(p => p.stage === 'Done').length} done`} />
         <KPI label="Attention" value={data.attention} icon={AlertTriangle} gradient={data.attention > 2 ? 'from-rose-500 to-pink-500' : 'from-amber-500 to-yellow-500'} sub={`${data.overdue} overdue`} />
@@ -227,7 +227,7 @@ function ClientForm({ onSave }) {
         <select value={f.source} onChange={e => setF(p => ({ ...p, source: e.target.value }))} className={inputCls} style={inputStyle}><option value="direct">Direct</option><option value="referral">Referral</option><option value="instagram">Instagram</option><option value="linkedin">LinkedIn</option></select>
         <select value={f.service} onChange={e => setF(p => ({ ...p, service: e.target.value }))} className={inputCls} style={inputStyle}><option value="other">Service</option><option value="content">Content</option><option value="design">Design</option><option value="development">Dev</option><option value="hardware">Hardware</option></select>
       </div>
-      <button type="submit" disabled={saving} className="w-full py-3 rounded-2xl text-[15px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 disabled:opacity-40 shadow-lg shadow-indigo-500/20 transition-all">{saving ? 'Saving...' : 'Add Client'}</button>
+      <button type="submit" disabled={saving} className="w-full py-3 rounded-2xl text-[15px] font-bold text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-indigo-600 hover:to-violet-600 disabled:opacity-40 shadow-lg shadow-violet-500/20 transition-all">{saving ? 'Saving...' : 'Add Client'}</button>
     </form>
   );
 }
@@ -247,7 +247,7 @@ function RevenueForm({ onSave }) {
         <input type="number" placeholder="Amount (₹)" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} className={inputCls} style={inputStyle} required min="0" autoFocus />
         <input type="month" value={f.month} onChange={e => setF(p => ({ ...p, month: e.target.value }))} className={inputCls} style={inputStyle} />
       </div>
-      <button type="submit" disabled={saving} className="w-full py-3 rounded-2xl text-[15px] font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-40 shadow-lg shadow-amber-500/20 transition-all">{saving ? 'Saving...' : 'Add Revenue'}</button>
+      <button type="submit" disabled={saving} className="w-full py-3 rounded-2xl text-[15px] font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-40 shadow-lg shadow-amber-500/20 transition-all">{saving ? 'Saving...' : 'Add Revenue'}</button>
     </form>
   );
 }
