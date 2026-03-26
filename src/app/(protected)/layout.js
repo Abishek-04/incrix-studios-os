@@ -26,7 +26,8 @@ import {
   Trash2,
   GraduationCap,
   MoreHorizontal,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 // import AccountSwitcher from '@/components/dev/AccountSwitcher';
@@ -185,6 +186,7 @@ function ProtectedLayoutInner({ children }) {
     '/channels': 'Channel Credentials',
     '/courses': 'Course Dashboard',
     '/instagram': 'Instagram DM Automation',
+    '/chat': 'Team Chat',
     '/settings/notifications': 'Notification Settings',
     '/recycle-bin': 'Recycle Bin',
     '/admin/notifications': 'Notification Management'
@@ -194,6 +196,7 @@ function ProtectedLayoutInner({ children }) {
     { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { href: '/projects', icon: ListChecks, label: 'Projects' },
     { href: '/board', icon: FolderKanban, label: 'Board' },
+    { href: '/chat', icon: MessageSquare, label: 'Chat' },
     { href: '/daily', icon: CheckSquare, label: 'Tasks' }
   ];
 
@@ -202,6 +205,7 @@ function ProtectedLayoutInner({ children }) {
       title: 'Planning',
       items: [
         { href: '/calendar', icon: CalendarIcon, label: 'Calendar' },
+        { href: '/chat', icon: MessageSquare, label: 'Team Chat' },
         { href: '/settings/notifications', icon: SettingsIcon, label: 'Settings' }
       ]
     },
@@ -264,6 +268,7 @@ function ProtectedLayoutInner({ children }) {
               <NavItem href="/board" icon={FolderKanban} label="Board" isActive={isActive('/board')} collapsed={sidebarCollapsed} />
               <NavItem href="/calendar" icon={CalendarIcon} label="Calendar" isActive={isActive('/calendar')} collapsed={sidebarCollapsed} />
               <NavItem href="/daily" icon={CheckSquare} label="Daily Tasks" isActive={isActive('/daily')} collapsed={sidebarCollapsed} />
+              <NavItem href="/chat" icon={MessageSquare} label="Team Chat" isActive={isRouteActive('/chat')} collapsed={sidebarCollapsed} />
               <NavItem href="/settings/notifications" icon={SettingsIcon} label="Settings" isActive={isActive('/settings/notifications')} collapsed={sidebarCollapsed} />
               <NavItem href="/recycle-bin" icon={Trash2} label="Recycle Bin" isActive={isActive('/recycle-bin')} collapsed={sidebarCollapsed} />
 
