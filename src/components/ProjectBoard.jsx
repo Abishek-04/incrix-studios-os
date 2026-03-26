@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Eye, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Plus, Eye, ChevronLeft, ChevronRight, Filter, Check, ChevronDown, Users } from 'lucide-react';
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
 const STAGES = [
@@ -257,6 +257,73 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
   );
 }
 
+// ─── Custom Filter Dropdown ───────────────────────────────────────────────────
+function CreatorFilter({ value, onChange, creators }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const label = value === 'all' ? 'Everyone' : value;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3.5 py-2 rounded-xl border text-[13px] font-semibold"
+        style={{ background: 'var(--bg-input)', borderColor: open ? 'var(--primary)' : 'var(--border)', color: 'var(--text-secondary)', transition: 'border-color 150ms' }}>
+        <Users size={14} style={{ color: value === 'all' ? 'var(--text-muted)' : 'var(--primary)' }} />
+        <span className="max-w-[100px] truncate">{label}</span>
+        <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1)' }} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -4 }}
+            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+            className="absolute top-full left-0 mt-1.5 min-w-[180px] rounded-xl border overflow-hidden z-50"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-md)' }}>
+            <div className="p-1.5">
+              <DropdownItem label="Everyone" icon={<Users size={14} />} selected={value === 'all'} onClick={() => { onChange('all'); setOpen(false); }} />
+              {creators.length > 0 && <div className="h-px my-1" style={{ background: 'var(--border-light)' }} />}
+              {creators.map(c => (
+                <DropdownItem key={c} label={c} selected={value === c}
+                  icon={<div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: 'var(--primary)' }}>{c.charAt(0)}</div>}
+                  onClick={() => { onChange(c); setOpen(false); }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DropdownItem({ label, icon, selected, onClick }) {
+  return (
+    <button onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-left"
+      style={{
+        background: selected ? 'var(--primary-light)' : 'transparent',
+        color: selected ? 'var(--primary)' : 'var(--text-secondary)',
+        transition: 'background 120ms',
+      }}
+      onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--bg-input)'; }}
+      onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent'; }}>
+      {icon}
+      <span className="flex-1 truncate">{label}</span>
+      {selected && <Check size={14} style={{ color: 'var(--primary)' }} />}
+    </button>
+  );
+}
+
 // ─── Board ────────────────────────────────────────────────────────────────────
 export default function ProjectBoard({ projects = [], channels = [], onSelectProject, onUpdateProject, onCreateProject, filterType }) {
   const [dragged, setDragged] = useState(null);
@@ -287,16 +354,7 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-5 py-3 border-b shrink-0"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border"
-          style={{ background: 'var(--bg-input)', borderColor: 'var(--border)' }}>
-          <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select value={creator} onChange={e => setCreator(e.target.value)}
-            className="bg-transparent text-[13px] font-medium outline-none pr-4"
-            style={{ color: 'var(--text-secondary)' }}>
-            <option value="all">Everyone</option>
-            {creators.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+        <CreatorFilter value={creator} onChange={setCreator} creators={creators} />
 
         {/* Pipeline distribution bar */}
         <div className="flex-1 max-w-lg hidden md:block">
