@@ -47,14 +47,14 @@ function ChannelAvatar({ channel, size = 20 }) {
 
   if (Icon) {
     return (
-      <div className="flex-shrink-0 text-[#888]">
+      <div className="flex-shrink-0 text-[var(--text-muted)]">
         <Icon size={size - 4} />
       </div>
     );
   }
 
   return (
-    <div className="flex-shrink-0 text-[#888]">
+    <div className="flex-shrink-0 text-[var(--text-muted)]">
       <Globe size={size - 4} />
     </div>
   );
@@ -83,7 +83,7 @@ export default function ChannelSelect({ channels, value, onChange, placeholder =
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2 bg-[#252525] border border-[#333] text-white text-xs font-medium rounded-lg px-3 py-2 hover:bg-[#2a2a2a] transition-colors uppercase tracking-wide"
+        className="w-full flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] text-xs font-medium rounded-lg px-3 py-2 hover:bg-[var(--bg-card-hover)] transition-colors uppercase tracking-wide"
       >
         {selected ? (
           <>
@@ -92,22 +92,22 @@ export default function ChannelSelect({ channels, value, onChange, placeholder =
           </>
         ) : (
           <>
-            <Globe size={14} className="text-[#999] flex-shrink-0" />
-            <span className="truncate flex-1 text-left text-[#999]">{placeholder}</span>
+            <Globe size={14} className="text-[var(--text-muted)] flex-shrink-0" />
+            <span className="truncate flex-1 text-left text-[var(--text-muted)]">{placeholder}</span>
           </>
         )}
-        <ChevronDown size={14} className={`text-[#999] flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-[var(--text-muted)] flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-[#1e1e1e] border border-[#333] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute z-50 mt-1 w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="max-h-60 overflow-y-auto py-1">
             {/* Empty option */}
             <button
               type="button"
               onClick={() => { onChange(''); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#888] hover:bg-[#2a2a2a] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] transition-colors"
             >
               <Globe size={14} className="flex-shrink-0" />
               <span>{placeholder}</span>
@@ -121,12 +121,12 @@ export default function ChannelSelect({ channels, value, onChange, placeholder =
                   key={cVal}
                   type="button"
                   onClick={() => { onChange(cVal); setOpen(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${isSelected ? 'bg-indigo-500/15 text-indigo-300' : 'text-white hover:bg-[#2a2a2a]'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${isSelected ? 'bg-indigo-500/15 text-indigo-300' : 'text-white hover:bg-[var(--bg-card-hover)]'}`}
                 >
                   <ChannelAvatar channel={channel} size={20} />
                   <div className="flex-1 min-w-0 text-left">
                     <div className="truncate font-medium">{channel.name}</div>
-                    <div className="text-[10px] text-[#666] capitalize">{channel.platform}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] capitalize">{channel.platform}</div>
                   </div>
                   {isSelected && (
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />

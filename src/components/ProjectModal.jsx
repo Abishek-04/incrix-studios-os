@@ -427,7 +427,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
       <div className="bg-[#191919] border border-[#2f2f2f] w-full h-full sm:h-[85vh] sm:max-w-6xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-[#2f2f2f] flex justify-between items-start bg-[#1e1e1e]">
+        <div className="p-4 sm:p-6 border-b border-[#2f2f2f] flex justify-between items-start bg-[var(--bg-input)]">
           <div className="flex-1 mr-4 sm:mr-8 min-w-0">
             <div className="flex items-center flex-wrap gap-2 mb-3">
               {/* Channel Selector */}
@@ -448,18 +448,18 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 }}
                 aria-label="Assign creator"
                 disabled={!canReassignCreator}
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="Unassigned">No Creator</option>
                 {creators.map(u => <option key={u.id || u._id} value={(u.name || '').trim()}>{(u.name || '').trim()}</option>)}
               </select>
 
               {/* Editors Assignment (Multi) */}
-              <div className="flex items-center gap-2 bg-[#252525] border border-[#333] rounded-lg px-2 py-1.5 min-w-[220px]">
-                <span className="text-[10px] uppercase tracking-wider text-[#888]">Editors</span>
+              <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2 py-1.5 min-w-[220px]">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Editors</span>
                 <div className="flex flex-wrap gap-1 max-w-[180px]">
                   {normalizeEditors(localProject).length === 0 && (
-                    <span className="text-[10px] text-[#777]">None</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">None</span>
                   )}
                   {normalizeEditors(localProject).map((name) => (
                     <button
@@ -470,7 +470,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${
                         canAssignEditors
                           ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/30'
-                          : 'bg-[#333] border-[#444] text-[#777] cursor-not-allowed'
+                          : 'bg-[#333] border-[#444] text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                       title={`Remove ${name}`}
                     >
@@ -492,7 +492,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   }}
                   aria-label="Add editor"
                   disabled={!canAssignEditors}
-                  className="ml-auto bg-[#1f1f1f] border border-[#333] text-white text-[10px] rounded px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="ml-auto bg-[#1f1f1f] border border-[var(--border)] text-[var(--text)] text-[10px] rounded px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">+ Add</option>
                   {editors
@@ -540,7 +540,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   onUpdate(updated);
                 }}
                 aria-label="Set stage"
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value={Stage.Backlog}>Backlog</option>
                 <option value={Stage.Scripting}>Scripting</option>
@@ -550,9 +550,9 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 <option value={Stage.Done}>Done</option>
               </select>
 
-              <span className="text-[#999] text-xs font-mono hidden sm:inline">{localProject.id}</span>
+              <span className="text-[var(--text-muted)] text-xs font-mono hidden sm:inline">{localProject.id}</span>
               {localProject.archived && (
-                <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[#999] font-mono uppercase">Archived</span>
+                <span className="px-2 py-0.5 text-xs rounded-md bg-[#333] text-[var(--text-muted)] font-mono uppercase">Archived</span>
               )}
             </div>
 
@@ -566,7 +566,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   onUpdate(updated);
                 }}
                 aria-label="Content format"
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+                className="bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
               >
                 <option value="" disabled>Select Format</option>
                 {localProject.platform === Platform.YouTube && (
@@ -604,7 +604,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   onUpdate(updated);
                 }}
                 aria-label="Select course"
-                className="bg-[#252525] border border-[#333] text-white text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+                className="bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
               >
                 <option value="">Select Course</option>
                 {courses.map((c) => (
@@ -622,7 +622,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                 if (e.target.value.trim()) setTitleError('');
               }}
               onBlur={handleSave}
-              className={`bg-transparent text-xl sm:text-2xl font-bold text-white w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#999] ${titleError ? 'text-rose-400' : ''}`}
+              className={`bg-transparent text-xl sm:text-2xl font-bold text-[var(--text)] w-full border-none focus:outline-none focus:ring-0 p-0 placeholder-[#999] ${titleError ? 'text-rose-400' : ''}`}
               placeholder="Project Title"
               aria-label="Project title"
             />
@@ -636,7 +636,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             {/* Save State Indicator */}
             {saveState !== 'idle' && (
               <span className={`text-xs font-medium flex items-center gap-1 mr-2 ${
-                saveState === 'saving' ? 'text-[#999]' :
+                saveState === 'saving' ? 'text-[var(--text-muted)]' :
                 saveState === 'saved' ? 'text-emerald-400' :
                 'text-rose-400'
               }`}>
@@ -648,7 +648,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
             <button
               onClick={handleSaveAndClose}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium shadow-lg shadow-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-[var(--text)] rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium shadow-lg shadow-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
               title="Save & Close"
               aria-label="Save and close"
             >
@@ -660,7 +660,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
             <button
               onClick={handleBroadcast}
-              className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-white rounded-lg transition-all flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-[var(--text)] rounded-lg transition-all flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
               title="Send Update to WhatsApp/Email"
               aria-label="Broadcast update"
             >
@@ -672,7 +672,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             {/* Duplicate Button */}
             <button
               onClick={handleDuplicate}
-              className="p-2 text-[#999] hover:text-indigo-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden sm:block"
+              className="p-2 text-[var(--text-muted)] hover:text-indigo-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden sm:block"
               title="Save as New Project"
               aria-label={`Duplicate project ${localProject.title}`}
             >
@@ -681,7 +681,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-[#999] hover:text-rose-500 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="p-2 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500"
               title="Delete Project"
               aria-label={`Delete project ${localProject.title}`}
             >
@@ -690,7 +690,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             <button
               onClick={handleToggleArchive}
               className={`p-2 rounded-lg transition-colors flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 hidden sm:flex
-                    ${localProject.archived ? 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20' : 'bg-[#252525] text-[#999] hover:text-white hover:bg-[#333]'}
+                    ${localProject.archived ? 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20' : 'bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[#333]'}
                 `}
               title={localProject.archived ? "Unarchive Project" : "Archive Project"}
               aria-label={localProject.archived ? "Unarchive project" : "Archive project"}
@@ -720,7 +720,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                         onCreate(duplicated).then(() => onClose());
                     }
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#252525] hover:bg-[#333] text-[#ccc] rounded-lg text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-input)] hover:bg-[#333] text-[var(--text-secondary)] rounded-lg text-xs font-medium transition-colors"
                 title="Duplicate project"
             >
                 <Copy size={14} />
@@ -728,7 +728,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             <div className="w-px h-6 bg-[#2f2f2f] mx-1 hidden sm:block"></div>
             <button
               onClick={handleSaveAndClose}
-              className="text-[#999] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1"
+              className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1"
               aria-label="Close modal (ESC)"
               title="Close (ESC)"
             >
@@ -742,19 +742,19 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
           <button
             onClick={() => setActiveTab('overview')}
             className={`flex-1 py-4 text-sm font-medium flex items-center justify-center space-x-2 transition-all border-b-2 min-w-[120px]
-            ${activeTab === 'overview' ? 'border-indigo-500 text-white bg-[#222]' : 'border-transparent text-[#666] hover:text-[#999]'}`}>
+            ${activeTab === 'overview' ? 'border-indigo-500 text-[var(--text)] bg-[#222]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-muted)]'}`}>
             <FileText size={16} /> <span>Overview</span>
           </button>
           <button
             onClick={() => setActiveTab('production')}
             className={`flex-1 py-4 text-sm font-medium flex items-center justify-center space-x-2 transition-all border-b-2 min-w-[120px]
-            ${activeTab === 'production' ? 'border-indigo-500 text-white bg-[#222]' : 'border-transparent text-[#666] hover:text-[#999]'}`}>
+            ${activeTab === 'production' ? 'border-indigo-500 text-[var(--text)] bg-[#222]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-muted)]'}`}>
             <CheckSquare size={16} /> <span>Production</span>
           </button>
           <button
             onClick={() => setActiveTab('discussion')}
             className={`flex-1 py-4 text-sm font-medium flex items-center justify-center space-x-2 transition-all border-b-2 min-w-[120px]
-            ${activeTab === 'discussion' ? 'border-indigo-500 text-white bg-[#222]' : 'border-transparent text-[#666] hover:text-[#999]'}`}>
+            ${activeTab === 'discussion' ? 'border-indigo-500 text-[var(--text)] bg-[#222]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-muted)]'}`}>
             <MessageSquare size={16} /> <span>Discussion</span>
           </button>
           {localProject.stage === Stage.Done && (
@@ -768,44 +768,44 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 bg-[#151515]">
+        <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-card)]">
 
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-white">Production Dates</h3>
+                <h3 className="text-sm font-medium text-[var(--text)]">Production Dates</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-[#666] uppercase">Shoot Date</label>
+                    <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Shoot Date</label>
                     <input
                       type="date"
-                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
                       value={formatDateForInput(localProject.shootDate)}
                       onChange={(e) => updateProjectDateField('shootDate', e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-[#666] uppercase">Edit Date</label>
+                    <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Edit Date</label>
                     <input
                       type="date"
-                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
                       value={formatDateForInput(localProject.editDate)}
                       onChange={(e) => updateProjectDateField('editDate', e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-[#666] uppercase">Upload / Done Date</label>
+                    <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Upload / Done Date</label>
                     <input
                       type="date"
-                      className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none"
                       value={formatDateForInput(localProject.uploadDoneDate)}
                       onChange={(e) => updateProjectDateField('uploadDoneDate', e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-[#666] uppercase">Reshoot</label>
-                    <label className="flex items-center space-x-2 h-[42px] px-3 bg-[#1e1e1e] border border-[#333] rounded-lg cursor-pointer">
+                    <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Reshoot</label>
+                    <label className="flex items-center space-x-2 h-[42px] px-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg cursor-pointer">
                       <input
                         type="checkbox"
                         checked={!!localProject.reshootDone}
@@ -822,7 +822,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                         }}
                         className="w-4 h-4 rounded bg-[#333] border-[#444] text-amber-500 focus:ring-amber-500"
                       />
-                      <span className="text-sm text-[#ddd]">Reshoot Done</span>
+                      <span className="text-sm text-[var(--text)]">Reshoot Done</span>
                     </label>
                   </div>
                 </div>
@@ -833,7 +833,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                       <label className="text-xs font-mono text-amber-300 uppercase">Reshoot Date</label>
                       <input
                         type="date"
-                        className="w-full bg-[#1e1e1e] border border-amber-500/40 rounded-lg p-2.5 text-sm text-[#eee] focus:border-amber-400 focus:outline-none"
+                        className="w-full bg-[var(--bg-input)] border border-amber-500/40 rounded-lg p-2.5 text-sm text-[#eee] focus:border-amber-400 focus:outline-none"
                         value={formatDateForInput(localProject.reshootDate)}
                         onChange={(e) => updateProjectDateField('reshootDate', e.target.value)}
                       />
@@ -843,9 +843,9 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-mono text-[#666] uppercase">Topic / Brief</label>
+                <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Topic / Brief</label>
                 <textarea
-                  className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#ddd] focus:border-indigo-500 focus:outline-none transition-colors min-h-[80px]"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-sm text-[var(--text)] focus:border-indigo-500 focus:outline-none transition-colors min-h-[80px]"
                   value={localProject.topic}
                   onChange={(e) => handleTextFieldChange('topic', e.target.value)}
                   onBlur={handleSave}
@@ -854,10 +854,10 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-mono text-[#666] uppercase">Script Editor</label>
+                  <label className="text-xs font-mono text-[var(--text-muted)] uppercase">Script Editor</label>
                 </div>
                 <textarea
-                  className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-4 text-sm text-[#eee] font-sans leading-relaxed min-h-[300px] focus:border-indigo-500 focus:outline-none"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-4 text-sm text-[#eee] font-sans leading-relaxed min-h-[300px] focus:border-indigo-500 focus:outline-none"
                   value={localProject.script}
                   onChange={(e) => handleTextFieldChange('script', e.target.value)}
                   onBlur={handleSave}
@@ -870,7 +870,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
           {activeTab === 'production' && (
             <div className="space-y-8">
               {/* MoGraph Callout */}
-              <div className="flex items-center space-x-3 p-4 border border-[#2f2f2f] rounded-xl bg-[#1a1a1a]">
+              <div className="flex items-center space-x-3 p-4 border border-[#2f2f2f] rounded-xl bg-[var(--bg-input)]">
                 <input
                   type="checkbox"
                   checked={localProject.hasMographNeeds}
@@ -882,15 +882,15 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   className="w-5 h-5 rounded bg-[#333] border-[#444] text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
                 />
                 <div>
-                  <h4 className="text-sm font-medium text-white">Motion Graphics Required</h4>
-                  <p className="text-xs text-[#666]">Enable to flag this project for the MoGraph team.</p>
+                  <h4 className="text-sm font-medium text-[var(--text)]">Motion Graphics Required</h4>
+                  <p className="text-xs text-[var(--text-muted)]">Enable to flag this project for the MoGraph team.</p>
                 </div>
               </div>
 
               {/* Tasks */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-medium text-white">Stage Checklist</h3>
+                  <h3 className="text-sm font-medium text-[var(--text)]">Stage Checklist</h3>
                 </div>
                 <div className="space-y-2">
                   {localProject.tasks.map(task => (
@@ -901,7 +901,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                                 ${task.done ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'border-[#444] hover:border-[#666]'}`}>
                         {task.done && <div className="w-2 h-2 bg-current rounded-sm" />}
                       </button>
-                      <span className={`text-sm ${task.done ? 'text-[#999] line-through' : 'text-[#ccc]'}`}>
+                      <span className={`text-sm ${task.done ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-secondary)]'}`}>
                         {task.text}
                       </span>
                     </div>
@@ -912,7 +912,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     <button
                       onClick={handleAddTask}
                       disabled={!newTaskText.trim()}
-                      className="w-4 h-4 rounded border border-[#333] flex items-center justify-center transition-colors hover:border-[#666] text-[#666] hover:text-white disabled:opacity-30 disabled:hover:border-[#333] disabled:hover:text-[#666]">
+                      className="w-4 h-4 rounded border border-[var(--border)] flex items-center justify-center transition-colors hover:border-[#666] text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-30 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--text-muted)]">
                       <Plus size={10} />
                     </button>
                     <input
@@ -921,7 +921,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                       onChange={(e) => setNewTaskText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                       placeholder="Add a new task..."
-                      className="flex-1 bg-transparent border-none text-sm text-[#eee] placeholder-[#999] focus:outline-none focus:placeholder-[#666] h-6"
+                      className="flex-1 bg-transparent border-none text-sm text-[#eee] placeholder-[#999] focus:outline-none focus:placeholder-[var(--text-muted)] h-6"
                     />
                   </div>
                 </div>
@@ -930,10 +930,10 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               {/* Technical Notes */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-medium text-white">Technical Notes</h3>
+                  <h3 className="text-sm font-medium text-[var(--text)]">Technical Notes</h3>
                 </div>
                 <textarea
-                  className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#ccc] focus:border-indigo-500 focus:outline-none min-h-[150px]"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-sm text-[var(--text-secondary)] focus:border-indigo-500 focus:outline-none min-h-[150px]"
                   placeholder="Enter technical specifications, color codes, or assembly notes..."
                   value={localProject.technicalNotes}
                   onChange={(e) => handleTextFieldChange('technicalNotes', e.target.value)}
@@ -944,12 +944,12 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#2f2f2f]">
                 {/* Review Link Validation */}
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-white flex items-center"><LinkIcon size={14} className="mr-2" /> Review Link</h3>
+                  <h3 className="text-sm font-medium text-[var(--text)] flex items-center"><LinkIcon size={14} className="mr-2" /> Review Link</h3>
                   <input
                     type="text"
                     placeholder="Frame.io / Drive Link..."
-                    className={`w-full bg-[#1e1e1e] border rounded-lg p-3 text-sm text-[#eee] focus:outline-none transition-colors
-                            ${!localProject.reviewLink && localProject.stage === Stage.Review ? 'border-rose-500/50' : 'border-[#333] focus:border-indigo-500'}`}
+                    className={`w-full bg-[var(--bg-input)] border rounded-lg p-3 text-sm text-[#eee] focus:outline-none transition-colors
+                            ${!localProject.reviewLink && localProject.stage === Stage.Review ? 'border-rose-500/50' : 'border-[var(--border)] focus:border-indigo-500'}`}
                     value={localProject.reviewLink || ''}
                     onChange={(e) => {
                       const updated = { ...localProject, reviewLink: e.target.value, lastUpdated: Date.now() };
@@ -964,11 +964,11 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
                 {/* Published Link */}
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-white flex items-center"><ExternalLink size={14} className="mr-2" /> Published Link</h3>
+                  <h3 className="text-sm font-medium text-[var(--text)] flex items-center"><ExternalLink size={14} className="mr-2" /> Published Link</h3>
                   <input
                     type="text"
                     placeholder="Instagram / YouTube URL..."
-                    className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-sm text-[#eee] focus:border-indigo-500 focus:outline-none transition-colors"
                     value={localProject.publishedLink || ''}
                     onChange={(e) => {
                       const updated = { ...localProject, publishedLink: e.target.value, lastUpdated: Date.now() };
@@ -1000,14 +1000,14 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               {/* Metric Source Control */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 space-y-2">
-                  <label className="text-xs text-[#666] uppercase tracking-wide flex items-center">
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide flex items-center">
                     <ExternalLink size={12} className="mr-1" /> Published Link (Source)
                   </label>
                   <div className="flex space-x-2">
                     <input
                       type="text"
                       placeholder="Paste live video URL..."
-                      className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-sm text-[#eee] focus:border-indigo-500 outline-none"
+                      className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-sm text-[#eee] focus:border-indigo-500 outline-none"
                       value={localProject.publishedLink || ''}
                       onChange={(e) => {
                         const updated = { ...localProject, publishedLink: e.target.value, lastUpdated: Date.now() };
@@ -1018,7 +1018,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     <button
                       onClick={handleFetchMetrics}
                       disabled={isFetchingMetrics || !localProject.publishedLink}
-                      className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-[#333] disabled:text-[#666] text-white rounded-lg transition-colors font-medium text-sm whitespace-nowrap"
+                      className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-[#333] disabled:text-[var(--text-muted)] text-[var(--text)] rounded-lg transition-colors font-medium text-sm whitespace-nowrap"
                     >
                       {isFetchingMetrics ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
                       <span>{isFetchingMetrics ? 'Fetching...' : 'Fetch Live Data'}</span>
@@ -1029,40 +1029,40 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-[#666] uppercase tracking-wide">Total Views</label>
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Total Views</label>
                   <input
                     type="number"
-                    className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-xl font-bold text-white focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-xl font-bold text-[var(--text)] focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
                     placeholder="0"
                     value={localProject.metrics?.views || ''}
                     onChange={(e) => handleMetricUpdate('views', e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-[#666] uppercase tracking-wide">Likes</label>
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Likes</label>
                   <input
                     type="number"
-                    className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-xl font-bold text-white focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-xl font-bold text-[var(--text)] focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
                     placeholder="0"
                     value={localProject.metrics?.likes || ''}
                     onChange={(e) => handleMetricUpdate('likes', e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-[#666] uppercase tracking-wide">Comments</label>
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Comments</label>
                   <input
                     type="number"
-                    className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-xl font-bold text-white focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-xl font-bold text-[var(--text)] focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
                     placeholder="0"
                     value={localProject.metrics?.comments || ''}
                     onChange={(e) => handleMetricUpdate('comments', e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-[#666] uppercase tracking-wide">Retention %</label>
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Retention %</label>
                   <input
                     type="text"
-                    className="w-full bg-[#1e1e1e] border border-[#333] rounded-lg p-3 text-xl font-bold text-white focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-xl font-bold text-[var(--text)] focus:border-indigo-500 outline-none transition-all focus:bg-[#222]"
                     placeholder="0%"
                     value={localProject.metrics?.retention || ''}
                     onChange={(e) => handleMetricUpdate('retention', e.target.value)}
@@ -1071,8 +1071,8 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               </div>
 
               {localProject.metrics?.sources && localProject.metrics.sources.length > 0 && (
-                <div className="bg-[#151515] rounded-xl border border-[#2a2a2a] p-4">
-                  <h5 className="text-xs font-medium text-[#888] flex items-center mb-2"><Info size={12} className="mr-1.5" /> Verified Sources</h5>
+                <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-4">
+                  <h5 className="text-xs font-medium text-[var(--text-muted)] flex items-center mb-2"><Info size={12} className="mr-1.5" /> Verified Sources</h5>
                   <ul className="space-y-1">
                     {localProject.metrics.sources.map((source, idx) => (
                       <li key={idx} className="text-xs truncate">
@@ -1088,11 +1088,11 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
               <div className="pt-8 border-t border-[#2f2f2f] flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                   <h4 className="text-white font-medium mb-1">Repurpose Content</h4>
-                  <p className="text-sm text-[#666]">Convert this high-performing asset into Shorts/Reels.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Convert this high-performing asset into Shorts/Reels.</p>
                 </div>
                 <button
                   onClick={handleRepurpose}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-lg transition-colors border border-[#333]">
+                  className="flex items-center space-x-2 px-4 py-2 bg-[var(--bg-input)] hover:bg-[#333] text-[var(--text)] rounded-lg transition-colors border border-[var(--border)]">
                   <Copy size={16} /> <span>Create Short from this</span>
                 </button>
               </div>
@@ -1103,7 +1103,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             <div className="flex flex-col h-full">
               <div className="flex-1 space-y-4 overflow-y-auto mb-4">
                 {localProject.comments.length === 0 ? (
-                  <div className="text-center text-[#999] mt-10 text-sm">No discussion yet. Start the conversation below.</div>
+                  <div className="text-center text-[var(--text-muted)] mt-10 text-sm">No discussion yet. Start the conversation below.</div>
                 ) : (
                   localProject.comments.map(comment => {
                     const isOwn = comment.authorId === currentUser?.id ||
@@ -1114,19 +1114,19 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                     return (
                       <div key={comment.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                         <div className="flex items-center space-x-2 mb-1">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white ${comment.authorId ? getUserAvatarColor(comment.authorId) : 'bg-gray-600'}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-[var(--text)] ${comment.authorId ? getUserAvatarColor(comment.authorId) : 'bg-gray-600'}`}>
                             {authorName.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-semibold text-white">{authorName}</span>
+                          <span className="text-sm font-semibold text-[var(--text)]">{authorName}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${getRoleBadgeColor(authorRole)}`}>
                             {authorRole}
                           </span>
-                          <span className="text-[10px] text-[#999] font-mono">
+                          <span className="text-[10px] text-[var(--text-muted)] font-mono">
                             {new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {comment.edited && <span className="text-[10px] text-[#999]">(edited)</span>}
+                          {comment.edited && <span className="text-[10px] text-[var(--text-muted)]">(edited)</span>}
                         </div>
-                        <div className={`max-w-[80%] rounded-lg p-3 text-sm leading-relaxed ${isOwn ? 'bg-indigo-600 text-white' : 'bg-[#222] text-[#ddd]'}`}>
+                        <div className={`max-w-[80%] rounded-lg p-3 text-sm leading-relaxed ${isOwn ? 'bg-indigo-600 text-[var(--text)]' : 'bg-[#222] text-[var(--text)]'}`}>
                           {comment.text}
                         </div>
                       </div>
@@ -1141,12 +1141,12 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
                   onSubmit={sendMessage}
                   users={users}
                   placeholder="Type a message... (@ to mention)"
-                  className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-[#999]"
+                  className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-[#999]"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}
-                  className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-[#333] disabled:text-[#666] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-[#333] disabled:text-[var(--text-muted)] text-[var(--text)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   aria-label="Send message"
                 >
                   <Send size={18} />

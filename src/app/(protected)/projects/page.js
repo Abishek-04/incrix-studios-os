@@ -236,7 +236,24 @@ export default function ProjectsPage() {
           if (project._isDevDesign) return;
           setSelectedProject(project);
         }}
-        onCreateProject={handleCreateProject}
+        onCreateProject={() => {
+          const newProject = {
+            id: `PRJ-${Date.now().toString().slice(-6)}`,
+            title: 'New Untitled Project',
+            topic: 'To be decided',
+            vertical: 'software',
+            platform: 'youtube',
+            creator: 'Unassigned',
+            editors: [],
+            stage: 'Backlog',
+            status: 'Not Started',
+            priority: 'Medium',
+            dueDate: Date.now() + 7 * 86400000,
+            lastUpdated: Date.now(),
+            role: currentUser?.role || 'creator',
+          };
+          setSelectedProject(newProject);
+        }}
         currentUser={currentUser}
         searchQuery={searchQuery}
         onDeleteProject={handleDeleteProject}

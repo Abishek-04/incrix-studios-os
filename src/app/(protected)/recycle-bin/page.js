@@ -192,8 +192,8 @@ export default function RecycleBinPage() {
   return (
     <div className="p-8 h-full overflow-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Recycle Bin</h1>
-        <p className="text-[#888]">Deleted items stay here for 30 days. Restore anytime.</p>
+        <h1 className="text-3xl font-bold text-[var(--text)] mb-2">Recycle Bin</h1>
+        <p className="text-[var(--text-muted)]">Deleted items stay here for 30 days. Restore anytime.</p>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -204,7 +204,7 @@ export default function RecycleBinPage() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               activeFilter === filter
                 ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300'
-                : 'bg-[#1a1a1a] border-[#2f2f2f] text-[#999] hover:text-white hover:border-[#444]'
+                : 'bg-[var(--bg-input)] border-[#2f2f2f] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[#444]'
             }`}
           >
             {filter === 'all' ? 'All' : ENTITY_LABELS[filter]}
@@ -216,7 +216,7 @@ export default function RecycleBinPage() {
       {loading ? (
         <LoadingScreen />
       ) : items.length === 0 ? (
-        <div className="bg-[#151515] border border-[#2a2a2a] rounded-xl p-8 text-center">
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-8 text-center">
           <Trash2 className="w-10 h-10 text-[#555] mx-auto mb-3" />
           <p className="text-white font-medium mb-1">Recycle Bin is empty</p>
           <p className="text-[#777] text-sm">Deleted items will appear here.</p>
@@ -227,7 +227,7 @@ export default function RecycleBinPage() {
           <div className="flex items-center justify-between mb-3 px-1">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-xs text-[#999] hover:text-white transition-colors"
+              className="flex items-center gap-2 text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
             >
               {isAllSelected ? (
                 <CheckSquare size={16} className="text-indigo-400" />
@@ -241,7 +241,7 @@ export default function RecycleBinPage() {
 
             {selectedIds.size > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#999]">{selectedIds.size} selected</span>
+                <span className="text-xs text-[var(--text-muted)]">{selectedIds.size} selected</span>
                 <button
                   onClick={handleBulkRestore}
                   disabled={!!bulkAction}
@@ -266,17 +266,17 @@ export default function RecycleBinPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`bg-[#151515] border rounded-xl p-4 transition-colors ${
+                className={`bg-[var(--bg-card)] border rounded-xl p-4 transition-colors ${
                   selectedIds.has(item.id)
                     ? 'border-indigo-500/40 bg-indigo-500/5'
-                    : 'border-[#2a2a2a]'
+                    : 'border-[var(--border)]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => toggleSelect(item.id)}
-                      className="mt-1 text-[#666] hover:text-indigo-400 transition-colors"
+                      className="mt-1 text-[var(--text-muted)] hover:text-indigo-400 transition-colors"
                     >
                       {selectedIds.has(item.id) ? (
                         <CheckSquare size={18} className="text-indigo-400" />
@@ -289,7 +289,7 @@ export default function RecycleBinPage() {
                         <span className="px-2 py-0.5 rounded-md text-[10px] border border-[#3a3a3a] text-[#bbb] uppercase">
                           {ENTITY_LABELS[item.entityType] || 'Item'}
                         </span>
-                        <span className="text-[11px] text-[#666] flex items-center gap-1">
+                        <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
                           <Calendar size={12} />
                           {new Date(item.createdAt).toLocaleString()}
                         </span>
