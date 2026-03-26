@@ -133,11 +133,8 @@ export default function BoardPage() {
       <ProjectBoard
         projects={projects}
         channels={channels}
-        users={users}
-        currentUser={currentUser}
         onSelectProject={setSelectedProject}
         onUpdateProject={handleUpdateProject}
-        onDeleteProject={handleDeleteProject}
         onCreateProject={async (newProject) => {
           setProjects((prevProjects) => [...prevProjects, newProject]);
 
