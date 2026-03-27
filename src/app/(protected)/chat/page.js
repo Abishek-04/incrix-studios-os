@@ -47,9 +47,11 @@ const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '✅', '🎉'];
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId }) {
+function ChannelItem({ channel, isActive, onClick, currentUserId, currentUserName }) {
   const isDM = channel.type === 'dm';
   const dmUser = channel.dmUser;
+  // Unread = has a last message from someone other than me
+  const hasNewMessage = channel.lastMessage && channel.lastMessageBy && channel.lastMessageBy !== currentUserName;
 
   return (
     <button
@@ -76,17 +78,15 @@ function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId })
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <span className="text-[13px] font-semibold truncate" style={{ color: isActive ? 'var(--primary)' : 'var(--text)' }}>
+          <span className="text-[13px] truncate" style={{ color: isActive ? 'var(--primary)' : 'var(--text)', fontWeight: hasNewMessage ? 700 : 500 }}>
             {isDM ? (dmUser?.name || channel.name) : channel.name}
           </span>
-          {unreadCount > 0 && (
-            <span className="flex-shrink-0 text-[10px] font-bold rounded-full px-1.5 py-0.5 ml-1" style={{ background: 'var(--primary)', color: 'white' }}>
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
+          {hasNewMessage && !isActive && (
+            <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full ml-1" style={{ background: 'var(--primary)' }} />
           )}
         </div>
         {channel.lastMessage && (
-          <span className="text-[11px] truncate block" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-[11px] truncate block" style={{ color: hasNewMessage ? 'var(--text-secondary)' : 'var(--text-muted)', fontWeight: hasNewMessage ? 600 : 400 }}>
             {channel.lastMessageBy ? `${channel.lastMessageBy}: ` : ''}{channel.lastMessage}
           </span>
         )}
@@ -181,9 +181,9 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
         )}
       </div>
 
-      {/* Action bar */}
+      {/* Action bar — appears above the bubble on same side */}
       {showActions && (
-        <div className={`absolute ${isOwn ? 'left-4' : 'right-4'} top-0 -translate-y-1/2 flex items-center gap-1 rounded-lg px-1.5 py-1 shadow-lg border z-10`}
+        <div className={`absolute ${isOwn ? 'right-12' : 'left-12'} -top-3 flex items-center gap-1 rounded-full px-2 py-1 shadow-lg border z-10`}
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
           {QUICK_EMOJIS.map(emoji => (
             <button key={emoji} onClick={() => onReact(msg.id, emoji)}
@@ -521,8 +521,8 @@ export default function ChatPage() {
                   channel={ch}
                   isActive={activeChannel?.id === ch.id}
                   onClick={() => selectChannel(ch)}
-                  unreadCount={unreadCounts[ch.id] || 0}
                   currentUserId={user?.id}
+                  currentUserName={user?.name}
                 />
               ))}
             </div>
@@ -577,14 +577,20 @@ export default function ChatPage() {
             )}
 
             <div className="space-y-0.5">
-              {dms.map(dm => (
+              {[...dms].sort((a, b) => {
+                // Unread (from others) come first
+                const aNew = a.lastMessage && a.lastMessageBy && a.lastMessageBy !== user?.name ? 1 : 0;
+                const bNew = b.lastMessage && b.lastMessageBy && b.lastMessageBy !== user?.name ? 1 : 0;
+                if (bNew !== aNew) return bNew - aNew;
+                return (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0);
+              }).map(dm => (
                 <ChannelItem
                   key={dm.id}
                   channel={dm}
                   isActive={activeChannel?.id === dm.id}
                   onClick={() => selectChannel(dm)}
-                  unreadCount={unreadCounts[dm.id] || 0}
                   currentUserId={user?.id}
+                  currentUserName={user?.name}
                 />
               ))}
             </div>
