@@ -337,19 +337,28 @@ export default function ChatPage() {
   }, [user, activeChannel?.id]);
 
   // ── Fetch channels ──────────────────────────────────────────────────────────
-  useEffect(() => {
+  const refreshChannels = useCallback(async () => {
     if (!user) return;
-    fetchWithAuth('/api/chat/channels')
-      .then(r => r.json())
-      .then(({ channels: ch = [], dms: d = [] }) => {
-        setChannels(ch);
-        setDms(d);
-        if (ch.length && !activeChannel) {
-          selectChannel(ch.find(c => c.slug === 'general') || ch[0]);
-        }
-      })
-      .catch(console.error);
+    try {
+      const res = await fetchWithAuth('/api/chat/channels');
+      const data = await res.json();
+      const ch = data.channels || [];
+      const d = data.dms || [];
+      setChannels(ch);
+      setDms(d);
+      // Auto-select general channel on first load
+      if (ch.length && !activeChannel) {
+        const general = ch.find(c => c.slug === 'general');
+        if (general) selectChannel(general);
+        else selectChannel(ch[0]);
+      }
+    } catch (err) {
+      console.error('Failed to load channels:', err);
+    }
+  }, [user]);
 
+  useEffect(() => {
+    refreshChannels();
     fetchWithAuth('/api/users')
       .then(r => r.json())
       .then(data => setAllUsers(data.users || data || []))
@@ -469,10 +478,13 @@ export default function ChatPage() {
     try {
       const res = await fetchWithAuth(`/api/chat/dm?userId=${targetUser.id}`);
       const { channel } = await res.json();
+      // Add to DM list if not already there
       if (!dms.find(d => d.id === channel.id)) {
         setDms(prev => [channel, ...prev]);
       }
       selectChannel(channel);
+      // Refresh channels so the DM persists in sidebar
+      setTimeout(() => refreshChannels(), 500);
     } catch (err) {
       console.error(err);
     }

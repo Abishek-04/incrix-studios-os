@@ -73,10 +73,23 @@ export async function GET(request) {
       }
     }
 
-    const [channels, dms] = await Promise.all([
+    const [channels, rawDms] = await Promise.all([
       ChatChannel.find(channelQuery).sort({ isDefault: -1, name: 1 }).lean(),
       ChatChannel.find({ type: 'dm', members: user.id }).sort({ lastMessageAt: -1 }).lean()
     ]);
+
+    // Attach dmUser info to each DM channel for display
+    const User = (await import('@/models/User')).default;
+    const dms = await Promise.all(rawDms.map(async (dm) => {
+      const otherUserId = dm.members?.find(m => m !== user.id) || dm.members?.[0];
+      if (otherUserId) {
+        const otherUser = await User.findOne({ id: otherUserId }).lean();
+        if (otherUser) {
+          dm.dmUser = { id: otherUser.id, name: otherUser.name, avatarColor: otherUser.avatarColor, profilePhoto: otherUser.profilePhoto, role: otherUser.role };
+        }
+      }
+      return dm;
+    }));
 
     return NextResponse.json({ channels, dms });
   } catch (err) {
