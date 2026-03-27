@@ -229,11 +229,22 @@ export default function ChatPage() {
   // ── Socket setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    const socket = socketIO({ path: '/api/socket', transports: ['websocket'] });
-    socketRef.current = socket;
+    let socket;
+    try {
+      socket = socketIO({ path: '/api/socket', transports: ['websocket', 'polling'], reconnectionAttempts: 3, timeout: 5000 });
+      socketRef.current = socket;
+    } catch (_) {
+      // Socket.io not available (Vercel serverless) — polling fallback handles messaging
+      console.log('Socket.io unavailable, using polling fallback');
+      return;
+    }
 
     socket.on('connect', () => {
       socket.emit('authenticate', { userId: user.id, userName: user.name });
+    });
+
+    socket.on('connect_error', () => {
+      console.log('Socket.io connection failed, polling fallback active');
     });
 
     socket.on('chat:message:new', (msg) => {

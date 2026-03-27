@@ -330,12 +330,18 @@ function ComposeModal({ onClose, onSend, replyTo }) {
     setTo(prev => prev.filter(r => r.id !== userId));
   };
 
-  const addAttachment = () => {
-    setAttachments(prev => [...prev, { name: '', url: '', type: 'file' }]);
-  };
+  const fileInputRef = useRef(null);
 
-  const updateAttachment = (i, field, value) => {
-    setAttachments(prev => prev.map((a, j) => j === i ? { ...a, [field]: value } : a));
+  const handleFilePick = (e) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      const sizeKB = Math.round(file.size / 1024);
+      const size = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+      const type = file.type.startsWith('image/') ? 'image' : file.type.includes('pdf') ? 'document' : 'file';
+      setAttachments(prev => [...prev, { name: file.name, url, type, size, file }]);
+    });
+    e.target.value = '';
   };
 
   const removeAttachment = (i) => {
@@ -406,8 +412,12 @@ function ComposeModal({ onClose, onSend, replyTo }) {
               <input
                 type="text"
                 value={userSearch}
-                onChange={e => setUserSearch(e.target.value)}
-                placeholder={to.length ? '' : 'Search users...'}
+                onChange={e => {
+                  let val = e.target.value;
+                  if (val.startsWith('@')) val = val.slice(1);
+                  setUserSearch(val);
+                }}
+                placeholder={to.length ? '@ to add more...' : 'Type @ or name to search...'}
                 className="flex-1 min-w-[120px] bg-transparent outline-none text-sm"
                 style={{ color: 'var(--text)' }}
               />
@@ -466,41 +476,40 @@ function ComposeModal({ onClose, onSend, replyTo }) {
             />
           </div>
 
-          {/* Attachments */}
+          {/* Attachments — file picker */}
           <div>
-            <div className="flex items-center justify-between mb-1">
+            <input type="file" ref={fileInputRef} multiple onChange={handleFilePick} className="hidden" accept="*/*" />
+            <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Attachments</label>
               <button
-                onClick={addAttachment}
-                className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors"
-                style={{ color: 'var(--primary)' }}
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+                style={{ color: 'var(--primary)', background: 'var(--primary-light)' }}
               >
-                <Plus size={12} /> Add
+                <Paperclip size={13} /> Pick Files
               </button>
             </div>
-            {attachments.map((att, i) => (
-              <div key={i} className="flex gap-2 mb-2 items-center">
-                <input
-                  type="text"
-                  value={att.name}
-                  onChange={e => updateAttachment(i, 'name', e.target.value)}
-                  placeholder="File name"
-                  className="flex-1 px-2 py-1.5 rounded-md text-xs outline-none"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                />
-                <input
-                  type="text"
-                  value={att.url}
-                  onChange={e => updateAttachment(i, 'url', e.target.value)}
-                  placeholder="URL"
-                  className="flex-[2] px-2 py-1.5 rounded-md text-xs outline-none"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                />
-                <button onClick={() => removeAttachment(i)} style={{ color: 'var(--text-muted)' }}>
-                  <X size={14} />
-                </button>
+            {attachments.length > 0 && (
+              <div className="space-y-1.5">
+                {attachments.map((att, i) => (
+                  <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{
+                      background: att.type === 'image' ? 'var(--success-light)' : att.type === 'document' ? 'var(--warning-light)' : 'var(--primary-light)',
+                      color: att.type === 'image' ? 'var(--success)' : att.type === 'document' ? 'var(--warning)' : 'var(--primary)'
+                    }}>
+                      {att.type === 'image' ? '🖼' : att.type === 'document' ? '📄' : '📎'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium truncate" style={{ color: 'var(--text)' }}>{att.name}</div>
+                      {att.size && <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{att.size}</div>}
+                    </div>
+                    <button onClick={() => removeAttachment(i)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
