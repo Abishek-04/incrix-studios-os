@@ -290,6 +290,10 @@ export default function ChatPage() {
       });
     });
 
+    ch.bind('reaction-update', ({ messageId, reactions }) => {
+      setMessages(prev => prev.map(msg => msg.id === messageId ? { ...msg, reactions } : msg));
+    });
+
     return () => {
       ch.unbind_all();
       pusherRef.current?.unsubscribe(`chat-${activeChannel.id}`);
@@ -404,10 +408,10 @@ export default function ChatPage() {
     setInput(e.target.value);
     if (!activeChannel) return;
 
-    
+    fetchWithAuth('/api/chat/typing', { method: 'POST', body: JSON.stringify({ channelId: activeChannel.id, typing: true }) }).catch(() => {});
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      
+      fetchWithAuth('/api/chat/typing', { method: 'POST', body: JSON.stringify({ channelId: activeChannel.id, typing: false }) }).catch(() => {});
     }, 2000);
   };
 

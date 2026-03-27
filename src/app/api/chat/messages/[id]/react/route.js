@@ -46,6 +46,15 @@ export async function POST(request, { params }) {
     message.reactions = reactions;
     await message.save();
 
+    // Broadcast reaction update via Pusher
+    try {
+      const { getPusher } = await import('@/lib/pusher');
+      const pusher = getPusher();
+      await pusher.trigger(`chat-${message.channelId}`, 'reaction-update', {
+        messageId, emoji, userId: user.id, userName: user.name, reactions
+      });
+    } catch (_) {}
+
     return NextResponse.json({ reactions });
   } catch (err) {
     console.error('[chat/react POST]', err);
