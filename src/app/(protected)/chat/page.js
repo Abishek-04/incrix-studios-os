@@ -101,67 +101,80 @@ function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId })
 }
 
 function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
-  const [showReactions, setShowReactions] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
   if (msg.isDeleted) {
     return (
-      <div className="px-4 py-1">
-        <span className="text-xs text-[var(--text-muted)] italic">This message was deleted</span>
+      <div className="px-4 py-1 flex" style={{ justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
+        <span className="text-xs italic" style={{ color: 'var(--text-muted)' }}>This message was deleted</span>
       </div>
     );
   }
 
   return (
     <div
-      className={`group flex gap-3 px-4 py-1 hover:bg-[var(--bg-card)] relative ${showActions ? 'bg-[var(--bg-card)]' : ''}`}
+      className={`group flex gap-2.5 px-4 py-0.5 relative ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
+      onMouseLeave={() => setShowActions(false)}
     >
-      {/* Avatar */}
-      <div className="w-9 flex-shrink-0 flex items-start pt-0.5">
-        {showAvatar && (
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[var(--text)] font-bold text-sm ${msg.senderColor || 'bg-indigo-600'}`}>
+      {/* Avatar — only for other people */}
+      <div className="w-8 flex-shrink-0 flex items-end">
+        {showAvatar && !isOwn && (
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs ${msg.senderColor || 'bg-indigo-600'}`}>
             {msg.senderName?.charAt(0) || '?'}
           </div>
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
-        {/* Header */}
-        {showAvatar && (
-          <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-sm font-semibold text-[var(--text)]">{msg.senderName}</span>
-            <span className="text-[11px] text-[var(--text-muted)]">{formatTime(msg.createdAt)}</span>
-            {msg.editedAt && <span className="text-[10px] text-[var(--text-muted)] italic">(edited)</span>}
-          </div>
-        )}
+      {/* Bubble */}
+      <div className={`max-w-[70%] min-w-[80px] ${isOwn ? 'items-end' : 'items-start'}`}>
+        <div
+          className="px-3.5 py-2 rounded-2xl relative"
+          style={{
+            background: isOwn ? 'var(--primary)' : 'var(--bg-input)',
+            color: isOwn ? 'white' : 'var(--text)',
+            borderBottomRightRadius: isOwn ? '6px' : '16px',
+            borderBottomLeftRadius: isOwn ? '16px' : '6px',
+          }}
+        >
+          {/* Sender name for others */}
+          {showAvatar && !isOwn && (
+            <div className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--primary)' }}>
+              {msg.senderName}
+            </div>
+          )}
 
-        {/* Reply context */}
-        {msg.replyToId && (
-          <div className="flex items-center gap-2 mb-1 pl-3 border-l-2 border-[var(--border)]">
-            <span className="text-[11px] text-[var(--text-muted)] truncate">
-              <span className="text-[var(--text-muted)] font-medium">{msg.replyToSender}</span>: {msg.replyToContent}
-            </span>
-          </div>
-        )}
+          {/* Reply context */}
+          {msg.replyToId && (
+            <div className="mb-1.5 px-2.5 py-1 rounded-lg text-[11px]"
+              style={{ background: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--bg-card-hover)', borderLeft: '2px solid var(--primary)' }}>
+              <span style={{ color: isOwn ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>
+                {msg.replyToSender}: {msg.replyToContent}
+              </span>
+            </div>
+          )}
 
-        {/* Content */}
-        <p className="text-sm text-[var(--text)] leading-relaxed whitespace-pre-wrap break-words">
-          {msg.content}
-        </p>
+          {/* Content */}
+          <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap break-words">
+            {msg.content}
+          </p>
+
+          {/* Time */}
+          <div className={`text-[10px] mt-1 ${isOwn ? 'text-right' : ''}`}
+            style={{ color: isOwn ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)' }}>
+            {formatTime(msg.createdAt)}
+          </div>
+        </div>
 
         {/* Reactions */}
         {msg.reactions?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : ''}`}>
             {msg.reactions.map((r, i) => (
-              <button
-                key={i}
-                onClick={() => onReact(msg.id, r.emoji)}
-                className="flex items-center gap-1 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border)] rounded-full px-2 py-0.5 text-xs transition-colors"
-              >
+              <button key={i} onClick={() => onReact(msg.id, r.emoji)}
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                 <span>{r.emoji}</span>
-                <span className="text-[var(--text-muted)]">{r.userIds?.length || 0}</span>
+                <span>{r.userIds?.length || 0}</span>
               </button>
             ))}
           </div>
@@ -170,15 +183,11 @@ function MessageBubble({ msg, isOwn, onReply, onReact, showAvatar }) {
 
       {/* Action bar */}
       {showActions && (
-        <div className="absolute right-4 top-0 -translate-y-1/2 flex items-center gap-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-1.5 py-1 shadow-xl">
-          {/* Quick emoji reactions */}
+        <div className={`absolute ${isOwn ? 'left-4' : 'right-4'} top-0 -translate-y-1/2 flex items-center gap-1 rounded-lg px-1.5 py-1 shadow-lg border z-10`}
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
           {QUICK_EMOJIS.map(emoji => (
-            <button
-              key={emoji}
-              onClick={() => onReact(msg.id, emoji)}
-              className="text-sm hover:scale-125 transition-transform px-0.5"
-              title={`React with ${emoji}`}
-            >
+            <button key={emoji} onClick={() => onReact(msg.id, emoji)}
+              className="text-sm hover:scale-125 transition-transform px-0.5">
               {emoji}
             </button>
           ))}
