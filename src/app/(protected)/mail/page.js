@@ -157,16 +157,22 @@ function MailListItem({ mail, userId, onClick, onToggleStar, folder }) {
         <div className="text-[13px] truncate" style={{ color: 'var(--text)', fontWeight: isRead ? 400 : 600 }}>
           {mail.subject || '(No subject)'}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[11px] truncate flex-1" style={{ color: 'var(--text-muted)' }}>
-            {mail.body?.slice(0, 120) || '(No content)'}
-          </span>
-          {hasAttachments && (
-            <span className="flex items-center gap-0.5 flex-shrink-0 text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
-              <Paperclip size={11} /> {mail.attachments.length}
-            </span>
-          )}
+        <div className="text-[11px] truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          {mail.body?.slice(0, 120) || '(No content)'}
         </div>
+        {hasAttachments && (
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {mail.attachments.slice(0, 3).map((att, i) => (
+              <span key={i} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border-light)' }}>
+                {att.type === 'image' ? '🖼' : att.type === 'document' ? '📄' : '📎'} {att.name?.length > 18 ? att.name.slice(0, 18) + '…' : att.name}
+              </span>
+            ))}
+            {mail.attachments.length > 3 && (
+              <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>+{mail.attachments.length - 3} more</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Star */}

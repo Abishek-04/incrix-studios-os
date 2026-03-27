@@ -17,13 +17,17 @@ export async function GET(request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = 30;
 
+    // Use the custom string `id` field (not MongoDB _id)
+    const uid = user.id;
     let query = {};
     if (folder === 'inbox') {
-      query = { to: user.id, [`isDeleted.${user.id}`]: { $ne: true } };
+      // Mails where I'm a recipient but NOT the sender
+      query = { to: uid, from: { $ne: uid }, [`isDeleted.${uid}`]: { $ne: true } };
     } else if (folder === 'sent') {
-      query = { from: user.id, [`isDeleted.${user.id}`]: { $ne: true } };
+      // Mails where I'm the sender (regardless of who's in `to`)
+      query = { from: uid, [`isDeleted.${uid}`]: { $ne: true } };
     } else if (folder === 'starred') {
-      query = { [`isStarred.${user.id}`]: true, [`isDeleted.${user.id}`]: { $ne: true } };
+      query = { $or: [{ to: uid }, { from: uid }], [`isStarred.${uid}`]: true, [`isDeleted.${uid}`]: { $ne: true } };
     }
 
     const [mails, total] = await Promise.all([
@@ -31,7 +35,7 @@ export async function GET(request) {
       Mail.countDocuments(query),
     ]);
 
-    const unread = await Mail.countDocuments({ to: user.id, [`isRead.${user.id}`]: { $ne: true }, [`isDeleted.${user.id}`]: { $ne: true } });
+    const unread = await Mail.countDocuments({ to: uid, from: { $ne: uid }, [`isRead.${uid}`]: { $ne: true }, [`isDeleted.${uid}`]: { $ne: true } });
 
     return NextResponse.json({ mails, total, unread, page, pages: Math.ceil(total / limit) });
   } catch (err) {
