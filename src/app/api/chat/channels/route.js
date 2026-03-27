@@ -75,7 +75,7 @@ export async function GET(request) {
 
     const [channels, rawDms] = await Promise.all([
       ChatChannel.find(channelQuery).sort({ isDefault: -1, name: 1 }).lean(),
-      ChatChannel.find({ type: 'dm', members: user.id }).sort({ lastMessageAt: -1 }).lean()
+      ChatChannel.find({ type: 'dm', members: user.id }).sort({ lastMessageAt: -1, createdAt: -1 }).lean()
     ]);
 
     // Attach dmUser info to each DM channel for display

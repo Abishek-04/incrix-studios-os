@@ -54,30 +54,48 @@ function ChannelItem({ channel, isActive, onClick, unreadCount, currentUserId })
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-left transition-colors group ${
-        isActive ? 'bg-[var(--bg-input)] text-[var(--text)]' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card-hover)]'
+      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-colors ${
+        isActive ? 'bg-[var(--primary-light)]' : 'hover:bg-[var(--bg-card-hover)]'
       }`}
     >
       {isDM ? (
         <div className="relative flex-shrink-0">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[var(--text)] font-bold text-xs ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
-            {dmUser?.name?.charAt(0) || '?'}
-          </div>
-          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[var(--bg)]"></span>
+          {dmUser?.profilePhoto ? (
+            <img src={dmUser.profilePhoto} alt={dmUser.name} className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${dmUser?.avatarColor || 'bg-indigo-600'}`}>
+              {dmUser?.name?.charAt(0) || '?'}
+            </div>
+          )}
+          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2" style={{ borderColor: 'var(--bg-sidebar)' }}></span>
         </div>
       ) : (
-        <span className="text-base leading-none flex-shrink-0 w-5 text-center">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: 'var(--bg-input)' }}>
           {channel.emoji || '#'}
-        </span>
+        </div>
       )}
-      <span className="flex-1 text-sm font-medium truncate">
-        {isDM ? (dmUser?.name || channel.name) : channel.name}
-      </span>
-      {unreadCount > 0 && (
-        <span className="flex-shrink-0 bg-indigo-600 text-[var(--text)] text-[10px] font-bold rounded-full w-4.5 h-4.5 flex items-center justify-center px-1">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </span>
-      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold truncate" style={{ color: isActive ? 'var(--primary)' : 'var(--text)' }}>
+            {isDM ? (dmUser?.name || channel.name) : channel.name}
+          </span>
+          {unreadCount > 0 && (
+            <span className="flex-shrink-0 text-[10px] font-bold rounded-full px-1.5 py-0.5 ml-1" style={{ background: 'var(--primary)', color: 'white' }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </div>
+        {channel.lastMessage && (
+          <span className="text-[11px] truncate block" style={{ color: 'var(--text-muted)' }}>
+            {channel.lastMessageBy ? `${channel.lastMessageBy}: ` : ''}{channel.lastMessage}
+          </span>
+        )}
+        {isDM && !channel.lastMessage && (
+          <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+            {dmUser?.role || 'Start chatting'}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
