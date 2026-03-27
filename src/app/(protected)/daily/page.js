@@ -82,16 +82,24 @@ function ProjectTaskCard({ project, onMoveForward, onReverse, isCompleted }) {
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             {!isCompleted && next && (
-              <button onClick={() => onMoveForward(project)}
+              <button onClick={() => {
+                if (confirm(`Move "${project.title}" from ${project.stage} → ${next}? This will reflect across the entire app.`)) {
+                  onMoveForward(project);
+                }
+              }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white transition-all hover:opacity-90"
                 style={{ background: 'var(--primary)' }}>
                 Complete & Move to {next} <ArrowRight size={13} />
               </button>
             )}
             {isCompleted && onReverse && (
-              <button onClick={() => onReverse(project)}
+              <button onClick={() => {
+                if (confirm(`Move "${project.title}" back to the previous stage?`)) {
+                  onReverse(project);
+                }
+              }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
                 style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 <RotateCcw size={12} /> Revise (Move Back)
