@@ -59,14 +59,15 @@ function ProtectedLayoutInner({ children }) {
       if (chatRes.status === 'fulfilled') {
         const channels = chatRes.value.channels || [];
         const dms = chatRes.value.dms || [];
-        // Count channels/DMs that have lastMessage and we haven't visited
-        // Simple approach: count DMs with unread messages
         let unreadChats = 0;
-        for (const dm of dms) {
-          if (dm.lastMessage && dm.lastMessageBy && dm.lastMessageBy !== currentUser.name) unreadChats++;
-        }
-        for (const ch of channels) {
-          if (ch.lastMessage && ch.lastMessageBy && ch.lastMessageBy !== currentUser.name) unreadChats++;
+        const allChats = [...channels, ...dms];
+        for (const ch of allChats) {
+          if (!ch.lastMessage || !ch.lastMessageAt) continue;
+          if (ch.lastMessageBy === currentUser.name) continue;
+          const lastRead = ch.lastReadBy?.[currentUser.id];
+          if (!lastRead || new Date(lastRead) < new Date(ch.lastMessageAt)) {
+            unreadChats++;
+          }
         }
         setChatUnread(unreadChats);
       }

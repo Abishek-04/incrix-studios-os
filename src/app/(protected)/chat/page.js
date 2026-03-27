@@ -50,8 +50,10 @@ const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '✅', '🎉'];
 function ChannelItem({ channel, isActive, onClick, currentUserId, currentUserName }) {
   const isDM = channel.type === 'dm';
   const dmUser = channel.dmUser;
-  // Unread = has a last message from someone other than me
-  const hasNewMessage = channel.lastMessage && channel.lastMessageBy && channel.lastMessageBy !== currentUserName;
+  // Unread = lastMessageAt is after my lastReadBy timestamp
+  const lastRead = channel.lastReadBy?.[currentUserId] || channel.lastReadBy?.get?.(currentUserId);
+  const lastMsgAt = channel.lastMessageAt ? new Date(channel.lastMessageAt) : null;
+  const hasNewMessage = lastMsgAt && channel.lastMessageBy !== currentUserName && (!lastRead || new Date(lastRead) < lastMsgAt);
 
   return (
     <button
@@ -341,6 +343,12 @@ export default function ChatPage() {
   // ── Select channel ──────────────────────────────────────────────────────────
   const selectChannel = useCallback((channel) => {
     if (!channel) return;
+
+    // Mark channel as read
+    fetchWithAuth(`/api/chat/channels/${channel.id}/read`, { method: 'POST' }).catch(() => {});
+    // Update local state so badge clears immediately
+    setChannels(prev => prev.map(ch => ch.id === channel.id ? { ...ch, lastReadBy: { ...ch.lastReadBy, [user?.id]: new Date().toISOString() } } : ch));
+    setDms(prev => prev.map(dm => dm.id === channel.id ? { ...dm, lastReadBy: { ...dm.lastReadBy, [user?.id]: new Date().toISOString() } } : dm));
 
     setActiveChannel(channel);
     setMessages([]);

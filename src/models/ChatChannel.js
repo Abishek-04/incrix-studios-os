@@ -29,6 +29,8 @@ const ChatChannelSchema = new Schema(
     lastMessage: { type: String, default: '' },
     lastMessageAt: { type: Date, default: null },
     lastMessageBy: { type: String, default: '' },
+    // Per-user last read timestamp { userId: Date }
+    lastReadBy: { type: Map, of: Date, default: {} },
     // Pinned message IDs
     pinnedMessages: [{ type: String }],
     emoji: { type: String, default: '' }
