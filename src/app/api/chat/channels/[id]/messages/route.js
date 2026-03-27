@@ -114,7 +114,14 @@ export async function POST(request, { params }) {
 
     const msgObj = message.toJSON();
 
-    // Broadcast via Socket.io if available
+    // Broadcast via Pusher (works on Vercel)
+    try {
+      const { getPusher } = await import('@/lib/pusher');
+      const pusher = getPusher();
+      await pusher.trigger(`chat-${channelId}`, 'new-message', msgObj);
+    } catch (_) {}
+
+    // Also broadcast via Socket.io if available (local dev)
     try {
       const { getIO } = await import('@/lib/socket-server');
       const io = getIO();

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/services/api';
-import { io as socketIO } from 'socket.io-client';
+import Pusher from 'pusher-js';
 import {
   Hash, Lock, MessageSquare, Search, Send, Smile, Paperclip,
   ChevronDown, Users, Plus, ArrowLeft, Reply, X, MoreHorizontal,
@@ -238,43 +238,48 @@ export default function ChatPage() {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [showSidebar, setShowSidebar] = useState(true); // mobile toggle
 
-  const socketRef = useRef(null);
+  const pusherRef = useRef(null);
+  const channelRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
-  // ── Socket setup ────────────────────────────────────────────────────────────
+  // ── Pusher setup ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    let socket;
-    try {
-      socket = socketIO({ path: '/api/socket', transports: ['websocket', 'polling'], reconnectionAttempts: 3, timeout: 5000 });
-      socketRef.current = socket;
-    } catch (_) {
-      // Socket.io not available (Vercel serverless) — polling fallback handles messaging
-      console.log('Socket.io unavailable, using polling fallback');
-      return;
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+    });
+    pusherRef.current = pusher;
+    return () => pusher.disconnect();
+  }, [user]);
+
+  // ── Subscribe to active channel ───────────────────────────────────────────
+  useEffect(() => {
+    if (!pusherRef.current || !activeChannel) return;
+
+    // Unsubscribe from previous channel
+    if (channelRef.current) {
+      channelRef.current.unbind_all();
+      pusherRef.current.unsubscribe(channelRef.current.name);
     }
 
-    socket.on('connect', () => {
-      socket.emit('authenticate', { userId: user.id, userName: user.name });
-    });
+    // Subscribe to new channel
+    const ch = pusherRef.current.subscribe(`chat-${activeChannel.id}`);
+    channelRef.current = ch;
 
-    socket.on('connect_error', () => {
-      console.log('Socket.io connection failed, polling fallback active');
-    });
-
-    socket.on('chat:message:new', (msg) => {
+    ch.bind('new-message', (msg) => {
+      // Don't add our own messages (already added optimistically or via API response)
+      if (msg.senderId === user.id) return;
       setMessages(prev => {
         if (prev.find(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      // Scroll to bottom if new message arrives and user is near bottom
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     });
 
-    socket.on('chat:typing', ({ userId, userName, channelId, typing }) => {
+    ch.bind('typing', ({ userId, userName, typing }) => {
       if (userId === user.id) return;
       setTypingUsers(prev => {
         if (typing) {
@@ -285,74 +290,11 @@ export default function ChatPage() {
       });
     });
 
-    socket.on('chat:message:deleted', ({ messageId }) => {
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isDeleted: true } : m));
-    });
-
-    socket.on('chat:reaction:update', ({ messageId, emoji, userId, userName }) => {
-      setMessages(prev => prev.map(msg => {
-        if (msg.id !== messageId) return msg;
-        const reactions = [...(msg.reactions || [])];
-        const idx = reactions.findIndex(r => r.emoji === emoji);
-        if (idx >= 0) {
-          const r = { ...reactions[idx] };
-          const userIds = [...(r.userIds || [])];
-          const userNames = [...(r.userNames || [])];
-          if (userIds.includes(userId)) {
-            const i = userIds.indexOf(userId);
-            userIds.splice(i, 1);
-            userNames.splice(i, 1);
-          } else {
-            userIds.push(userId);
-            userNames.push(userName);
-          }
-          reactions[idx] = { ...r, userIds, userNames };
-          if (userIds.length === 0) reactions.splice(idx, 1);
-        } else {
-          reactions.push({ emoji, userIds: [userId], userNames: [userName] });
-        }
-        return { ...msg, reactions };
-      }));
-    });
-
-    return () => socket.disconnect();
-  }, [user]);
-
-  // ── Polling fallback (for Vercel where WebSocket doesn't work) ──
-  useEffect(() => {
-    if (!user || !activeChannel) return;
-
-    let pollInterval = null;
-    let lastTimestamp = new Date().toISOString();
-
-    const poll = async () => {
-      try {
-        const res = await fetchWithAuth(
-          `/api/chat/channels/${activeChannel.id}/poll?since=${encodeURIComponent(lastTimestamp)}`
-        );
-        const data = await res.json();
-        if (data.messages?.length > 0) {
-          setMessages(prev => {
-            const existingIds = new Set(prev.map(m => m.id));
-            const newMsgs = data.messages.filter(m => !existingIds.has(m.id));
-            if (newMsgs.length === 0) return prev;
-            return [...prev, ...newMsgs];
-          });
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-        }
-        if (data.timestamp) lastTimestamp = data.timestamp;
-      } catch (_) {}
-    };
-
-    const startTimeout = setTimeout(() => {
-      pollInterval = setInterval(poll, 3000);
-    }, 2000);
-
     return () => {
-      clearTimeout(startTimeout);
-      if (pollInterval) clearInterval(pollInterval);
+      ch.unbind_all();
+      pusherRef.current?.unsubscribe(`chat-${activeChannel.id}`);
     };
-  }, [user, activeChannel?.id]);
+  }, [activeChannel?.id, user?.id]);
 
   // ── Fetch channels ──────────────────────────────────────────────────────────
   const refreshChannels = useCallback(async () => {
@@ -387,21 +329,13 @@ export default function ChatPage() {
   const selectChannel = useCallback((channel) => {
     if (!channel) return;
 
-    // Leave previous socket room
-    if (activeChannel) {
-      socketRef.current?.emit('chat:leave', activeChannel.id);
-    }
-
     setActiveChannel(channel);
     setMessages([]);
     setHasMore(false);
     setOldestCursor(null);
     setTypingUsers([]);
     setReplyTo(null);
-    setShowSidebar(false); // on mobile, hide sidebar when entering channel
-
-    // Join new socket room
-    socketRef.current?.emit('chat:join', channel.id);
+    setShowSidebar(false);
 
     // Load messages
     loadMessages(channel.id);
@@ -439,7 +373,7 @@ export default function ChatPage() {
     setSending(true);
 
     // Stop typing indicator
-    socketRef.current?.emit('chat:typing:stop', { channelId: activeChannel.id });
+    
 
     try {
       await fetchWithAuth(`/api/chat/channels/${activeChannel.id}/messages`, {
@@ -470,17 +404,17 @@ export default function ChatPage() {
     setInput(e.target.value);
     if (!activeChannel) return;
 
-    socketRef.current?.emit('chat:typing:start', { channelId: activeChannel.id });
+    
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current?.emit('chat:typing:stop', { channelId: activeChannel.id });
+      
     }, 2000);
   };
 
   // ── React to message ────────────────────────────────────────────────────────
   const handleReact = useCallback(async (messageId, emoji) => {
     if (!activeChannel) return;
-    socketRef.current?.emit('chat:react', { channelId: activeChannel.id, messageId, emoji });
+    
     try {
       await fetchWithAuth(`/api/chat/messages/${messageId}/react`, {
         method: 'POST',
