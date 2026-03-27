@@ -289,6 +289,42 @@ export default function ChatPage() {
     return () => socket.disconnect();
   }, [user]);
 
+  // ── Polling fallback (for Vercel where WebSocket doesn't work) ──
+  useEffect(() => {
+    if (!user || !activeChannel) return;
+
+    let pollInterval = null;
+    let lastTimestamp = new Date().toISOString();
+
+    const poll = async () => {
+      try {
+        const res = await fetchWithAuth(
+          `/api/chat/channels/${activeChannel.id}/poll?since=${encodeURIComponent(lastTimestamp)}`
+        );
+        const data = await res.json();
+        if (data.messages?.length > 0) {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = data.messages.filter(m => !existingIds.has(m.id));
+            if (newMsgs.length === 0) return prev;
+            return [...prev, ...newMsgs];
+          });
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
+        if (data.timestamp) lastTimestamp = data.timestamp;
+      } catch (_) {}
+    };
+
+    const startTimeout = setTimeout(() => {
+      pollInterval = setInterval(poll, 3000);
+    }, 2000);
+
+    return () => {
+      clearTimeout(startTimeout);
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [user, activeChannel?.id]);
+
   // ── Fetch channels ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;

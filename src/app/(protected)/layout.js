@@ -8,7 +8,8 @@ import {
   CheckSquare, Users, Settings as SettingsIcon, Bell, LogOut,
   ChevronLeft, ChevronRight, TrendingUp, Palette, Code,
   Instagram, BarChart3, Trash2, GraduationCap, MoreHorizontal, X,
-  MessageSquare, Briefcase, DollarSign, Radio, Menu, Sun, Moon
+  MessageSquare, Briefcase, DollarSign, Radio, Menu, Sun, Moon,
+  Mail as MailIcon
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 import { UIProvider } from '@/contexts/UIContext';
@@ -62,7 +63,7 @@ function ProtectedLayoutInner({ children }) {
 
   const teamName = pathname.startsWith('/team-view/') ? pathname.split('/')[2] : null;
   const teamLabels = { content: 'Content Team', editing: 'Editing Team', design: 'Design Team', dev: 'Dev Team', marketing: 'Marketing', hardware: 'Hardware' };
-  const titles = { '/dashboard': 'Home', '/projects': 'Projects', '/board': 'Board', '/calendar': 'Calendar', '/daily': 'My Tasks', '/performance': 'Overview', '/analytics': 'Analytics', '/design-projects': 'Design', '/dev-projects': 'Development', '/team': 'Team', '/channels': 'Channels', '/courses': 'Classory', '/instagram': 'Instagram', '/chat': 'Messages', '/clients': 'Clients', '/revenue': 'Revenue', '/marketing': 'Marketing', '/settings/notifications': 'Settings', '/recycle-bin': 'Recycle Bin', '/admin/notifications': 'Notifications', ...(teamName ? { [pathname]: teamLabels[teamName] || teamName } : {}) };
+  const titles = { '/dashboard': 'Home', '/projects': 'Projects', '/board': 'Board', '/calendar': 'Calendar', '/daily': 'My Tasks', '/performance': 'Overview', '/analytics': 'Analytics', '/design-projects': 'Design', '/dev-projects': 'Development', '/team': 'Team', '/channels': 'Channels', '/courses': 'Classory', '/instagram': 'Instagram', '/chat': 'Messages', '/mail': 'Mail', '/clients': 'Clients', '/revenue': 'Revenue', '/marketing': 'Marketing', '/settings/notifications': 'Settings', '/recycle-bin': 'Recycle Bin', '/admin/notifications': 'Notifications', ...(teamName ? { [pathname]: teamLabels[teamName] || teamName } : {}) };
 
   const isDark = theme === 'dark';
 
@@ -88,6 +89,7 @@ function ProtectedLayoutInner({ children }) {
               <NavLink href="/calendar" icon={CalendarIcon} label="Calendar" active={isActive('/calendar')} collapsed={collapsed} />
               <NavLink href="/daily" icon={CheckSquare} label="My Tasks" active={isActive('/daily')} collapsed={collapsed} />
               <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} />
+              <NavLink href="/mail" icon={MailIcon} label="Mail" active={isRoute('/mail')} collapsed={collapsed} />
               <NavLink href="/performance" icon={TrendingUp} label="Overview" active={isActive('/performance')} collapsed={collapsed} />
             </div>
 
