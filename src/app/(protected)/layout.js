@@ -40,12 +40,54 @@ function ProtectedLayoutInner({ children }) {
   const [showNotif, setShowNotif] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+  const [mailUnread, setMailUnread] = useState(false);
 
   useEffect(() => { if (!loading && !currentUser) router.push('/'); }, [loading, currentUser, router]);
   useEffect(() => { setMobileMenu(false); }, [pathname]);
 
   const fetchNotif = useCallback(async (uid) => { try { const r = await fetchWithAuth(`/api/notifications?userId=${uid}&limit=50`); if (r.ok) { const d = await r.json(); setNotifications(d.notifications || []); } } catch (_) {} }, []);
-  useEffect(() => { if (!currentUser?.id) return; fetchNotif(currentUser.id); const iv = setInterval(() => { fetch('/api/reminders/check').catch(() => {}); fetchNotif(currentUser.id); }, 30000); return () => clearInterval(iv); }, [currentUser?.id, fetchNotif]);
+
+  // Fetch unread chat + mail counts
+  const fetchUnreadCounts = useCallback(async () => {
+    if (!currentUser?.id) return;
+    try {
+      const [chatRes, mailRes] = await Promise.allSettled([
+        fetchWithAuth('/api/chat/channels').then(r => r.json()),
+        fetchWithAuth('/api/mail?folder=inbox&page=1').then(r => r.json()),
+      ]);
+      if (chatRes.status === 'fulfilled') {
+        const channels = chatRes.value.channels || [];
+        const dms = chatRes.value.dms || [];
+        // Count channels/DMs that have lastMessage and we haven't visited
+        // Simple approach: count DMs with unread messages
+        let unreadChats = 0;
+        for (const dm of dms) {
+          if (dm.lastMessage && dm.lastMessageBy && dm.lastMessageBy !== currentUser.name) unreadChats++;
+        }
+        for (const ch of channels) {
+          if (ch.lastMessage && ch.lastMessageBy && ch.lastMessageBy !== currentUser.name) unreadChats++;
+        }
+        setChatUnread(unreadChats);
+      }
+      if (mailRes.status === 'fulfilled') {
+        setMailUnread((mailRes.value.unread || 0) > 0);
+      }
+    } catch (_) {}
+  }, [currentUser?.id, currentUser?.name]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetchNotif(currentUser.id);
+    fetchUnreadCounts();
+    const iv = setInterval(() => {
+      fetch('/api/reminders/check').catch(() => {});
+      fetchNotif(currentUser.id);
+      fetchUnreadCounts();
+    }, 30000);
+    return () => clearInterval(iv);
+  }, [currentUser?.id, fetchNotif, fetchUnreadCounts]);
+
   useEffect(() => { if (currentUser?.id) subPush(currentUser.id); }, [currentUser?.id]);
 
   if (loading || !currentUser) return <LoadingScreen />;
@@ -88,8 +130,8 @@ function ProtectedLayoutInner({ children }) {
               <NavLink href="/board" icon={FolderKanban} label="Board" active={isActive('/board')} collapsed={collapsed} />
               <NavLink href="/calendar" icon={CalendarIcon} label="Calendar" active={isActive('/calendar')} collapsed={collapsed} />
               <NavLink href="/daily" icon={CheckSquare} label="My Tasks" active={isActive('/daily')} collapsed={collapsed} />
-              <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} />
-              <NavLink href="/mail" icon={MailIcon} label="Mail" active={isRoute('/mail')} collapsed={collapsed} />
+              <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} badge={chatUnread} />
+              <NavLink href="/mail" icon={MailIcon} label="Mail" active={isRoute('/mail')} collapsed={collapsed} badgeDot={mailUnread} />
               <NavLink href="/performance" icon={TrendingUp} label="Overview" active={isActive('/performance')} collapsed={collapsed} />
             </div>
 
@@ -226,16 +268,30 @@ function SectionLabel({ children }) {
   return <div className="px-3 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>{children}</div>;
 }
 
-function NavLink({ href, icon: Icon, label, active, collapsed }) {
+function NavLink({ href, icon: Icon, label, active, collapsed, badge, badgeDot }) {
   return (
     <Link href={href}>
-      <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold transition-all`}
+      <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold transition-all relative`}
         style={{
           background: active ? 'var(--primary-light)' : 'transparent',
           color: active ? 'var(--primary)' : 'var(--text-secondary)'
         }} title={collapsed ? label : undefined}>
-        <Icon size={20} className="shrink-0" />
-        {!collapsed && <span>{label}</span>}
+        <div className="relative shrink-0">
+          <Icon size={20} />
+          {collapsed && badge > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold text-white px-1" style={{ background: 'var(--danger)' }}>{badge > 9 ? '9+' : badge}</span>
+          )}
+          {collapsed && badgeDot && !badge && (
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full" style={{ background: 'var(--danger)' }} />
+          )}
+        </div>
+        {!collapsed && <span className="flex-1">{label}</span>}
+        {!collapsed && badge > 0 && (
+          <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full text-[10px] font-bold text-white px-1.5" style={{ background: 'var(--danger)' }}>{badge > 99 ? '99+' : badge}</span>
+        )}
+        {!collapsed && badgeDot && !badge && (
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--danger)' }} />
+        )}
       </div>
     </Link>
   );
