@@ -106,9 +106,16 @@ function FolderTabs({ active, onChange, unreadCount }) {
 
 // ─── Mail List Item ───────────────────────────────────────────────────────────
 
-function MailListItem({ mail, userId, onClick, onToggleStar }) {
+function MailListItem({ mail, userId, onClick, onToggleStar, folder }) {
   const isRead = mail.isRead?.[userId];
   const isStarred = mail.isStarred?.[userId];
+  const isSent = folder === 'sent';
+  // In sent: show recipient name/avatar. In inbox: show sender.
+  const displayName = isSent ? (mail.toNames?.[0] || 'Unknown') : mail.fromName;
+  const displayAvatar = isSent ? null : mail.fromAvatar;
+  const displayColor = isSent ? 'bg-cyan-500' : mail.fromColor;
+  const hasAttachments = mail.attachments?.length > 0;
+  const recipientCount = mail.to?.length || 0;
 
   return (
     <motion.div
@@ -116,7 +123,7 @@ function MailListItem({ mail, userId, onClick, onToggleStar }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors group"
+      className="flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors group"
       style={{
         background: isRead ? 'transparent' : 'var(--primary-light)',
         borderBottom: '1px solid var(--border-light)',
@@ -125,43 +132,50 @@ function MailListItem({ mail, userId, onClick, onToggleStar }) {
       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
       onMouseLeave={e => e.currentTarget.style.background = isRead ? 'transparent' : 'var(--primary-light)'}
     >
-      {!isRead && (
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--primary)' }} />
-      )}
+      {/* Unread dot */}
+      {!isRead && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--primary)' }} />}
       {isRead && <div className="w-2 flex-shrink-0" />}
 
-      <Avatar name={mail.fromName} avatar={mail.fromAvatar} color={mail.fromColor} size={34} />
+      {/* Avatar */}
+      <Avatar name={displayName} avatar={displayAvatar} color={displayColor} size={38} />
 
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="text-sm truncate"
-            style={{ color: 'var(--text)', fontWeight: isRead ? 400 : 600 }}
-          >
-            {mail.fromName}
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[13px] truncate" style={{ color: 'var(--text)', fontWeight: isRead ? 500 : 700 }}>
+            {isSent ? `To: ${displayName}` : displayName}
           </span>
-          <span className="text-xs flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
+          {isSent && recipientCount > 1 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
+              +{recipientCount - 1}
+            </span>
+          )}
+          <span className="text-[11px] flex-shrink-0 ml-auto" style={{ color: 'var(--text-muted)' }}>
             {formatDate(mail.createdAt)}
           </span>
         </div>
-        <div
-          className="text-sm truncate"
-          style={{ color: 'var(--text)', fontWeight: isRead ? 400 : 600 }}
-        >
-          {mail.subject}
+        <div className="text-[13px] truncate" style={{ color: 'var(--text)', fontWeight: isRead ? 400 : 600 }}>
+          {mail.subject || '(No subject)'}
         </div>
-        <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-          {mail.body?.slice(0, 100)}
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[11px] truncate flex-1" style={{ color: 'var(--text-muted)' }}>
+            {mail.body?.slice(0, 120) || '(No content)'}
+          </span>
+          {hasAttachments && (
+            <span className="flex items-center gap-0.5 flex-shrink-0 text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
+              <Paperclip size={11} /> {mail.attachments.length}
+            </span>
+          )}
         </div>
       </div>
 
+      {/* Star */}
       <button
-        className="flex-shrink-0 p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-        style={{ color: isStarred ? 'var(--warning)' : 'var(--text-muted)' }}
+        className="flex-shrink-0 p-1.5 rounded-lg transition-all"
+        style={{ color: isStarred ? 'var(--warning)' : 'var(--text-muted)', opacity: isStarred ? 1 : undefined }}
         onClick={e => { e.stopPropagation(); onToggleStar(mail); }}
-        title={isStarred ? 'Unstar' : 'Star'}
       >
-        {isStarred ? <Star size={16} fill="currentColor" /> : <Star size={16} />}
+        {isStarred ? <Star size={16} fill="currentColor" /> : <Star size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
       </button>
     </motion.div>
   );
@@ -335,11 +349,15 @@ function ComposeModal({ onClose, onSend, replyTo }) {
   const handleFilePick = (e) => {
     const files = Array.from(e.target.files || []);
     files.forEach(file => {
-      const url = URL.createObjectURL(file);
-      const sizeKB = Math.round(file.size / 1024);
-      const size = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
-      const type = file.type.startsWith('image/') ? 'image' : file.type.includes('pdf') ? 'document' : 'file';
-      setAttachments(prev => [...prev, { name: file.name, url, type, size, file }]);
+      if (file.size > 5 * 1024 * 1024) { alert(`"${file.name}" is too large (max 5MB)`); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const sizeKB = Math.round(file.size / 1024);
+        const size = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+        const type = file.type.startsWith('image/') ? 'image' : file.type.includes('pdf') ? 'document' : 'file';
+        setAttachments(prev => [...prev, { name: file.name, url: reader.result, type, size }]);
+      };
+      reader.readAsDataURL(file);
     });
     e.target.value = '';
   };
@@ -351,7 +369,7 @@ function ComposeModal({ onClose, onSend, replyTo }) {
   const handleSend = async () => {
     if (!to.length || !subject.trim()) return;
     setSending(true);
-    const validAttachments = attachments.filter(a => a.name && a.url);
+    const validAttachments = attachments.filter(a => a.name && a.url).map(({ name, url, type, size }) => ({ name, url, type, size }));
     await onSend({
       to: to.map(r => r.id),
       subject: subject.trim(),
@@ -726,6 +744,7 @@ export default function MailPage() {
                         key={mail.id}
                         mail={mail}
                         userId={userId}
+                        folder={folder}
                         onClick={() => openMail(mail)}
                         onToggleStar={toggleStar}
                       />
