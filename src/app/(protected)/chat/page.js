@@ -376,17 +376,25 @@ export default function ChatPage() {
     setReplyTo(null);
     setSending(true);
 
-    // Stop typing indicator
-    
+    fetchWithAuth('/api/chat/typing', { method: 'POST', body: JSON.stringify({ channelId: activeChannel.id, typing: false }) }).catch(() => {});
 
     try {
-      await fetchWithAuth(`/api/chat/channels/${activeChannel.id}/messages`, {
+      const res = await fetchWithAuth(`/api/chat/channels/${activeChannel.id}/messages`, {
         method: 'POST',
         body: JSON.stringify({
           content,
           replyToId: replyTo?.id || null
         })
       });
+      const data = await res.json();
+      if (data.message) {
+        // Add own message to local state immediately
+        setMessages(prev => {
+          if (prev.find(m => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      }
     } catch (err) {
       console.error(err);
       setInput(content); // restore on error

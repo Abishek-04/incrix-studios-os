@@ -5,20 +5,18 @@ import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// Default channels seeded on first access
 const DEFAULT_CHANNELS = [
-  { name: 'General', slug: 'general', description: 'Company-wide conversations', team: 'general', emoji: '🏠', isDefault: true },
-  { name: 'Announcements', slug: 'announcements', description: 'Official announcements from management', team: 'general', emoji: '📣', isDefault: true, isReadOnly: true },
-  { name: 'Dev Team', slug: 'dev-team', description: 'Development team discussions', team: 'dev', emoji: '💻', isDefault: false },
-  { name: 'Content Team', slug: 'content-team', description: 'Content creation & production', team: 'content', emoji: '🎬', isDefault: false },
-  { name: 'Design Team', slug: 'design-team', description: 'Design discussions and feedback', team: 'design', emoji: '🎨', isDefault: false },
-  { name: 'Marketing', slug: 'marketing', description: 'Marketing campaigns and strategy', team: 'marketing', emoji: '📈', isDefault: false },
-  { name: 'Editing Team', slug: 'editing-team', description: 'Video editing and post-production', team: 'editing', emoji: '✂️', isDefault: false },
-  { name: 'Hardware Team', slug: 'hardware-team', description: 'Custom hardware and microcontroller projects', team: 'hardware', emoji: '🔧', isDefault: false },
-  { name: 'Classory', slug: 'classory', description: 'Classory LMS product discussions', team: null, emoji: '🎓', isDefault: false },
+  { name: 'General', slug: 'general', description: 'Company-wide conversations', team: 'general', emoji: '🏠', isDefault: true, type: 'channel' },
+  { name: 'Announcements', slug: 'announcements', description: 'Official announcements', team: 'general', emoji: '📣', isDefault: true, type: 'announcement', isReadOnly: true },
+  { name: 'Dev Team', slug: 'dev-team', description: 'Development discussions', team: 'dev', emoji: '💻', isDefault: false, type: 'channel' },
+  { name: 'Content Team', slug: 'content-team', description: 'Content creation', team: 'content', emoji: '🎬', isDefault: false, type: 'channel' },
+  { name: 'Design Team', slug: 'design-team', description: 'Design feedback', team: 'design', emoji: '🎨', isDefault: false, type: 'channel' },
+  { name: 'Marketing', slug: 'marketing', description: 'Marketing strategy', team: 'marketing', emoji: '📈', isDefault: false, type: 'channel' },
+  { name: 'Editing Team', slug: 'editing-team', description: 'Video editing', team: 'editing', emoji: '✂️', isDefault: false, type: 'channel' },
+  { name: 'Hardware Team', slug: 'hardware-team', description: 'Hardware projects', team: 'hardware', emoji: '🔧', isDefault: false, type: 'channel' },
+  { name: 'Classory', slug: 'classory', description: 'Classory LMS discussions', team: null, emoji: '🎓', isDefault: false, type: 'channel' },
 ];
 
-// Which channels each role can see
 const ROLE_CHANNELS = {
   superadmin: 'all',
   manager: 'all',
@@ -28,22 +26,41 @@ const ROLE_CHANNELS = {
   developer: ['general', 'announcements', 'dev-team', 'classory'],
 };
 
-async function seedDefaultChannels(systemUserId) {
-  const existing = await ChatChannel.find({ type: 'channel' }).lean();
-  const existingSlugs = new Set(existing.map(c => c.slug));
+async function seedDefaultChannels(userId) {
+  try {
+    // Check ALL channel types, not just 'channel'
+    const existing = await ChatChannel.find({ type: { $in: ['channel', 'announcement'] } }).lean();
+    const existingSlugs = new Set(existing.map(c => c.slug));
 
-  const toCreate = DEFAULT_CHANNELS.filter(c => !existingSlugs.has(c.slug));
-  if (!toCreate.length) return;
+    const toCreate = DEFAULT_CHANNELS.filter(c => !existingSlugs.has(c.slug));
+    if (!toCreate.length) return;
 
-  const now = Date.now();
-  await ChatChannel.insertMany(
-    toCreate.map((c, i) => ({
-      id: `CH-${now}-${i}`,
-      type: c.isReadOnly ? 'announcement' : 'channel',
-      createdBy: systemUserId,
-      ...c
-    }))
-  );
+    const now = Date.now();
+    // Insert one by one to avoid bulk failure
+    for (let i = 0; i < toCreate.length; i++) {
+      const c = toCreate[i];
+      try {
+        await ChatChannel.create({
+          id: `CH-${now}-${i}`,
+          name: c.name,
+          slug: c.slug,
+          description: c.description,
+          team: c.team,
+          emoji: c.emoji,
+          isDefault: c.isDefault,
+          isReadOnly: c.isReadOnly || false,
+          type: c.type,
+          createdBy: userId,
+          members: [],
+        });
+      } catch (e) {
+        // Skip if already exists (duplicate slug)
+        if (e.code !== 11000) console.error('Seed channel error:', c.slug, e.message);
+      }
+    }
+  } catch (err) {
+    console.error('Seed failed:', err.message);
+  }
 }
 
 export async function GET(request) {
@@ -57,11 +74,9 @@ export async function GET(request) {
     const userRoles = Array.isArray(user.roles) && user.roles.length ? user.roles : [user.role];
     const isManager = userRoles.some(r => ['superadmin', 'manager'].includes(r));
 
-    // Get team channels visible to this user
     let channelQuery = { type: { $in: ['channel', 'announcement'] } };
 
     if (!isManager) {
-      // Get allowed slugs from all user roles
       const allowedSlugs = new Set();
       for (const role of userRoles) {
         const allowed = ROLE_CHANNELS[role];
@@ -78,18 +93,23 @@ export async function GET(request) {
       ChatChannel.find({ type: 'dm', members: user.id }).sort({ lastMessageAt: -1, createdAt: -1 }).lean()
     ]);
 
-    // Attach dmUser info to each DM channel for display
-    const User = (await import('@/models/User')).default;
-    const dms = await Promise.all(rawDms.map(async (dm) => {
-      const otherUserId = dm.members?.find(m => m !== user.id) || dm.members?.[0];
-      if (otherUserId) {
-        const otherUser = await User.findOne({ id: otherUserId }).lean();
+    // Attach dmUser info for each DM
+    let dms = rawDms;
+    if (rawDms.length > 0) {
+      const User = (await import('@/models/User')).default;
+      const otherUserIds = rawDms.map(dm => dm.members?.find(m => m !== user.id)).filter(Boolean);
+      const otherUsers = otherUserIds.length > 0 ? await User.find({ id: { $in: otherUserIds } }).lean() : [];
+      const userMap = Object.fromEntries(otherUsers.map(u => [u.id, u]));
+
+      dms = rawDms.map(dm => {
+        const otherId = dm.members?.find(m => m !== user.id) || dm.members?.[0];
+        const otherUser = userMap[otherId];
         if (otherUser) {
-          dm.dmUser = { id: otherUser.id, name: otherUser.name, avatarColor: otherUser.avatarColor, profilePhoto: otherUser.profilePhoto, role: otherUser.role };
+          dm.dmUser = { id: otherUser.id, name: otherUser.name, avatarColor: otherUser.avatarColor, profilePhoto: otherUser.profilePhoto || '', role: otherUser.role };
         }
-      }
-      return dm;
-    }));
+        return dm;
+      });
+    }
 
     return NextResponse.json({ channels, dms });
   } catch (err) {
