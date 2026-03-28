@@ -159,18 +159,31 @@ export default function SettingsPage() {
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
-                    const reader = new FileReader();
-                    reader.onload = async () => {
+                    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+                    // Resize to 200x200 to keep base64 small
+                    const img = new Image();
+                    img.onload = async () => {
+                      const canvas = document.createElement('canvas');
+                      const size = 200;
+                      canvas.width = size;
+                      canvas.height = size;
+                      const ctx = canvas.getContext('2d');
+                      // Crop to square center
+                      const minDim = Math.min(img.width, img.height);
+                      const sx = (img.width - minDim) / 2;
+                      const sy = (img.height - minDim) / 2;
+                      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                       try {
                         const res = await fetchWithAuth(`/api/users/${user.id}`, {
                           method: 'PATCH',
-                          body: JSON.stringify({ profilePhoto: reader.result })
+                          body: JSON.stringify({ profilePhoto: dataUrl })
                         });
                         if (res.ok) { refreshUser?.(); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-                      } catch (err) { console.error(err); }
+                        else { const d = await res.json(); alert(d.error || 'Failed to upload'); }
+                      } catch (err) { console.error(err); alert('Failed to upload photo'); }
                     };
-                    reader.readAsDataURL(file);
+                    img.src = URL.createObjectURL(file);
                     e.target.value = '';
                   }} />
                 </div>
