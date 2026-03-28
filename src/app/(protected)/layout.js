@@ -143,6 +143,10 @@ function ProtectedLayoutInner({ children }) {
               <NavLink href="/daily" icon={CheckSquare} label="My Tasks" active={isActive('/daily')} collapsed={collapsed} />
               <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} badge={chatUnread} />
               <NavLink href="/mail" icon={MailIcon} label="Mail" active={isRoute('/mail')} collapsed={collapsed} badgeDot={mailUnread} />
+              {/* Creators/editors see Instagram to connect their accounts */}
+              {(hasRole(['creator', 'editor']) || isMgr) && (
+                <NavLink href="/instagram" icon={Instagram} label="Instagram" active={isActive('/instagram')} collapsed={collapsed} />
+              )}
               {/* Designers see their design projects here */}
               {hasRole(['designer']) && !isMgr && (
                 <NavLink href="/design-projects" icon={Palette} label="My Designs" active={isActive('/design-projects')} collapsed={collapsed} />
