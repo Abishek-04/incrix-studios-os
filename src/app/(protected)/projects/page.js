@@ -231,7 +231,11 @@ export default function ProjectsPage() {
       </div>
 
       <ProjectList
-        projects={allProjects}
+        projects={(() => {
+          const r = Array.isArray(currentUser.roles) && currentUser.roles.length ? currentUser.roles : [currentUser.role];
+          if (r.some(x => ['superadmin', 'manager'].includes(x))) return allProjects;
+          return allProjects.filter(p => p.creator === currentUser.name || (p.editors || []).includes(currentUser.name) || p.editor === currentUser.name || p.assignedTo === currentUser.id || p.assignedDesigner === currentUser.name || p.assignedDeveloper === currentUser.name);
+        })()}
         channels={channels}
         onSelectProject={(project) => {
           if (project._isDevDesign) return;

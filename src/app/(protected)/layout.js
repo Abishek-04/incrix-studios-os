@@ -124,56 +124,85 @@ function ProtectedLayoutInner({ children }) {
           </div>
 
           <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-7 scrollbar-none">
-            {/* MAIN */}
+            {/* MAIN — everyone sees these */}
             <div className="space-y-1">
               {!collapsed && <SectionLabel>Main</SectionLabel>}
               <NavLink href="/dashboard" icon={LayoutDashboard} label="Home" active={isActive('/dashboard')} collapsed={collapsed} />
               <NavLink href="/projects" icon={ListChecks} label="Projects" active={isActive('/projects')} collapsed={collapsed} />
-              <NavLink href="/board" icon={FolderKanban} label="Board" active={isActive('/board')} collapsed={collapsed} />
+              {/* Board: managers, creators, editors only */}
+              {(isMgr || hasRole(['creator', 'editor'])) && (
+                <NavLink href="/board" icon={FolderKanban} label="Board" active={isActive('/board')} collapsed={collapsed} />
+              )}
               <NavLink href="/calendar" icon={CalendarIcon} label="Calendar" active={isActive('/calendar')} collapsed={collapsed} />
               <NavLink href="/daily" icon={CheckSquare} label="My Tasks" active={isActive('/daily')} collapsed={collapsed} />
               <NavLink href="/chat" icon={MessageSquare} label="Messages" active={isRoute('/chat')} collapsed={collapsed} badge={chatUnread} />
               <NavLink href="/mail" icon={MailIcon} label="Mail" active={isRoute('/mail')} collapsed={collapsed} badgeDot={mailUnread} />
-              <NavLink href="/attendance" icon={CalendarCheck} label="Attendance" active={isRoute('/attendance')} collapsed={collapsed} />
-              <NavLink href="/performance" icon={TrendingUp} label="Overview" active={isActive('/performance')} collapsed={collapsed} />
+              {/* Designers see their design projects here */}
+              {hasRole(['designer']) && !isMgr && (
+                <NavLink href="/design-projects" icon={Palette} label="My Designs" active={isActive('/design-projects')} collapsed={collapsed} />
+              )}
+              {/* Developers see their dev projects here */}
+              {hasRole(['developer']) && !isMgr && (
+                <NavLink href="/dev-projects" icon={Code} label="My Dev Work" active={isActive('/dev-projects')} collapsed={collapsed} />
+              )}
+              <NavLink href="/settings/notifications" icon={SettingsIcon} label="Settings" active={isActive('/settings/notifications')} collapsed={collapsed} />
             </div>
 
-            {/* TEAMS */}
-            <div className="space-y-1">
-              {!collapsed && <SectionLabel>Teams</SectionLabel>}
-              {TEAMS.filter(() => isMgr || hasRole(['creator', 'editor', 'designer', 'developer'])).map(t => (
-                <Link key={t.id} href={t.href}>
-                  <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold transition-all ${
-                    isRoute(t.href.split('?')[0]) ? 'shadow-sm' : 'hover:opacity-80'
-                  }`} style={{
-                    background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent',
-                    color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)'
-                  }} title={collapsed ? t.label : undefined}>
-                    <span className="text-xl leading-none">{t.emoji}</span>
-                    {!collapsed && <span>{t.label}</span>}
-                  </div>
-                </Link>
-              ))}
-            </div>
+            {/* TEAMS — managers see all, others see only their team */}
+            {isMgr ? (
+              <div className="space-y-1">
+                {!collapsed && <SectionLabel>Teams</SectionLabel>}
+                {TEAMS.map(t => (
+                  <Link key={t.id} href={t.href}>
+                    <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold transition-all ${
+                      isRoute(t.href.split('?')[0]) ? 'shadow-sm' : 'hover:opacity-80'
+                    }`} style={{
+                      background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent',
+                      color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)'
+                    }} title={collapsed ? t.label : undefined}>
+                      <span className="text-xl leading-none">{t.emoji}</span>
+                      {!collapsed && <span>{t.label}</span>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {!collapsed && <SectionLabel>My Team</SectionLabel>}
+                {/* Show only the user's own team */}
+                {hasRole(['creator']) && TEAMS.filter(t => t.id === 'content').map(t => (
+                  <Link key={t.id} href={t.href}><div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold`} style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}><span className="text-xl">{t.emoji}</span>{!collapsed && <span>{t.label}</span>}</div></Link>
+                ))}
+                {hasRole(['editor']) && TEAMS.filter(t => t.id === 'editing').map(t => (
+                  <Link key={t.id} href={t.href}><div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold`} style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}><span className="text-xl">{t.emoji}</span>{!collapsed && <span>{t.label}</span>}</div></Link>
+                ))}
+                {hasRole(['designer']) && TEAMS.filter(t => t.id === 'design').map(t => (
+                  <Link key={t.id} href={t.href}><div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold`} style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}><span className="text-xl">{t.emoji}</span>{!collapsed && <span>{t.label}</span>}</div></Link>
+                ))}
+                {hasRole(['developer']) && TEAMS.filter(t => t.id === 'dev').map(t => (
+                  <Link key={t.id} href={t.href}><div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-2xl text-[14px] font-semibold`} style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'transparent', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}><span className="text-xl">{t.emoji}</span>{!collapsed && <span>{t.label}</span>}</div></Link>
+                ))}
+              </div>
+            )}
 
-            {/* BUSINESS */}
+            {/* BUSINESS — managers only */}
             {isMgr && (
               <div className="space-y-1">
                 {!collapsed && <SectionLabel>Business</SectionLabel>}
                 <NavLink href="/clients" icon={Briefcase} label="Clients" active={isRoute('/clients')} collapsed={collapsed} />
                 <NavLink href="/revenue" icon={DollarSign} label="Revenue" active={isRoute('/revenue')} collapsed={collapsed} />
                 <NavLink href="/courses" icon={GraduationCap} label="Classory" active={isRoute('/courses')} collapsed={collapsed} />
+                <NavLink href="/performance" icon={TrendingUp} label="Overview" active={isActive('/performance')} collapsed={collapsed} />
               </div>
             )}
 
-            {/* ADMIN */}
+            {/* ADMIN — managers only */}
             {isMgr && (
               <div className="space-y-1">
                 {!collapsed && <SectionLabel>Admin</SectionLabel>}
                 <NavLink href="/team" icon={Users} label="Team" active={isActive('/team')} collapsed={collapsed} />
                 <NavLink href="/instagram" icon={Instagram} label="Instagram" active={isActive('/instagram')} collapsed={collapsed} />
                 <NavLink href="/recycle-bin" icon={Trash2} label="Recycle Bin" active={isActive('/recycle-bin')} collapsed={collapsed} />
-                <NavLink href="/settings/notifications" icon={SettingsIcon} label="Settings" active={isActive('/settings/notifications')} collapsed={collapsed} />
               </div>
             )}
           </div>

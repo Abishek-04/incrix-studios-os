@@ -133,7 +133,19 @@ export default function BoardPage() {
   return (
     <>
       <ProjectBoard
-        projects={projects}
+        projects={(() => {
+          const userRoles = Array.isArray(currentUser.roles) && currentUser.roles.length ? currentUser.roles : [currentUser.role];
+          const isMgr = userRoles.some(r => ['superadmin', 'manager'].includes(r));
+          if (isMgr) return projects;
+          return projects.filter(p => {
+            return p.creator === currentUser.name ||
+              (p.editors || []).includes(currentUser.name) ||
+              p.editor === currentUser.name ||
+              p.assignedTo === currentUser.id ||
+              p.assignedDesigner === currentUser.name ||
+              p.assignedDeveloper === currentUser.name;
+          });
+        })()}
         channels={channels}
         onSelectProject={(p) => router.push(`/projects/${p.id}`)}
         onUpdateProject={handleUpdateProject}

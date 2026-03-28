@@ -105,14 +105,30 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
   const [showAddRevenue, setShowAddRevenue] = useState(false);
   const now = useMemo(() => new Date(), []);
 
+  const userRoles = currentUser ? (Array.isArray(currentUser.roles) && currentUser.roles.length ? currentUser.roles : [currentUser.role]) : [];
+  const isMgr = userRoles.some(r => ['superadmin', 'manager'].includes(r));
+
+  // For non-managers, filter to only their assigned projects
+  const visibleProjects = useMemo(() => {
+    if (isMgr) return projects;
+    return projects.filter(p =>
+      p.creator === currentUser?.name ||
+      (p.editors || []).includes(currentUser?.name) ||
+      p.editor === currentUser?.name ||
+      p.assignedTo === currentUser?.id ||
+      p.assignedDesigner === currentUser?.name ||
+      p.assignedDeveloper === currentUser?.name
+    );
+  }, [projects, currentUser, isMgr]);
+
   const data = useMemo(() => {
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const revMTD = revenue.filter(r => r.month === month).reduce((s, r) => s + (r.amount || 0), 0);
     const activeClients = clients.filter(c => c.status === 'active').length;
     const leads = clients.filter(c => c.status === 'lead' || c.status === 'prospect').length;
-    const contentP = projects.filter(p => !p.projectType || p.projectType === 'content');
-    const designP = projects.filter(p => p.projectType === 'design');
-    const devP = projects.filter(p => p.projectType === 'dev');
+    const contentP = visibleProjects.filter(p => !p.projectType || p.projectType === 'content');
+    const designP = visibleProjects.filter(p => p.projectType === 'design');
+    const devP = visibleProjects.filter(p => p.projectType === 'dev');
     const isAct = p => p.stage !== 'Done' && p.stage !== 'Backlog';
     const isDone = p => p.stage === 'Done';
 
@@ -125,17 +141,17 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
       hardware: { active: clients.filter(c => c.service === 'hardware' && c.status === 'active').length, done: clients.filter(c => c.service === 'hardware' && c.status === 'completed').length, total: clients.filter(c => c.service === 'hardware').length || 1 },
     };
 
-    const topProjects = [...projects].filter(isAct).sort((a, b) => {
+    const topProjects = [...visibleProjects].filter(isAct).sort((a, b) => {
       const aO = a.dueDate && new Date(a.dueDate) < now ? -1 : 0;
       const bO = b.dueDate && new Date(b.dueDate) < now ? -1 : 0;
       return aO !== bO ? aO - bO : (b.lastUpdated || 0) - (a.lastUpdated || 0);
     }).slice(0, 6);
 
-    const overdue = projects.filter(p => p.dueDate && new Date(p.dueDate) < now && p.stage !== 'Done').length;
-    const blocked = projects.filter(p => p.status === 'Blocked').length;
+    const overdue = visibleProjects.filter(p => p.dueDate && new Date(p.dueDate) < now && p.stage !== 'Done').length;
+    const blocked = visibleProjects.filter(p => p.status === 'Blocked').length;
 
     return { revMTD, activeClients, leads, teamData, topProjects, overdue, blocked, attention: overdue + blocked };
-  }, [projects, users, clients, revenue, now]);
+  }, [visibleProjects, users, clients, revenue, now]);
 
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -145,43 +161,56 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
       <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text)' }}>{greeting}, {currentUser?.name?.split(' ')[0]} 👋</h1>
-          <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>Here's your organization at a glance</p>
+          <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>{isMgr ? "Here's your organization at a glance" : "Here's your work at a glance"}</p>
         </div>
-        <div className="flex gap-2.5">
-          <button onClick={() => setShowAddClient(true)} className="px-4 py-2 rounded-2xl border text-sm font-bold transition-all hover:scale-105" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-            <Plus size={14} className="inline mr-1" />Client
-          </button>
-          <button onClick={() => setShowAddRevenue(true)} className="px-4 py-2 rounded-2xl text-sm font-bold text-white transition-all hover:scale-105 bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/20">
-            <Plus size={14} className="inline mr-1" />Revenue
-          </button>
-        </div>
+        {isMgr && (
+          <div className="flex gap-2.5">
+            <button onClick={() => setShowAddClient(true)} className="px-4 py-2 rounded-2xl border text-sm font-bold transition-all hover:scale-105" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+              <Plus size={14} className="inline mr-1" />Client
+            </button>
+            <button onClick={() => setShowAddRevenue(true)} className="px-4 py-2 rounded-2xl text-sm font-bold text-white transition-all hover:scale-105 bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/20">
+              <Plus size={14} className="inline mr-1" />Revenue
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* KPIs */}
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI label="Revenue" value={`₹${data.revMTD.toLocaleString()}`} icon={DollarSign} gradient="from-amber-500 to-yellow-500" sub="This month" />
-        <KPI label="Clients" value={data.activeClients} icon={Briefcase} gradient="from-cyan-500 to-teal-500" sub={`${data.leads} leads`} />
-        <KPI label="In Progress" value={data.topProjects.length} icon={CheckCircle} gradient="from-emerald-500 to-green-500" sub={`${projects.filter(p => p.stage === 'Done').length} done`} />
+        {isMgr ? (
+          <>
+            <KPI label="Revenue" value={`₹${data.revMTD.toLocaleString()}`} icon={DollarSign} gradient="from-amber-500 to-yellow-500" sub="This month" />
+            <KPI label="Clients" value={data.activeClients} icon={Briefcase} gradient="from-cyan-500 to-teal-500" sub={`${data.leads} leads`} />
+          </>
+        ) : (
+          <>
+            <KPI label="My Active" value={data.topProjects.length} icon={CheckCircle} gradient="from-indigo-500 to-violet-500" sub="Assigned to me" />
+            <KPI label="Done" value={visibleProjects.filter(p => p.stage === 'Done').length} icon={CheckCircle} gradient="from-emerald-500 to-green-500" sub="Completed" />
+          </>
+        )}
+        <KPI label="In Progress" value={data.topProjects.length} icon={CheckCircle} gradient="from-emerald-500 to-green-500" sub={`${visibleProjects.filter(p => p.stage === 'Done').length} done`} />
         <KPI label="Attention" value={data.attention} icon={AlertTriangle} gradient={data.attention > 2 ? 'from-rose-500 to-pink-500' : 'from-amber-500 to-yellow-500'} sub={`${data.overdue} overdue`} />
       </motion.div>
 
-      {/* Team Performance */}
-      <motion.div variants={fade} initial="hidden" animate="show" className="rounded-3xl border p-7" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-black" style={{ color: 'var(--text)' }}>Team Performance</h2>
-          <Link href="/performance" className="text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all" style={{ color: 'var(--primary)' }}>View All <ArrowUpRight size={14} /></Link>
-        </div>
-        <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-wrap justify-center gap-10 md:gap-14">
-          {Object.entries(data.teamData).map(([key, d]) => (
-            <TeamRing key={key} teamKey={key} active={d.active} done={d.done} total={d.total} />
-          ))}
+      {/* Team Performance — managers only */}
+      {isMgr && (
+        <motion.div variants={fade} initial="hidden" animate="show" className="rounded-3xl border p-7" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-black" style={{ color: 'var(--text)' }}>Team Performance</h2>
+            <Link href="/performance" className="text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all" style={{ color: 'var(--primary)' }}>View All <ArrowUpRight size={14} /></Link>
+          </div>
+          <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-wrap justify-center gap-10 md:gap-14">
+            {Object.entries(data.teamData).map(([key, d]) => (
+              <TeamRing key={key} teamKey={key} active={d.active} done={d.done} total={d.total} />
+            ))}
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
 
       {/* Active Projects */}
       <motion.div variants={fade} initial="hidden" animate="show" className="rounded-3xl border overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
         <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--border-light)' }}>
-          <h2 className="text-xl font-black" style={{ color: 'var(--text)' }}>Active Projects</h2>
+          <h2 className="text-xl font-black" style={{ color: 'var(--text)' }}>{isMgr ? 'Active Projects' : 'My Projects'}</h2>
           <Link href="/projects" className="text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all" style={{ color: 'var(--primary)' }}>See All <ArrowUpRight size={14} /></Link>
         </div>
         <motion.div variants={stagger} initial="hidden" animate="show" className="py-2">
@@ -194,8 +223,8 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
       </motion.div>
 
       {/* Modals */}
-      {showAddClient && <Modal title="Add Client" onClose={() => setShowAddClient(false)}><ClientForm onSave={() => { setShowAddClient(false); window.location.reload(); }} /></Modal>}
-      {showAddRevenue && <Modal title="Add Revenue" onClose={() => setShowAddRevenue(false)}><RevenueForm onSave={() => { setShowAddRevenue(false); window.location.reload(); }} /></Modal>}
+      {isMgr && showAddClient && <Modal title="Add Client" onClose={() => setShowAddClient(false)}><ClientForm onSave={() => { setShowAddClient(false); window.location.reload(); }} /></Modal>}
+      {isMgr && showAddRevenue && <Modal title="Add Revenue" onClose={() => setShowAddRevenue(false)}><RevenueForm onSave={() => { setShowAddRevenue(false); window.location.reload(); }} /></Modal>}
     </div>
   );
 }
