@@ -119,33 +119,36 @@ function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, 
             )}
           </div>
 
-          {/* Move buttons INSIDE card — bottom row */}
-          <div className="flex items-center gap-1.5 pt-1 opacity-0 group-hover:opacity-100" style={{ transition: 'opacity 150ms' }}>
+          {/* Actions — always visible */}
+          <div className="flex items-center gap-1 pt-2 border-t" style={{ borderColor: 'var(--border-light)' }}>
             {canLeft && (
               <button onClick={e => { e.stopPropagation(); onMoveLeft(); }}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
-                style={{ background: `rgba(${stage.rgb}, 0.1)`, color: `rgba(${stage.rgb}, 1)` }}
-                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
-                onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
-                <ArrowLeft size={11} /> Back
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all"
+                style={{ background: `rgba(${stage.rgb}, 0.08)`, color: `rgba(${stage.rgb}, 0.7)` }}
+                onMouseEnter={e => { e.currentTarget.style.background = `rgba(${stage.rgb}, 0.2)`; e.currentTarget.style.color = `rgba(${stage.rgb}, 1)`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = `rgba(${stage.rgb}, 0.08)`; e.currentTarget.style.color = `rgba(${stage.rgb}, 0.7)`; }}
+                title="Move to previous stage">
+                <ArrowLeft size={13} />
               </button>
             )}
             {canRight && (
               <button onClick={e => { e.stopPropagation(); onMoveRight(); }}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
-                style={{ background: `rgba(${stage.rgb}, 0.15)`, color: `rgba(${stage.rgb}, 1)` }}
-                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
-                onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
-                Forward <ArrowRight size={11} />
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all"
+                style={{ background: `rgba(${stage.rgb}, 0.12)`, color: `rgba(${stage.rgb}, 0.8)` }}
+                onMouseEnter={e => { e.currentTarget.style.background = `rgba(${stage.rgb}, 0.25)`; e.currentTarget.style.color = `rgba(${stage.rgb}, 1)`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = `rgba(${stage.rgb}, 0.12)`; e.currentTarget.style.color = `rgba(${stage.rgb}, 0.8)`; }}
+                title="Move to next stage">
+                <ArrowRight size={13} />
               </button>
             )}
             <div className="flex-1" />
             {onDelete && (
               <button onClick={e => { e.stopPropagation(); if (confirm(`Delete "${project.title}"?`)) onDelete(project.id); }}
-                className="p-1 rounded-lg transition-all"
+                className="flex items-center justify-center w-7 h-7 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-light)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}>
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+                title="Delete project">
                 <Trash2 size={12} />
               </button>
             )}
