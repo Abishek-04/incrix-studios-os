@@ -349,6 +349,8 @@ export default function ChatPage() {
     // Update local state so badge clears immediately
     setChannels(prev => prev.map(ch => ch.id === channel.id ? { ...ch, lastReadBy: { ...ch.lastReadBy, [user?.id]: new Date().toISOString() } } : ch));
     setDms(prev => prev.map(dm => dm.id === channel.id ? { ...dm, lastReadBy: { ...dm.lastReadBy, [user?.id]: new Date().toISOString() } } : dm));
+    // Notify sidebar to update badge count immediately
+    window.dispatchEvent(new Event('chat-read'));
 
     setActiveChannel(channel);
     setMessages([]);

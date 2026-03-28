@@ -87,7 +87,10 @@ function ProtectedLayoutInner({ children }) {
       fetchNotif(currentUser.id);
       fetchUnreadCounts();
     }, 30000);
-    return () => clearInterval(iv);
+    // Listen for chat-read events to update badge instantly
+    const onChatRead = () => fetchUnreadCounts();
+    window.addEventListener('chat-read', onChatRead);
+    return () => { clearInterval(iv); window.removeEventListener('chat-read', onChatRead); };
   }, [currentUser?.id, fetchNotif, fetchUnreadCounts]);
 
   useEffect(() => { if (currentUser?.id) subPush(currentUser.id); }, [currentUser?.id]);
