@@ -256,13 +256,35 @@ export default function ProjectDetailPage() {
 
         {/* Right sidebar — metadata */}
         <div className="space-y-5">
+          {/* Team card */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.25, ease }}
+            className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+            <h3 className="text-[14px] font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+              <Users size={16} /> People
+            </h3>
+            <div className="space-y-3">
+              {/* Creator */}
+              <PersonRow user={users.find(u => u.name === project.creator)} name={project.creator} role="Creator" />
+              {/* Editors */}
+              {project.editors?.map(edName => (
+                <PersonRow key={edName} user={users.find(u => u.name === edName)} name={edName} role="Editor" />
+              ))}
+              {/* Designer */}
+              {project.assignedDesigner && (
+                <PersonRow user={users.find(u => u.name === project.assignedDesigner)} name={project.assignedDesigner} role="Designer" />
+              )}
+              {/* Developer */}
+              {project.assignedDeveloper && (
+                <PersonRow user={users.find(u => u.name === project.assignedDeveloper)} name={project.assignedDeveloper} role="Developer" />
+              )}
+            </div>
+          </motion.div>
+
           {/* Details card */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.25, ease }}
             className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
             <h3 className="text-[14px] font-bold mb-4" style={{ color: 'var(--text)' }}>Details</h3>
             <div className="space-y-3">
-              <DetailRow icon={User} label="Creator" value={project.creator || 'Unassigned'} />
-              {project.editors?.length > 0 && <DetailRow icon={Users} label="Editors" value={project.editors.join(', ')} />}
               <DetailRow icon={Film} label="Platform" value={project.platform || '—'} />
               <DetailRow label="Stage" value={project.stage} color={stage.color} emoji={stage.emoji} />
               <DetailRow label="Status" value={project.status || '—'} />
@@ -302,6 +324,26 @@ export default function ProjectDetailPage() {
             </motion.div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PersonRow({ user, name, role }) {
+  if (!name || name === 'Unassigned') return null;
+  const roleColors = { Creator: '#8b5cf6', Editor: '#f59e0b', Designer: '#ec4899', Developer: '#06b6d4' };
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      {user?.profilePhoto ? (
+        <img src={user.profilePhoto} alt={name} className="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--border)]" />
+      ) : (
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${user?.avatarColor || 'bg-violet-500'}`}>
+          {name.charAt(0)}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{name}</div>
+        <div className="text-[10px] font-medium" style={{ color: roleColors[role] || 'var(--text-muted)' }}>{role}</div>
       </div>
     </div>
   );
