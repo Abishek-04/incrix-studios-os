@@ -87,8 +87,11 @@ function ProtectedLayoutInner({ children }) {
       fetchNotif(currentUser.id);
       fetchUnreadCounts();
     }, 30000);
-    // Listen for chat-read events to update badge instantly
-    const onChatRead = () => fetchUnreadCounts();
+    // Listen for chat-read events — decrement instantly, then sync from API
+    const onChatRead = () => {
+      setChatUnread(prev => Math.max(0, prev - 1));
+      setTimeout(() => fetchUnreadCounts(), 1500);
+    };
     window.addEventListener('chat-read', onChatRead);
     return () => { clearInterval(iv); window.removeEventListener('chat-read', onChatRead); };
   }, [currentUser?.id, fetchNotif, fetchUnreadCounts]);
