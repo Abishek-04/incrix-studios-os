@@ -141,18 +141,45 @@ export default function SettingsPage() {
               className="rounded-2xl border p-6 space-y-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
               <h2 className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>Profile</h2>
 
-              {/* Avatar */}
+              {/* Avatar with photo upload */}
               <div className="flex items-center gap-4">
-                {user.profilePhoto ? (
-                  <img src={user.profilePhoto} alt={user.name} className="w-16 h-16 rounded-2xl object-cover" />
-                ) : (
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl ${avatarColor}`}>
-                    {name?.charAt(0) || '?'}
-                  </div>
-                )}
+                <div className="relative group">
+                  {user.profilePhoto ? (
+                    <img src={user.profilePhoto} alt={user.name} className="w-16 h-16 rounded-2xl object-cover" />
+                  ) : (
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl ${avatarColor}`}>
+                      {name?.charAt(0) || '?'}
+                    </div>
+                  )}
+                  <button onClick={() => fileRef.current?.click()}
+                    className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <Camera size={20} className="text-white" />
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      try {
+                        const res = await fetchWithAuth(`/api/users/${user.id}`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ profilePhoto: reader.result })
+                        });
+                        if (res.ok) { refreshUser?.(); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+                      } catch (err) { console.error(err); }
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }} />
+                </div>
                 <div>
                   <p className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>{name}</p>
                   <p className="text-[12px] capitalize" style={{ color: 'var(--text-muted)' }}>{user.role}</p>
+                  <button onClick={() => fileRef.current?.click()} className="text-[11px] font-medium mt-1" style={{ color: 'var(--primary)' }}>
+                    Change photo
+                  </button>
                 </div>
               </div>
 

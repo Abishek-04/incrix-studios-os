@@ -42,6 +42,7 @@ function ProtectedLayoutInner({ children }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [mailUnread, setMailUnread] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => { if (!loading && !currentUser) router.push('/'); }, [loading, currentUser, router]);
   useEffect(() => { setMobileMenu(false); }, [pathname]);
@@ -186,22 +187,44 @@ function ProtectedLayoutInner({ children }) {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
             {!collapsed && <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
           </button>
-          {/* User */}
-          {collapsed ? (
-            <div className="flex flex-col items-center gap-1.5">
-              <Av user={currentUser} />
-              <button onClick={logout} className="p-1" style={{ color: 'var(--text-muted)' }}><LogOut size={14} /></button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5 p-2.5 rounded-2xl" style={{ background: 'var(--bg-input)' }}>
-              <Av user={currentUser} />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold truncate" style={{ color: 'var(--text)' }}>{currentUser.name}</div>
-                <div className="text-[10px] capitalize" style={{ color: 'var(--text-muted)' }}>{currentUser.role}</div>
+          {/* User + Logout with confirmation */}
+          <div className="relative">
+            {collapsed ? (
+              <div className="flex flex-col items-center gap-1.5">
+                <Av user={currentUser} />
+                <button onClick={() => setShowLogoutConfirm(true)} className="p-1" style={{ color: 'var(--text-muted)' }}><LogOut size={14} /></button>
               </div>
-              <button onClick={logout} style={{ color: 'var(--text-muted)' }} className="hover:text-rose-500"><LogOut size={14} /></button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl" style={{ background: 'var(--bg-input)' }}>
+                <Av user={currentUser} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-bold truncate" style={{ color: 'var(--text)' }}>{currentUser.name}</div>
+                  <div className="text-[10px] capitalize" style={{ color: 'var(--text-muted)' }}>{currentUser.role}</div>
+                </div>
+                <button onClick={() => setShowLogoutConfirm(true)} style={{ color: 'var(--text-muted)' }} className="hover:text-rose-500"><LogOut size={14} /></button>
+              </div>
+            )}
+
+            {/* Logout confirmation popup */}
+            {showLogoutConfirm && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 p-3 rounded-xl border shadow-lg z-50"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-md)' }}>
+                <p className="text-[12px] font-semibold mb-2.5" style={{ color: 'var(--text)' }}>Sign out of Incrix?</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                    style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                    Cancel
+                  </button>
+                  <button onClick={logout}
+                    className="flex-1 py-1.5 rounded-lg text-[12px] font-semibold text-white transition-all"
+                    style={{ background: '#ef4444' }}>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <button onClick={() => setCollapsed(!collapsed)} className="absolute -right-3 top-8 w-6 h-6 rounded-full flex items-center justify-center z-10 border shadow-sm transition-all hover:scale-110"

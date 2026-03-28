@@ -7,27 +7,27 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Neon palette: Purple #7C00FE, Yellow #F9E400, Amber #FFAF00
+// Only two colors: Yellow #F9E400, Teal #76D2DB
 // Light theme
 const STAGE_LIGHT = {
-  Backlog:    { bg: 'rgba(124,0,254,0.06)',  text: '#7C00FE', dot: '#7C00FE', glow: '0 0 12px rgba(124,0,254,0.2), 0 0 4px rgba(124,0,254,0.1)' },
-  Scripting:  { bg: 'rgba(124,0,254,0.06)',  text: '#7C00FE', dot: '#7C00FE', glow: '0 0 12px rgba(124,0,254,0.2), 0 0 4px rgba(124,0,254,0.1)' },
-  Shooting:   { bg: 'rgba(255,175,0,0.08)',  text: '#cc8c00', dot: '#FFAF00', glow: '0 0 12px rgba(255,175,0,0.25), 0 0 4px rgba(255,175,0,0.1)' },
-  Editing:    { bg: 'rgba(249,228,0,0.08)',  text: '#b8a600', dot: '#F9E400', glow: '0 0 12px rgba(249,228,0,0.25), 0 0 4px rgba(249,228,0,0.1)' },
-  Review:     { bg: 'rgba(255,175,0,0.08)',  text: '#cc8c00', dot: '#FFAF00', glow: '0 0 12px rgba(255,175,0,0.25), 0 0 4px rgba(255,175,0,0.1)' },
-  Publishing: { bg: 'rgba(124,0,254,0.06)',  text: '#7C00FE', dot: '#7C00FE', glow: '0 0 12px rgba(124,0,254,0.2), 0 0 4px rgba(124,0,254,0.1)' },
-  Done:       { bg: 'rgba(124,0,254,0.08)',  text: '#6a00d9', dot: '#7C00FE', glow: '0 0 14px rgba(124,0,254,0.25), 0 0 5px rgba(124,0,254,0.15)' },
+  Backlog:    { bg: 'rgba(118,210,219,0.08)', text: '#4db8c4', dot: '#76D2DB', glow: '0 0 12px rgba(118,210,219,0.2), 0 0 4px rgba(118,210,219,0.1)' },
+  Scripting:  { bg: 'rgba(118,210,219,0.08)', text: '#4db8c4', dot: '#76D2DB', glow: '0 0 12px rgba(118,210,219,0.2), 0 0 4px rgba(118,210,219,0.1)' },
+  Shooting:   { bg: 'rgba(249,228,0,0.08)',   text: '#b8a600', dot: '#F9E400', glow: '0 0 12px rgba(249,228,0,0.2), 0 0 4px rgba(249,228,0,0.1)' },
+  Editing:    { bg: 'rgba(249,228,0,0.08)',   text: '#b8a600', dot: '#F9E400', glow: '0 0 12px rgba(249,228,0,0.2), 0 0 4px rgba(249,228,0,0.1)' },
+  Review:     { bg: 'rgba(249,228,0,0.08)',   text: '#b8a600', dot: '#F9E400', glow: '0 0 12px rgba(249,228,0,0.2), 0 0 4px rgba(249,228,0,0.1)' },
+  Publishing: { bg: 'rgba(118,210,219,0.08)', text: '#4db8c4', dot: '#76D2DB', glow: '0 0 12px rgba(118,210,219,0.2), 0 0 4px rgba(118,210,219,0.1)' },
+  Done:       { bg: 'rgba(118,210,219,0.1)',  text: '#3da8b4', dot: '#76D2DB', glow: '0 0 14px rgba(118,210,219,0.25), 0 0 5px rgba(118,210,219,0.15)' },
 };
 
-// Dark theme — neon glow cranked up
+// Dark theme — brighter glow
 const STAGE_DARK = {
-  Backlog:    { bg: 'rgba(124,0,254,0.1)',   text: '#a855f7', dot: '#a855f7', glow: '0 0 16px rgba(124,0,254,0.4), 0 0 6px rgba(124,0,254,0.2)' },
-  Scripting:  { bg: 'rgba(124,0,254,0.1)',   text: '#a855f7', dot: '#a855f7', glow: '0 0 16px rgba(124,0,254,0.4), 0 0 6px rgba(124,0,254,0.2)' },
-  Shooting:   { bg: 'rgba(255,175,0,0.1)',   text: '#FFAF00', dot: '#FFAF00', glow: '0 0 16px rgba(255,175,0,0.4), 0 0 6px rgba(255,175,0,0.2)' },
-  Editing:    { bg: 'rgba(249,228,0,0.1)',   text: '#F9E400', dot: '#F9E400', glow: '0 0 16px rgba(249,228,0,0.4), 0 0 6px rgba(249,228,0,0.2)' },
-  Review:     { bg: 'rgba(255,175,0,0.1)',   text: '#FFAF00', dot: '#FFAF00', glow: '0 0 16px rgba(255,175,0,0.4), 0 0 6px rgba(255,175,0,0.2)' },
-  Publishing: { bg: 'rgba(124,0,254,0.1)',   text: '#a855f7', dot: '#a855f7', glow: '0 0 16px rgba(124,0,254,0.4), 0 0 6px rgba(124,0,254,0.2)' },
-  Done:       { bg: 'rgba(124,0,254,0.12)',  text: '#c084fc', dot: '#c084fc', glow: '0 0 20px rgba(124,0,254,0.45), 0 0 8px rgba(124,0,254,0.25)' },
+  Backlog:    { bg: 'rgba(118,210,219,0.1)',  text: '#76D2DB', dot: '#76D2DB', glow: '0 0 16px rgba(118,210,219,0.35), 0 0 6px rgba(118,210,219,0.2)' },
+  Scripting:  { bg: 'rgba(118,210,219,0.1)',  text: '#76D2DB', dot: '#76D2DB', glow: '0 0 16px rgba(118,210,219,0.35), 0 0 6px rgba(118,210,219,0.2)' },
+  Shooting:   { bg: 'rgba(249,228,0,0.1)',    text: '#F9E400', dot: '#F9E400', glow: '0 0 16px rgba(249,228,0,0.35), 0 0 6px rgba(249,228,0,0.2)' },
+  Editing:    { bg: 'rgba(249,228,0,0.1)',    text: '#F9E400', dot: '#F9E400', glow: '0 0 16px rgba(249,228,0,0.35), 0 0 6px rgba(249,228,0,0.2)' },
+  Review:     { bg: 'rgba(249,228,0,0.1)',    text: '#F9E400', dot: '#F9E400', glow: '0 0 16px rgba(249,228,0,0.35), 0 0 6px rgba(249,228,0,0.2)' },
+  Publishing: { bg: 'rgba(118,210,219,0.1)',  text: '#76D2DB', dot: '#76D2DB', glow: '0 0 16px rgba(118,210,219,0.35), 0 0 6px rgba(118,210,219,0.2)' },
+  Done:       { bg: 'rgba(118,210,219,0.12)', text: '#96e0e8', dot: '#96e0e8', glow: '0 0 20px rgba(118,210,219,0.4), 0 0 8px rgba(118,210,219,0.25)' },
 };
 
 export default function CalendarView({ projects = [], onSelectProject }) {
@@ -159,9 +159,9 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                     <div className={`w-7 h-7 flex items-center justify-center rounded-full text-[12px] font-bold transition-all ${
                       isToday ? 'text-white' : ''
                     }`} style={{
-                      background: isToday ? '#7C00FE' : 'transparent',
-                      color: isToday ? 'white' : day.inMonth ? 'var(--text)' : 'var(--text-muted)',
-                      boxShadow: isToday ? '0 0 16px rgba(124,0,254,0.5), 0 0 6px rgba(124,0,254,0.3)' : 'none'
+                      background: isToday ? '#76D2DB' : 'transparent',
+                      color: isToday ? '#1a1a1a' : day.inMonth ? 'var(--text)' : 'var(--text-muted)',
+                      boxShadow: isToday ? '0 0 16px rgba(118,210,219,0.5), 0 0 6px rgba(118,210,219,0.3)' : 'none'
                     }}>
                       {day.date.getDate()}
                     </div>
@@ -182,10 +182,10 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                           onClick={e => { e.stopPropagation(); onSelectProject?.(p); }}
                           className="text-[10px] font-semibold px-2 py-1.5 rounded-lg truncate cursor-pointer transition-all hover:scale-[1.02]"
                           style={{
-                            background: overdue ? (isDark ? 'rgba(255,50,80,0.1)' : 'rgba(255,50,80,0.07)') : sc.bg,
-                            color: overdue ? (isDark ? '#ff6b8a' : '#e6003a') : sc.text,
-                            borderLeft: `3px solid ${overdue ? (isDark ? '#ff6b8a' : '#e6003a') : sc.dot}`,
-                            boxShadow: overdue ? `0 0 14px rgba(255,50,80,${isDark ? '0.4' : '0.2'}), 0 0 5px rgba(255,50,80,0.15)` : sc.glow,
+                            background: overdue ? (isDark ? 'rgba(249,228,0,0.12)' : 'rgba(249,228,0,0.1)') : sc.bg,
+                            color: overdue ? (isDark ? '#F9E400' : '#c9a800') : sc.text,
+                            borderLeft: `3px solid ${overdue ? (isDark ? '#F9E400' : '#d4af00') : sc.dot}`,
+                            boxShadow: overdue ? `0 0 14px rgba(249,228,0,${isDark ? '0.4' : '0.2'}), 0 0 5px rgba(249,228,0,0.15)` : sc.glow,
                             backdropFilter: 'blur(4px)',
                           }}>
                           {p.title}
@@ -240,7 +240,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                         transition={{ delay: i * 0.05, duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                         onClick={() => onSelectProject?.(p)}
                         className="rounded-xl border p-4 cursor-pointer transition-all"
-                        style={{ borderColor: 'var(--border)', borderLeft: `4px solid ${overdue ? (isDark ? '#ff6b8a' : '#e6003a') : sc.dot}`, boxShadow: sc.glow }}
+                        style={{ borderColor: 'var(--border)', borderLeft: `4px solid ${overdue ? (isDark ? '#F9E400' : '#d4af00') : sc.dot}`, boxShadow: sc.glow }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.boxShadow = (sc.glow || '').replace('10px', '18px').replace('8px', '16px'); }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = sc.glow; }}
                       >
@@ -248,7 +248,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
                           <h4 className="text-[13px] font-bold leading-snug" style={{ color: p.stage === 'Done' ? 'var(--success)' : 'var(--text)' }}>
                             {p.title}
                           </h4>
-                          {overdue && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-100 text-pink-700 shrink-0">Late</span>}
+                          {overdue && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 shrink-0">Late</span>}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ background: sc.bg, color: sc.text }}>
