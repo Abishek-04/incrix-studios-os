@@ -312,6 +312,9 @@ export default function ChatPage() {
   }, [activeChannel?.id, user?.id]);
 
   // ── Fetch channels ──────────────────────────────────────────────────────────
+  const activeChannelRef = useRef(null);
+  useEffect(() => { activeChannelRef.current = activeChannel; }, [activeChannel]);
+
   const refreshChannels = useCallback(async () => {
     if (!user) return;
     try {
@@ -321,8 +324,8 @@ export default function ChatPage() {
       const d = data.dms || [];
       setChannels(ch);
       setDms(d);
-      // Auto-select general channel on first load
-      if (ch.length && !activeChannel) {
+      // Auto-select general channel only on first load
+      if (ch.length && !activeChannelRef.current) {
         const general = ch.find(c => c.slug === 'general');
         if (general) selectChannel(general);
         else selectChannel(ch[0]);
@@ -338,6 +341,9 @@ export default function ChatPage() {
       .then(r => r.json())
       .then(data => setAllUsers(data.users || data || []))
       .catch(() => {});
+    // Poll channels every 5s to detect new messages in other channels (for dot badges)
+    const pollChannels = setInterval(() => refreshChannels(), 5000);
+    return () => clearInterval(pollChannels);
   }, [user]);
 
   // ── Select channel ──────────────────────────────────────────────────────────
