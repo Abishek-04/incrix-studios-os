@@ -20,14 +20,13 @@ export async function GET(request) {
 
     const userRoles = Array.isArray(user.roles) && user.roles.length ? user.roles : [user.role];
     const isManager = userRoles.some(r => ['manager', 'superadmin'].includes(r));
-    const isCreatorOrEditor = userRoles.some(r => ['creator', 'editor'].includes(r));
 
     let accounts;
-    if (isManager || isCreatorOrEditor) {
-      // Managers + creators/editors see all accounts (they create content for these)
+    if (isManager) {
+      // Managers see ALL connected accounts across the org
       accounts = await InstaAccount.find({}).select('-accessToken').lean();
     } else {
-      // Other roles see only their own accounts
+      // Everyone else sees only accounts they connected themselves
       accounts = await InstaAccount.find({ connectedBy: user.id }).select('-accessToken').lean();
     }
 
