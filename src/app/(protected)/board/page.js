@@ -5,6 +5,7 @@ import ProjectBoard from '@/components/ProjectBoard';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import { useRouter } from 'next/navigation';
 import { fetchState, createProject, updateProject, deleteProject, fetchWithAuth } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +20,7 @@ export default function BoardPage() {
   const [undoDelete, setUndoDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
+  const router = useRouter();
 
   const loadData = async () => {
     try {
@@ -133,7 +135,7 @@ export default function BoardPage() {
       <ProjectBoard
         projects={projects}
         channels={channels}
-        onSelectProject={setSelectedProject}
+        onSelectProject={(p) => router.push(`/projects/${p.id}`)}
         onUpdateProject={handleUpdateProject}
         onDeleteProject={handleDeleteProject}
         onCreateProject={() => {

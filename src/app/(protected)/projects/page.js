@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ProjectList from '@/components/ProjectList';
 import ProjectModal from '@/components/ProjectModal';
 import UndoToast from '@/components/ui/UndoToast';
@@ -21,6 +22,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
   const showToast = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const loadData = async () => {
@@ -232,9 +234,8 @@ export default function ProjectsPage() {
         projects={allProjects}
         channels={channels}
         onSelectProject={(project) => {
-          // Only open modal for content projects (dev/design have their own pages)
           if (project._isDevDesign) return;
-          setSelectedProject(project);
+          router.push(`/projects/${project.id}`);
         }}
         onCreateProject={() => {
           const newProject = {

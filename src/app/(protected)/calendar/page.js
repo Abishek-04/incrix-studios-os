@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import CalendarView from '@/components/CalendarView';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import ReminderDialog from '@/components/ReminderDialog';
@@ -18,6 +19,7 @@ export default function CalendarPage() {
   const [showReminder, setShowReminder] = useState(false);
   const [reminderDefaultDate, setReminderDefaultDate] = useState(null);
   const showToast = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,7 +90,7 @@ export default function CalendarPage() {
         projects={projects}
         channels={channels}
         reminders={reminders}
-        onSelectProject={() => {}}
+        onSelectProject={(p) => router.push(`/projects/${p.id}`)}
         onDateClick={handleDateClick}
         onDeleteReminder={handleDeleteReminder}
       />
