@@ -30,7 +30,6 @@ function formatDue(dueDate) {
 export default function ProjectList({ projects = [], onSelectProject, onCreateProject }) {
   const [search, setSearch] = useState('');
   const [filterStage, setFilterStage] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
@@ -39,7 +38,6 @@ export default function ProjectList({ projects = [], onSelectProject, onCreatePr
     let list = projects.filter(p => {
       if (search && !p.title?.toLowerCase().includes(search.toLowerCase()) && !p.creator?.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterStage !== 'all' && p.stage !== filterStage) return false;
-      if (filterStatus !== 'all' && p.status !== filterStatus) return false;
       if (filterType !== 'all' && (p.projectType || 'content') !== filterType) return false;
       if (filterUser !== 'all') {
         const involved = p.creator === filterUser || (p.editors || []).includes(filterUser) || p.assignedDesigner === filterUser || p.assignedDeveloper === filterUser;
@@ -50,7 +48,7 @@ export default function ProjectList({ projects = [], onSelectProject, onCreatePr
     if (sortOrder === 'newest') list.sort((a, b) => (b.lastUpdated || b.createdAt || 0) - (a.lastUpdated || a.createdAt || 0));
     else if (sortOrder === 'oldest') list.sort((a, b) => (a.lastUpdated || a.createdAt || 0) - (b.lastUpdated || b.createdAt || 0));
     return list;
-  }, [projects, search, filterStage, filterStatus, filterType, filterUser, sortOrder]);
+  }, [projects, search, filterStage, filterType, filterUser, sortOrder]);
 
   const stages = useMemo(() => Array.from(new Set(projects.map(p => p.stage).filter(Boolean))).sort(), [projects]);
   const people = useMemo(() => {
@@ -97,10 +95,6 @@ export default function ProjectList({ projects = [], onSelectProject, onCreatePr
         <select value={filterStage} onChange={e => setFilterStage(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
           <option value="all">All Stages</option>
           {stages.map(s => <option key={s} value={s}>{STAGE_PILLS[s] || ''} {s}</option>)}
-        </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
-          <option value="all">All Status</option>
-          {Object.entries(STATUS_PILLS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
         <select value={filterUser} onChange={e => setFilterUser(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
           <option value="all">All People</option>
