@@ -618,38 +618,116 @@ export default function InstagramPage() {
     );
   }
 
+  // ─── Sync profile from Instagram ───
+  const [syncing, setSyncing] = useState(false);
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetchWithAuth(`/api/instagram/accounts/${selectedAccount._id || selectedAccount.id}/sync`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.profile) {
+        setSelectedAccount(prev => ({ ...prev, ...data.profile }));
+        // Also update in accounts list
+        setAccounts(prev => prev.map(a => (a._id || a.id) === (selectedAccount._id || selectedAccount.id) ? { ...a, ...data.profile } : a));
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Sync failed' });
+      }
+    } catch { setMessage({ type: 'error', text: 'Sync failed' }); }
+    finally { setSyncing(false); }
+  };
+
   // ─── Main Dashboard (account selected) ───
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-5">
-      {/* Header */}
+      {/* Back + Add Account row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {accounts.length > 1 && (
-            <button
-              onClick={() => { setSelectedAccount(null); setMedia([]); setAutomations([]); }}
-              className="text-[#999] hover:text-white transition-colors"
-            >
+            <button onClick={() => { setSelectedAccount(null); setMedia([]); setAutomations([]); }} className="text-[#999] hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </button>
           )}
-          {selectedAccount.profilePictureUrl ? (
-            <img src={selectedAccount.profilePictureUrl} alt="" className="w-10 h-10 rounded-full" />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Instagram size={20} className="text-white" />
-            </div>
-          )}
-          <div>
-            <h1 className="text-xl font-bold text-white">@{selectedAccount.username}</h1>
-            <p className="text-[#999] text-xs">Instagram Automation</p>
-          </div>
+          <h1 className="text-xl font-bold text-white">Instagram</h1>
         </div>
-        <button
-          onClick={handleConnect}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2"
-        >
+        <button onClick={handleConnect}
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2">
           <Plus size={14} /> Add Account
         </button>
+      </div>
+
+      {/* ─── Profile Card (Instagram-style) ─── */}
+      <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-[3px] bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600">
+              {selectedAccount.profilePictureUrl ? (
+                <img src={selectedAccount.profilePictureUrl} alt="" className="w-full h-full rounded-full object-cover border-[3px] border-[#1e1e1e]" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-[#1e1e1e] border-[3px] border-[#1e1e1e] flex items-center justify-center">
+                  <Instagram size={32} className="text-[#666]" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            {/* Username + sync */}
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-semibold text-white">@{selectedAccount.username}</h2>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#333] text-[#999] capitalize">{selectedAccount.accountType || 'Business'}</span>
+              <button onClick={handleSync} disabled={syncing}
+                className="text-[#666] hover:text-white transition-colors ml-1" title="Sync from Instagram">
+                <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+              </button>
+            </div>
+
+            {/* Name */}
+            {selectedAccount.name && (
+              <p className="text-sm font-semibold text-white mb-1">{selectedAccount.name}</p>
+            )}
+
+            {/* Bio */}
+            {selectedAccount.biography && (
+              <p className="text-[13px] text-[#ccc] mb-2 whitespace-pre-line leading-relaxed max-w-lg">{selectedAccount.biography}</p>
+            )}
+
+            {/* Website */}
+            {selectedAccount.website && (
+              <a href={selectedAccount.website} target="_blank" rel="noopener noreferrer" className="text-[13px] text-blue-400 hover:underline mb-3 block">{selectedAccount.website}</a>
+            )}
+
+            {/* Stats */}
+            <div className="flex items-center gap-8 mt-2">
+              <div className="text-center">
+                <span className="text-lg font-bold text-white block">{(selectedAccount.mediaCount || 0).toLocaleString()}</span>
+                <span className="text-[11px] text-[#999]">Posts</span>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-white block">{(selectedAccount.followerCount || 0).toLocaleString()}</span>
+                <span className="text-[11px] text-[#999]">Followers</span>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-bold text-white block">{(selectedAccount.followsCount || 0).toLocaleString()}</span>
+                <span className="text-[11px] text-[#999]">Following</span>
+              </div>
+            </div>
+
+            {/* Last synced */}
+            {selectedAccount.lastSynced && (
+              <p className="text-[10px] text-[#555] mt-3">Last synced: {new Date(selectedAccount.lastSynced).toLocaleString()}</p>
+            )}
+          </div>
+
+          {/* Connected by (manager view) */}
+          {isManager && selectedAccount.connectedBy && (
+            <div className="text-right shrink-0">
+              <p className="text-[10px] text-[#666]">Connected by</p>
+              <p className="text-xs text-[#999]">{selectedAccount.connectedBy}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Message */}

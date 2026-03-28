@@ -20,7 +20,11 @@ const instaAccountSchema = new mongoose.Schema(
     // Metadata
     connectedAt: { type: String },
     followerCount: { type: Number, default: 0 },
+    followsCount: { type: Number, default: 0 },
     mediaCount: { type: Number, default: 0 },
+    biography: { type: String, default: '' },
+    website: { type: String, default: '' },
+    name: { type: String, default: '' },
     lastSynced: { type: Date },
   },
   { timestamps: true }
