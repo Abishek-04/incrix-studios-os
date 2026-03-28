@@ -32,18 +32,37 @@ export default function ProjectList({ projects = [], onSelectProject, onCreatePr
   const [filterStage, setFilterStage] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
 
   const filtered = useMemo(() => {
-    return projects.filter(p => {
+    let list = projects.filter(p => {
       if (search && !p.title?.toLowerCase().includes(search.toLowerCase()) && !p.creator?.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterStage !== 'all' && p.stage !== filterStage) return false;
       if (filterStatus !== 'all' && p.status !== filterStatus) return false;
       if (filterType !== 'all' && (p.projectType || 'content') !== filterType) return false;
+      if (filterUser !== 'all') {
+        const involved = p.creator === filterUser || (p.editors || []).includes(filterUser) || p.assignedDesigner === filterUser || p.assignedDeveloper === filterUser;
+        if (!involved) return false;
+      }
       return true;
-    }).sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
-  }, [projects, search, filterStage, filterStatus, filterType]);
+    });
+    if (sortOrder === 'newest') list.sort((a, b) => (b.lastUpdated || b.createdAt || 0) - (a.lastUpdated || a.createdAt || 0));
+    else if (sortOrder === 'oldest') list.sort((a, b) => (a.lastUpdated || a.createdAt || 0) - (b.lastUpdated || b.createdAt || 0));
+    return list;
+  }, [projects, search, filterStage, filterStatus, filterType, filterUser, sortOrder]);
 
   const stages = useMemo(() => Array.from(new Set(projects.map(p => p.stage).filter(Boolean))).sort(), [projects]);
+  const people = useMemo(() => {
+    const set = new Set();
+    projects.forEach(p => {
+      if (p.creator) set.add(p.creator);
+      (p.editors || []).forEach(e => set.add(e));
+      if (p.assignedDesigner) set.add(p.assignedDesigner);
+      if (p.assignedDeveloper) set.add(p.assignedDeveloper);
+    });
+    return Array.from(set).sort();
+  }, [projects]);
   const types = useMemo(() => {
     const set = new Set(projects.map(p => p.projectType || 'content'));
     return Array.from(set);
@@ -82,6 +101,14 @@ export default function ProjectList({ projects = [], onSelectProject, onCreatePr
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
           <option value="all">All Status</option>
           {Object.entries(STATUS_PILLS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+        <select value={filterUser} onChange={e => setFilterUser(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
+          <option value="all">All People</option>
+          {people.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-secondary)] outline-none">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
         </select>
       </div>
 
