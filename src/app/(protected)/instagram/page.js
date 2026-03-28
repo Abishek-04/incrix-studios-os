@@ -360,6 +360,7 @@ export default function InstagramPage() {
   const [builderMedia, setBuilderMedia] = useState(null);
   const [editingAutomation, setEditingAutomation] = useState(null);
   const [showBuilder, setShowBuilder] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'superadmin' ||
     (Array.isArray(currentUser?.roles) && (currentUser.roles.includes('manager') || currentUser.roles.includes('superadmin')));
@@ -619,7 +620,6 @@ export default function InstagramPage() {
   }
 
   // ─── Sync profile from Instagram ───
-  const [syncing, setSyncing] = useState(false);
   const handleSync = async () => {
     setSyncing(true);
     try {
