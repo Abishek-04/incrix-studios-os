@@ -196,15 +196,20 @@ export default function MyTasksPage() {
   }, [user]);
 
   // ── My assigned projects ──────────────────────────────────────────────────
+  const userRoles = user ? (Array.isArray(user.roles) && user.roles.length ? user.roles : [user.role]) : [];
+  const isManager = userRoles.some(r => ['superadmin', 'manager'].includes(r));
+
   const myProjects = useMemo(() => {
     if (!user) return [];
+    // Managers see ALL projects, team members see only their assigned ones
+    if (isManager) return projects;
     return projects.filter(p => {
       const isCreator = p.creator === user.name;
       const isEditor = (p.editors || []).includes(user.name) || p.editor === user.name;
       const isAssigned = p.assignedTo === user.id || p.assignedDesigner === user.name || p.assignedDeveloper === user.name;
       return isCreator || isEditor || isAssigned;
     });
-  }, [projects, user]);
+  }, [projects, user, isManager]);
 
   const activeProjects = useMemo(() => {
     let list = myProjects.filter(p => p.stage !== 'Done');
@@ -313,7 +318,7 @@ export default function MyTasksPage() {
   const tabs = [
     { id: 'projects', label: 'Project Work', icon: Briefcase, count: activeProjects.length },
     { id: 'personal', label: 'Personal Tasks', icon: ListChecks, count: todayTasks.length },
-    { id: 'completed', label: 'Completed', icon: History, count: completedProjects.length },
+    { id: 'completed', label: 'Completed', icon: History, count: completedProjects.length + recentlyCompleted.length },
   ];
 
   return (
@@ -434,16 +439,36 @@ export default function MyTasksPage() {
         {/* ── TAB 3: Completed ─────────────────────────────────────────────── */}
         {tab === 'completed' && (
           <motion.div key="completed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease }}>
+            {/* Recently moved forward (this session) */}
+            {recentlyCompleted.length > 0 && (
+              <div className="mb-5">
+                <h3 className="text-[13px] font-bold mb-3" style={{ color: 'var(--text-secondary)' }}>Recently Moved Forward</h3>
+                <div className="space-y-2">
+                  {recentlyCompleted.map((p, i) => (
+                    <div key={p.id + '-' + i} className="flex items-center gap-3 px-4 py-3 rounded-xl border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+                      <CheckCircle size={16} style={{ color: 'var(--success)' }} />
+                      <span className="text-[13px] font-medium flex-1 truncate" style={{ color: 'var(--text)' }}>{p.title}</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--success-light)', color: 'var(--success)' }}>{p.movedFrom} → {p.movedTo}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Done projects */}
+            <h3 className="text-[13px] font-bold mb-3" style={{ color: 'var(--text-secondary)' }}>
+              {completedProjects.length > 0 ? 'Fully Completed Projects' : ''}
+            </h3>
             <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
               {completedProjects.length > 0 ? completedProjects.map(p => (
                 <ProjectTaskCard key={p.id} project={p} isCompleted onReverse={reverseProject} />
-              )) : (
+              )) : recentlyCompleted.length === 0 ? (
                 <div className="py-12 text-center rounded-xl border border-dashed" style={{ borderColor: 'var(--border)' }}>
                   <History size={32} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
                   <p className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>No completed projects yet</p>
                   <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Projects you move forward will appear here</p>
                 </div>
-              )}
+              ) : null}
             </motion.div>
           </motion.div>
         )}
