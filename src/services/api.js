@@ -24,24 +24,38 @@ function clearTokens() {
 
 // ── Core Fetch ──
 
+// Prevent concurrent refresh calls (race condition when multiple 401s fire at once)
+let refreshPromise = null;
+
 async function refreshAccessToken() {
+  // If a refresh is already in progress, wait for it
+  if (refreshPromise) return refreshPromise;
+
   const rt = getRefreshToken();
   if (!rt) throw new Error('No refresh token');
 
-  const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: rt }),
-  });
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
 
-  if (!res.ok) {
-    clearTokens();
-    throw new Error('Session expired');
-  }
+      if (!res.ok) {
+        clearTokens();
+        throw new Error('Session expired');
+      }
 
-  const data = await res.json();
-  if (data.accessToken) setTokens(data.accessToken, null);
-  return data.accessToken;
+      const data = await res.json();
+      if (data.accessToken) setTokens(data.accessToken, null);
+      return data.accessToken;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 export async function fetchWithAuth(url, options = {}) {
