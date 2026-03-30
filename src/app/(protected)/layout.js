@@ -120,8 +120,8 @@ function ProtectedLayoutInner({ children }) {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* SIDEBAR */}
-      <aside className={`${collapsed ? 'w-[72px]' : 'w-[240px]'} hidden md:flex flex-col relative border-r`} style={{ transition: 'width 250ms cubic-bezier(0.23,1,0.32,1)' }}
-        style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
+      <aside className={`${collapsed ? 'w-[72px]' : 'w-[240px]'} hidden md:flex flex-col relative border-r`}
+        style={{ transition: 'width 250ms cubic-bezier(0.23,1,0.32,1)', background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
         <div className="flex flex-col min-h-0 flex-1">
           {/* Logo */}
           <div className="h-16 flex items-center px-4 border-b shrink-0" style={{ borderColor: 'var(--border-light)' }}>
@@ -230,16 +230,18 @@ function ProtectedLayoutInner({ children }) {
           <div className="relative">
             {collapsed ? (
               <div className="flex flex-col items-center gap-1.5">
-                <Av user={currentUser} />
+                <Link href="/settings/notifications"><Av user={currentUser} /></Link>
                 <button onClick={() => setShowLogoutConfirm(true)} className="p-1" style={{ color: 'var(--text-muted)' }}><LogOut size={14} /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2.5 p-2.5 rounded-2xl" style={{ background: 'var(--bg-input)' }}>
-                <Av user={currentUser} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-bold truncate" style={{ color: 'var(--text)' }}>{currentUser.name}</div>
-                  <div className="text-[10px] capitalize" style={{ color: 'var(--text-muted)' }}>{currentUser.role}</div>
-                </div>
+                <Link href="/settings/notifications" className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
+                  <Av user={currentUser} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-bold truncate" style={{ color: 'var(--text)' }}>{currentUser.name}</div>
+                    <div className="text-[10px] capitalize" style={{ color: 'var(--text-muted)' }}>{currentUser.role}</div>
+                  </div>
+                </Link>
                 <button onClick={() => setShowLogoutConfirm(true)} style={{ color: 'var(--text-muted)' }} className="hover:text-rose-500"><LogOut size={14} /></button>
               </div>
             )}
