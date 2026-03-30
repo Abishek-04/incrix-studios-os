@@ -197,7 +197,7 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
       <div className="h-[2px] mx-4" style={{ background: `linear-gradient(90deg, rgba(${stage.rgb}, 0.4), transparent)` }} />
 
       {/* Cards */}
-      <div className="p-3 space-y-2.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+      <div className="flex-1 p-3 space-y-2.5 overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {visible.map((p, i) => (
             <Card
@@ -360,8 +360,8 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto p-3 sm:p-4 md:p-5">
-        <div className="flex gap-3 sm:gap-4 items-start">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 sm:p-4 md:p-5">
+        <div className="flex gap-3 sm:gap-4 h-full">
           {columns.map((col, i) => (
             <Column
               key={col.key} stage={col} idx={i} projects={col.projects} isDone={col.key === 'Done'} channels={channels}
