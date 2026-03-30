@@ -47,7 +47,10 @@ function MediaCard({ item, automated, onSelect }) {
 
 // ─── Automation Builder Modal ───
 function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClose }) {
-  const [triggerKeyword, setTriggerKeyword] = useState(existingAutomation?.triggerKeyword || '');
+  // Parse existing keywords from comma-separated string
+  const initialKeywords = (existingAutomation?.triggerKeyword || '').split(',').map(k => k.trim()).filter(Boolean);
+  const [keywords, setKeywords] = useState(initialKeywords.length > 0 ? initialKeywords : []);
+  const [keywordInput, setKeywordInput] = useState('');
   const [matchType, setMatchType] = useState(existingAutomation?.matchType || 'contains');
   const [replyType, setReplyType] = useState(existingAutomation?.replyType || 'both');
   const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage ?? existingAutomation?.replyMessage ?? '');
@@ -59,10 +62,31 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
   const needsComment = replyType === 'comment' || replyType === 'both';
   const needsDm = replyType === 'dm' || replyType === 'both';
 
+  function addKeyword(value) {
+    const word = value.trim().toLowerCase();
+    if (word && !keywords.includes(word)) {
+      setKeywords(prev => [...prev, word]);
+    }
+    setKeywordInput('');
+  }
+
+  function removeKeyword(word) {
+    setKeywords(prev => prev.filter(k => k !== word));
+  }
+
+  function handleKeywordKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addKeyword(keywordInput);
+    } else if (e.key === 'Backspace' && !keywordInput && keywords.length > 0) {
+      setKeywords(prev => prev.slice(0, -1));
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!triggerKeyword.trim()) {
-      setError('Trigger keyword is required');
+    if (keywords.length === 0) {
+      setError('At least one trigger keyword is required');
       return;
     }
     if (needsComment && !commentReplyMessage.trim()) {
@@ -80,7 +104,7 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
     try {
       const payload = {
         accountId,
-        triggerKeyword: triggerKeyword.trim(),
+        triggerKeyword: keywords.join(','),
         matchType,
         replyType,
         commentReplyMessage: commentReplyMessage.trim(),
@@ -149,14 +173,27 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
             )}
 
             <div>
-              <label className="block text-sm text-[#999] mb-1">Trigger Keyword</label>
-              <input
-                type="text"
-                value={triggerKeyword}
-                onChange={e => setTriggerKeyword(e.target.value)}
-                placeholder="e.g. price, link, info"
-                className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none"
-              />
+              <label className="block text-sm text-[#999] mb-1">Trigger Keywords</label>
+              <div className="flex flex-wrap items-center gap-1.5 w-full px-2.5 py-2 bg-[#151515] border border-[#333] rounded-lg focus-within:border-indigo-500 transition-colors min-h-[42px]">
+                {keywords.map(word => (
+                  <span key={word} className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+                    {word}
+                    <button type="button" onClick={() => removeKeyword(word)} className="hover:text-white transition-colors">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={keywordInput}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onKeyDown={handleKeywordKeyDown}
+                  onBlur={() => { if (keywordInput.trim()) addKeyword(keywordInput); }}
+                  placeholder={keywords.length === 0 ? 'Type keyword and press Enter' : 'Add more...'}
+                  className="flex-1 min-w-[80px] bg-transparent text-white placeholder-[#666] outline-none text-sm"
+                />
+              </div>
+              <p className="text-[10px] text-[#666] mt-1">Press Enter or comma to add. Any keyword match triggers the reply.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -259,8 +296,12 @@ function AutomationCard({ automation, onToggle, onEdit, onDelete }) {
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-semibold text-lg">&ldquo;{automation.triggerKeyword}&rdquo;</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {automation.triggerKeyword.split(',').map(k => k.trim()).filter(Boolean).map(word => (
+                  <span key={word} className="px-2 py-0.5 rounded-md text-sm font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+                    {word}
+                  </span>
+                ))}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${automation.active ? 'bg-green-500/10 text-green-400' : 'bg-[#333] text-[#999]'}`}>
                   {automation.active ? 'Active' : 'Paused'}
                 </span>

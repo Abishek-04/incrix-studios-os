@@ -73,12 +73,14 @@ export const AutomationEngine = {
       return;
     }
 
-    // Match trigger keyword
+    // Match trigger keywords (supports comma-separated multiple keywords)
     const lowerText = text.toLowerCase();
     const matched = matchingAutomations.find(rule => {
-      const triggerWord = rule.triggerKeyword.toLowerCase();
-      if (rule.matchType === 'exact') return lowerText === triggerWord;
-      return lowerText.includes(triggerWord);
+      const triggerWords = rule.triggerKeyword.toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
+      return triggerWords.some(word => {
+        if (rule.matchType === 'exact') return lowerText === word;
+        return lowerText.includes(word);
+      });
     });
 
     if (!matched) {

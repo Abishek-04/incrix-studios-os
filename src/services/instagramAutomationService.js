@@ -60,17 +60,21 @@ export const InstaAutomationService = {
     if (!payload.targetMediaId) throw new Error('targetMediaId is required');
     if (!payload.triggerKeyword?.trim()) throw new Error('triggerKeyword is required');
 
-    // Check if automation with same keyword already exists for this media
-    const existing = await InstaAutomation.findOne({
+    // Check for duplicate keywords on the same media
+    const newKeywords = payload.triggerKeyword.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const existingAutomations = await InstaAutomation.find({
       accountId,
       targetMediaId: payload.targetMediaId,
-      triggerKeyword: payload.triggerKeyword.trim(),
     }).lean();
-    if (existing) {
-      const error = new Error('Automation with this keyword already exists for this media');
-      error.code = 'AUTOMATION_EXISTS';
-      error.automation = { ...existing, id: existing._id.toString() };
-      throw error;
+    for (const existing of existingAutomations) {
+      const existingKeywords = existing.triggerKeyword.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+      const overlap = newKeywords.filter(k => existingKeywords.includes(k));
+      if (overlap.length > 0) {
+        const error = new Error(`Keyword "${overlap[0]}" already exists on this media`);
+        error.code = 'AUTOMATION_EXISTS';
+        error.automation = { ...existing, id: existing._id.toString() };
+        throw error;
+      }
     }
 
     const doc = await InstaAutomation.create(toAutomationRecord(accountId, createdBy, payload));
