@@ -125,7 +125,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
         {/* Calendar Grid */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1], delay: 0.1 }}
           className="flex-1 rounded-2xl border overflow-x-auto" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-          <div className="min-w-[560px]">
+          <div className="min-w-[700px]">
 
           {/* Day headers */}
           <div className="grid grid-cols-7 border-b" style={{ borderColor: 'var(--border-light)' }}>
