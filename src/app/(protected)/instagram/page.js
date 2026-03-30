@@ -638,20 +638,21 @@ export default function InstagramPage() {
 
   // Load accounts
   useEffect(() => {
-    loadAccounts();
-
-    // Check for OAuth callback or automation deep link
     const params = new URLSearchParams(window.location.search);
+    const automateId = params.get('automate');
+
     if (params.get('success')) {
       showMsg(`Connected @${params.get('connected') || 'account'}!`, 'success');
       window.history.replaceState({}, '', '/instagram');
     } else if (params.get('error')) {
       showMsg(`Connection failed: ${params.get('error')}`, 'error');
       window.history.replaceState({}, '', '/instagram');
-    } else if (params.get('automate')) {
-      setPendingAutomateId(params.get('automate'));
+    } else if (automateId) {
+      setPendingAutomateId(automateId);
       window.history.replaceState({}, '', '/instagram');
     }
+
+    loadAccounts(automateId);
   }, []);
 
   // Load media + automations when account selected
@@ -667,20 +668,30 @@ export default function InstagramPage() {
       const targetMedia = media.find(m => m.id === pendingAutomateId);
       if (targetMedia) {
         handleSetupAutomation(targetMedia);
+        setPendingAutomateId(null);
       }
-      setPendingAutomateId(null);
     }
   }, [pendingAutomateId, media, mediaLoading]);
 
-  async function loadAccounts() {
+  async function loadAccounts(automateId) {
     try {
       const res = await fetchWithAuth('/api/instagram/accounts');
       const data = await res.json();
       if (data.success) {
         setAccounts(data.accounts);
-        // Auto-select first account if coming from automation deep link
-        if (data.accounts.length > 0 && pendingAutomateId) {
-          setSelectedAccount(data.accounts[0]);
+        // If deep-linking to automate a specific media, find which account has it
+        if (automateId && data.accounts.length > 0) {
+          // Try each account's media to find the target
+          for (const acct of data.accounts) {
+            try {
+              const mRes = await fetchWithAuth(`/api/instagram/media?accountId=${acct.id}`);
+              const mData = await mRes.json();
+              if (mData.success && mData.media.some(m => m.id === automateId)) {
+                setSelectedAccount(acct);
+                break;
+              }
+            } catch { /* try next */ }
+          }
         }
       }
     } catch (err) {
