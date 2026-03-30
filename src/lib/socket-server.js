@@ -8,9 +8,13 @@ export function initSocketServer(httpServer) {
     return io;
   }
 
+  const allowedOrigins = process.env.NEXT_PUBLIC_BASE_URL
+    ? [process.env.NEXT_PUBLIC_BASE_URL]
+    : ['http://localhost:3005', 'http://localhost:3000'];
+
   io = new Server(httpServer, {
     cors: {
-      origin: '*',
+      origin: allowedOrigins,
       methods: ['GET', 'POST']
     },
     path: '/api/socket'
@@ -23,11 +27,29 @@ export function initSocketServer(httpServer) {
     socket.userName = null;
     socket.currentPageId = null;
 
-    // ─── Auth ────────────────────────────────────────────────────────────────
-    socket.on('authenticate', ({ userId, userName }) => {
-      socket.userId = userId;
-      socket.userName = userName;
-      console.log(`User authenticated: ${userName} (${userId})`);
+    // ─── Auth (JWT verified) ──────────────────────────────────────────────────
+    socket.on('authenticate', async ({ token, userId, userName }) => {
+      if (token) {
+        try {
+          const jwt = await import('jsonwebtoken');
+          const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+          if (decoded.type === 'refresh') {
+            socket.emit('auth-error', 'Invalid token type');
+            return;
+          }
+          socket.userId = decoded.userId;
+          socket.userName = userName || decoded.userId;
+          console.log(`User authenticated via JWT: ${socket.userName} (${socket.userId})`);
+        } catch {
+          socket.emit('auth-error', 'Invalid token');
+          return;
+        }
+      } else {
+        // Fallback for backward compat — will be removed
+        socket.userId = userId;
+        socket.userName = userName;
+        console.log(`User authenticated (legacy): ${userName} (${userId})`);
+      }
     });
 
     // ─── Page collaboration ───────────────────────────────────────────────────

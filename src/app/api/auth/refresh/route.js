@@ -15,6 +15,11 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Invalid or expired refresh token' }, { status: 403 });
     }
 
+    // Reject access tokens used as refresh tokens
+    if (decoded.type && decoded.type !== 'refresh') {
+      return NextResponse.json({ success: false, error: 'Invalid token type' }, { status: 403 });
+    }
+
     await connectDB();
     const User = (await import('@/models/User')).default;
 

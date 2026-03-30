@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { authenticate } from '@/lib/auth';
 
 // POST — Save push subscription for a user
 export async function POST(request) {
   try {
+    const decoded = await authenticate(request);
     const { userId, subscription } = await request.json();
+
+    // Users can only modify their own subscriptions
+    if (userId !== decoded.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     if (!userId || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 });
@@ -40,7 +47,13 @@ export async function POST(request) {
 // DELETE — Remove a push subscription
 export async function DELETE(request) {
   try {
+    const decoded = await authenticate(request);
     const { userId, endpoint } = await request.json();
+
+    // Users can only modify their own subscriptions
+    if (userId !== decoded.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     if (!userId || !endpoint) {
       return NextResponse.json({ error: 'userId and endpoint are required' }, { status: 400 });

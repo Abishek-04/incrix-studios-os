@@ -111,7 +111,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               <ChevronLeft size={18} />
             </button>
-            <span className="px-4 py-2 text-[15px] font-bold min-w-[170px] text-center" style={{ color: 'var(--text)' }}>{monthLabel}</span>
+            <span className="px-2 sm:px-4 py-2 text-[13px] sm:text-[15px] font-bold min-w-[120px] sm:min-w-[170px] text-center" style={{ color: 'var(--text)' }}>{monthLabel}</span>
             <button onClick={next} className="px-3 py-2 transition-colors" style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-input)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -129,7 +129,7 @@ export default function CalendarView({ projects = [], onSelectProject }) {
           {/* Day headers */}
           <div className="grid grid-cols-7 border-b" style={{ borderColor: 'var(--border-light)' }}>
             {DAYS.map(d => (
-              <div key={d} className="px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{d}</div>
+              <div key={d} className="px-1 sm:px-2 py-2 sm:py-3 text-center text-[9px] sm:text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{d}</div>
             ))}
           </div>
 

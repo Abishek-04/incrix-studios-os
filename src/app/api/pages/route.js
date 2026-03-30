@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Page from '@/models/Page';
+import { authenticate } from '@/lib/auth';
 
 // GET /api/pages - List all pages with optional filters
 export async function GET(request) {
   try {
+    await authenticate(request);
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -39,6 +41,7 @@ export async function GET(request) {
 // POST /api/pages - Create new page
 export async function POST(request) {
   try {
+    await authenticate(request);
     const body = await request.json();
     await connectDB();
 

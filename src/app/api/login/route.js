@@ -8,10 +8,6 @@ function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
-function isBcryptHash(value) {
-  return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
-}
-
 function normalizeRoles(roles, fallbackRole = '') {
   if (Array.isArray(roles) && roles.length > 0) {
     return Array.from(new Set(roles.filter(Boolean)));
@@ -47,14 +43,8 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Account is inactive' }, { status: 403 });
     }
 
-    // Verify password
-    let isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid && user.password && !isBcryptHash(user.password) && user.password === password) {
-      isPasswordValid = true;
-      const bcrypt = (await import('bcryptjs')).default;
-      user.password = await bcrypt.hash(password, 12);
-      await user.save();
-    }
+    // Verify password (bcrypt only — plaintext passwords are rejected)
+    const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
       await logLoginFailed(normalizedEmail, ipAddress, userAgent);

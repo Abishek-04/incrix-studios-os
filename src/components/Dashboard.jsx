@@ -28,16 +28,16 @@ function TeamRing({ teamKey, active, done, total }) {
   return (
     <Link href={t.href}>
       <motion.div variants={fade} whileHover={{ transform: 'scale(1.04) translateY(-3px)' }} transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }} className="flex flex-col items-center gap-3 cursor-pointer group">
-        <div className="relative w-28 h-28">
-          <svg className="w-28 h-28 -rotate-90" viewBox="0 0 96 96">
+        <div className="relative w-20 h-20 sm:w-28 sm:h-28">
+          <svg className="w-20 h-20 sm:w-28 sm:h-28 -rotate-90" viewBox="0 0 96 96">
             <circle cx="48" cy="48" r={r} fill="none" stroke="var(--border-light)" strokeWidth="7" />
             <motion.circle cx="48" cy="48" r={r} fill="none" stroke={t.ring} strokeWidth="7" strokeLinecap="round"
               strokeDasharray={circ} initial={{ strokeDashoffset: circ }} animate={{ strokeDashoffset: offset }}
               transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl">{t.emoji}</span>
-            <span className="text-sm font-black" style={{ color: 'var(--text)' }}>{pct}%</span>
+            <span className="text-xl sm:text-3xl">{t.emoji}</span>
+            <span className="text-xs sm:text-sm font-black" style={{ color: 'var(--text)' }}>{pct}%</span>
           </div>
         </div>
         <div className="text-center">
@@ -156,11 +156,11 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="min-h-full p-5 md:p-8 space-y-8" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-full p-3 sm:p-5 md:p-8 space-y-6 sm:space-y-8" style={{ background: 'var(--bg)' }}>
       {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--text)' }}>{greeting}, {currentUser?.name?.split(' ')[0]} 👋</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black" style={{ color: 'var(--text)' }}>{greeting}, {currentUser?.name?.split(' ')[0]} 👋</h1>
           <p className="text-base mt-1" style={{ color: 'var(--text-secondary)' }}>{isMgr ? "Here's your organization at a glance" : "Here's your work at a glance"}</p>
         </div>
         {isMgr && (
@@ -194,12 +194,12 @@ export default function Dashboard({ projects = [], users = [], currentUser, clie
 
       {/* Team Performance — managers only */}
       {isMgr && (
-        <motion.div variants={fade} initial="hidden" animate="show" className="rounded-3xl border p-7" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-black" style={{ color: 'var(--text)' }}>Team Performance</h2>
+        <motion.div variants={fade} initial="hidden" animate="show" className="rounded-3xl border p-4 sm:p-7" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-black" style={{ color: 'var(--text)' }}>Team Performance</h2>
             <Link href="/performance" className="text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all" style={{ color: 'var(--primary)' }}>View All <ArrowUpRight size={14} /></Link>
           </div>
-          <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-wrap justify-center gap-10 md:gap-14">
+          <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-6 sm:gap-10 md:gap-14">
             {Object.entries(data.teamData).map(([key, d]) => (
               <TeamRing key={key} teamKey={key} active={d.active} done={d.done} total={d.total} />
             ))}

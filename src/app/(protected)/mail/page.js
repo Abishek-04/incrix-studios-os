@@ -691,11 +691,11 @@ export default function MailPage() {
     <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
       {/* Top bar */}
       <div
-        className="flex items-center gap-3 px-5 py-3"
+        className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}
       >
         <Mail size={20} style={{ color: 'var(--primary)' }} />
-        <h1 className="text-lg font-bold flex-1" style={{ color: 'var(--text)' }}>Mail</h1>
+        <h1 className="text-base sm:text-lg font-bold flex-1" style={{ color: 'var(--text)' }}>Mail</h1>
 
         {view === 'list' && (
           <div
@@ -708,7 +708,7 @@ export default function MailPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search mail..."
-              className="bg-transparent outline-none text-sm w-48"
+              className="bg-transparent outline-none text-sm w-full sm:w-48"
               style={{ color: 'var(--text)' }}
             />
           </div>

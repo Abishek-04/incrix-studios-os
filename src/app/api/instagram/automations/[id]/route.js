@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ success: false, error: 'accountId required' }, { status: 400 });
     }
 
-    const automation = await InstaAutomationService.getAutomationForMedia(accountId, id);
+    const automation = await InstaAutomationService.getById(accountId, id);
     if (!automation) {
       return NextResponse.json({ success: false, error: 'Automation not found' }, { status: 404 });
     }

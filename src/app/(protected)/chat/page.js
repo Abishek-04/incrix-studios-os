@@ -655,7 +655,7 @@ export default function ChatPage() {
                     <div>
                       <div className="text-sm font-semibold text-[var(--text)]">{activeChannel.name}</div>
                       {activeChannel.description && (
-                        <div className="text-[11px] text-[var(--text-muted)] truncate max-w-xs">{activeChannel.description}</div>
+                        <div className="text-[11px] text-[var(--text-muted)] truncate max-w-[150px] sm:max-w-xs md:max-w-md">{activeChannel.description}</div>
                       )}
                     </div>
                   </div>

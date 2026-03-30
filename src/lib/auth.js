@@ -3,18 +3,18 @@ import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('[Auth] FATAL: JWT_SECRET environment variable is not set');
+  throw new Error('[Auth] FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
 }
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
 export function generateAccessToken(userId) {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ userId, type: 'access' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function generateRefreshToken(userId) {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign({ userId, type: 'refresh' }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 }
 
 export function verifyToken(token) {
@@ -53,6 +53,9 @@ export async function authenticate(request) {
 
   const decoded = verifyToken(token);
   if (!decoded) throw new Error('Invalid or expired token');
+
+  // Reject refresh tokens used as access tokens
+  if (decoded.type === 'refresh') throw new Error('Invalid token type');
 
   return decoded;
 }

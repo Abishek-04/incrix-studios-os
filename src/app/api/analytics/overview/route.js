@@ -17,16 +17,10 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    // Authenticate via JWT, fall back to query param role for backward compat
-    let currentUserRole;
-    try {
-      const decoded = await authenticate(request);
-      const user = await User.findOne({ id: decoded.userId }).select('role').lean();
-      currentUserRole = user?.role;
-    } catch {
-      const { searchParams } = new URL(request.url);
-      currentUserRole = searchParams.get('role');
-    }
+    // Authenticate via JWT — no fallback
+    const decoded = await authenticate(request);
+    const authUser = await User.findOne({ id: decoded.userId }).select('role').lean();
+    const currentUserRole = authUser?.role;
 
     // Permission check - Super Admin only
     if (!hasPermission(currentUserRole, PERMISSIONS.VIEW_ANALYTICS)) {
@@ -36,6 +30,7 @@ export async function GET(request) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('range') || '30'; // days
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(timeRange));

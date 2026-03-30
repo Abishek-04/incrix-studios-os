@@ -65,7 +65,7 @@ export default function SettingsPage() {
     setPassSuccess('');
     if (!currentPass || !newPass) { setPassError('Fill in all fields'); return; }
     if (newPass !== confirmPass) { setPassError('New passwords do not match'); return; }
-    if (newPass.length < 6) { setPassError('Password must be at least 6 characters'); return; }
+    if (newPass.length < 8) { setPassError('Password must be at least 8 characters'); return; }
 
     try {
       const res = await fetchWithAuth(`/api/users/${user.id}`, {

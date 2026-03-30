@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-// Dynamic import for queue (not available in Vercel production)
+import { getAuthUser } from '@/lib/auth';
 
 /**
  * POST /api/whatsapp/broadcast
@@ -10,6 +10,15 @@ import User from '@/models/User';
  */
 export async function POST(request) {
   try {
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const userRole = authUser.role || (authUser.roles && authUser.roles[0]);
+    if (!['superadmin', 'manager'].includes(userRole)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
 
     const body = await request.json();

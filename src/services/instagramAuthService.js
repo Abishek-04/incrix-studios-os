@@ -1,4 +1,5 @@
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 
 const INSTAGRAM_AUTHORIZE_URL = 'https://www.instagram.com/oauth/authorize';
 const INSTAGRAM_TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
@@ -20,6 +21,12 @@ function getConfig() {
 
 export function buildInstagramLoginUrl(studioUserId) {
   const config = getConfig();
+  // Sign userId into a short-lived JWT as CSRF protection
+  const stateToken = jwt.sign(
+    { userId: studioUserId, purpose: 'instagram_oauth' },
+    process.env.JWT_SECRET,
+    { expiresIn: '10m' }
+  );
   const params = new URLSearchParams({
     enable_fb_login: '0',
     force_authentication: '1',
@@ -28,9 +35,22 @@ export function buildInstagramLoginUrl(studioUserId) {
     redirect_uri: config.redirectUri,
     response_type: 'code',
     scope: config.scopes.join(','),
-    state: studioUserId || '',
+    state: stateToken,
   });
   return `${INSTAGRAM_AUTHORIZE_URL}?${params.toString()}`;
+}
+
+/**
+ * Verify the OAuth state token and extract userId
+ */
+export function verifyOAuthState(stateToken) {
+  try {
+    const decoded = jwt.verify(stateToken, process.env.JWT_SECRET);
+    if (decoded.purpose !== 'instagram_oauth') return null;
+    return decoded.userId;
+  } catch {
+    return null;
+  }
 }
 
 export async function exchangeCodeForAccessToken(code) {

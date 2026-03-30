@@ -86,10 +86,15 @@ function serializeUserForRecycle(user) {
 
 /**
  * GET /api/users/[id]
- * Get a specific user
+ * Get a specific user (authenticated only)
  */
 export async function GET(request, { params }) {
   try {
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectDB();
 
     const { id } = await params;
@@ -109,7 +114,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('[API] Error fetching user:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Failed to fetch user' },
       { status: 500 }
     );
   }

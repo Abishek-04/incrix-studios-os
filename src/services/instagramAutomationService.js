@@ -7,7 +7,9 @@ function buildCompiledReplyMessage(replyMessage, productLink) {
 }
 
 function toAutomationRecord(accountId, createdBy, payload) {
-  const replyMessage = payload.replyMessage?.trim() || '';
+  const commentReplyMessage = payload.commentReplyMessage?.trim() || '';
+  const dmReplyMessage = payload.dmReplyMessage?.trim() || '';
+  const replyMessage = payload.replyMessage?.trim() || commentReplyMessage || dmReplyMessage;
   const productLink = payload.productLink?.trim() || '';
 
   return {
@@ -18,6 +20,8 @@ function toAutomationRecord(accountId, createdBy, payload) {
     matchType: payload.matchType || 'contains',
     replyType: payload.replyType || 'both',
     replyMessage,
+    commentReplyMessage,
+    dmReplyMessage,
     productLink,
     compiledReplyMessage: buildCompiledReplyMessage(replyMessage, productLink),
     targetMediaId: payload.targetMediaId || 'any',
@@ -36,6 +40,14 @@ export const InstaAutomationService = {
     );
   },
 
+  async getById(accountId, automationId) {
+    await connectDB();
+    if (!automationId) return null;
+    const doc = await InstaAutomation.findById(automationId).lean();
+    if (!doc || doc.accountId !== accountId) return null;
+    return { ...doc, id: doc._id.toString() };
+  },
+
   async getAutomationForMedia(accountId, mediaId) {
     await connectDB();
     if (!mediaId) return null;
@@ -48,10 +60,14 @@ export const InstaAutomationService = {
     if (!payload.targetMediaId) throw new Error('targetMediaId is required');
     if (!payload.triggerKeyword?.trim()) throw new Error('triggerKeyword is required');
 
-    // Check if automation already exists for this media
-    const existing = await InstaAutomation.findOne({ accountId, targetMediaId: payload.targetMediaId }).lean();
+    // Check if automation with same keyword already exists for this media
+    const existing = await InstaAutomation.findOne({
+      accountId,
+      targetMediaId: payload.targetMediaId,
+      triggerKeyword: payload.triggerKeyword.trim(),
+    }).lean();
     if (existing) {
-      const error = new Error('Automation already exists for this media');
+      const error = new Error('Automation with this keyword already exists for this media');
       error.code = 'AUTOMATION_EXISTS';
       error.automation = { ...existing, id: existing._id.toString() };
       throw error;
@@ -79,9 +95,12 @@ export const InstaAutomationService = {
 
   async toggleAutomation(accountId, automationId) {
     await connectDB();
-    const existing = await InstaAutomation.findById(automationId).lean();
-    if (!existing || existing.accountId !== accountId) return null;
-    const doc = await InstaAutomation.findByIdAndUpdate(automationId, { active: !existing.active }, { new: true }).lean();
+    // Atomic toggle using MongoDB $not expression to avoid race condition
+    const doc = await InstaAutomation.findOneAndUpdate(
+      { _id: automationId, accountId },
+      [{ $set: { active: { $not: '$active' } } }],
+      { new: true }
+    ).lean();
     return doc ? { ...doc, id: doc._id.toString() } : null;
   },
 

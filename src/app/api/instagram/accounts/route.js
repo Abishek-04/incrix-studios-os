@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import InstaAccount from '@/models/InstaAccount';
+import InstaAutomation from '@/models/InstaAutomation';
 import { getAuthUser } from '@/lib/auth';
 
 /**
@@ -73,6 +74,10 @@ export async function DELETE(request) {
     if (!account) {
       return NextResponse.json({ success: false, error: 'Account not found' }, { status: 404 });
     }
+
+    // Clean up all automations linked to this account
+    const deleted = await InstaAutomation.deleteMany({ accountId: accountId });
+    console.log(`[instagram-accounts] Deleted ${deleted.deletedCount} automations for account ${accountId}`);
 
     return NextResponse.json({ success: true, message: `Disconnected @${account.username}` });
   } catch (error) {

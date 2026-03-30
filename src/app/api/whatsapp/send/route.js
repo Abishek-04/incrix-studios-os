@@ -2,20 +2,23 @@ import { NextResponse } from 'next/server';
 import { sendWhatsAppMessage } from '@/services/whatsappService';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { getAuthUser } from '@/lib/auth';
 
 /**
  * POST /api/whatsapp/send
  * Manual WhatsApp message sending endpoint (for admin/manager use)
- *
- * This endpoint allows sending WhatsApp messages to one or more users manually.
- * Useful for announcements, reminders, or broadcasting messages.
- *
- * @param {Array<string>} userIds - Array of user IDs to send to
- * @param {string} message - Message text to send
- * @returns {Object} Results with success/failure counts
  */
 export async function POST(request) {
   try {
+    const { user: authUser } = await getAuthUser(request);
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const userRole = authUser.role || (authUser.roles && authUser.roles[0]);
+    if (!['superadmin', 'manager'].includes(userRole)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
     const { userIds, message } = await request.json();
 
     // Validate required fields

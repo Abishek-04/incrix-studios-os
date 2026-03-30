@@ -87,9 +87,9 @@ export const AutomationEngine = {
     }
 
     console.log(`[engine] Trigger matched "${matched.triggerKeyword}" for ${account.username}`);
-    const fallbackMessage = matched.compiledReplyMessage || matched.replyMessage;
-    const commentMessage = matched.commentReplyMessage || fallbackMessage;
-    const dmMessage = matched.dmReplyMessage || fallbackMessage;
+    const fallbackMessage = matched.compiledReplyMessage || matched.replyMessage || '';
+    const commentMessage = (matched.commentReplyMessage != null && matched.commentReplyMessage !== '') ? matched.commentReplyMessage : fallbackMessage;
+    const dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : fallbackMessage;
 
     await markEventProcessed(recentEventKey);
 

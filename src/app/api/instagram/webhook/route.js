@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHmac, timingSafeEqual } from 'crypto';
 import connectDB from '@/lib/mongodb';
 import InstaAccount from '@/models/InstaAccount';
 import { AutomationEngine } from '@/services/instagramAutomationEngine';
@@ -13,9 +14,15 @@ export async function GET(request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  console.log('[webhook] Verification request:', { mode, token, challenge });
+  const expectedToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN;
+  if (!expectedToken || !token) {
+    return new Response(null, { status: 403 });
+  }
 
-  if (mode === 'subscribe' && token === process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN) {
+  // Timing-safe comparison for verify token
+  const a = Buffer.from(token);
+  const b = Buffer.from(expectedToken);
+  if (mode === 'subscribe' && a.length === b.length && timingSafeEqual(a, b)) {
     console.log('[webhook] Verification successful');
     return new Response(challenge, { status: 200 });
   }
@@ -25,12 +32,33 @@ export async function GET(request) {
 }
 
 /**
+ * Verify Instagram webhook signature (x-hub-signature-256)
+ */
+function verifyWebhookSignature(rawBody, signature) {
+  if (!signature || !process.env.INSTAGRAM_APP_SECRET) return false;
+  const expected = 'sha256=' + createHmac('sha256', process.env.INSTAGRAM_APP_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
  * POST /api/instagram/webhook
  * Receive Instagram webhook events (comments, messages)
  */
 export async function POST(request) {
+  // Verify webhook signature
+  const rawBody = await request.text();
+  const signature = request.headers.get('x-hub-signature-256');
+  if (!verifyWebhookSignature(rawBody, signature)) {
+    console.error('[webhook] Invalid signature');
+    return new Response('Invalid signature', { status: 403 });
+  }
+
   await connectDB();
-  const body = await request.json();
+  const body = JSON.parse(rawBody);
 
   console.log('\n===== INSTAGRAM WEBHOOK RECEIVED =====');
   console.log('Time:', new Date().toISOString());

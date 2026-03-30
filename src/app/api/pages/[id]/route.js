@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Page from '@/models/Page';
+import { authenticate } from '@/lib/auth';
 
 // GET /api/pages/[id] - Get single page with all blocks
 export async function GET(request, { params }) {
   try {
+    await authenticate(request);
     await connectDB();
     const { id } = params;
 
@@ -34,6 +36,7 @@ export async function GET(request, { params }) {
 // PATCH /api/pages/[id] - Update page metadata
 export async function PATCH(request, { params }) {
   try {
+    await authenticate(request);
     const body = await request.json();
     await connectDB();
     const { id } = params;
@@ -84,6 +87,7 @@ export async function PATCH(request, { params }) {
 // DELETE /api/pages/[id] - Soft delete page
 export async function DELETE(request, { params }) {
   try {
+    await authenticate(request);
     await connectDB();
     const { id } = params;
 

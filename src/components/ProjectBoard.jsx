@@ -71,7 +71,7 @@ function Card({ project, stage, onSelect, onDragStart, onMoveLeft, onMoveRight, 
         {/* Glow bar at top */}
         <div className="h-[3px]" style={{ background: `linear-gradient(90deg, rgba(${stage.rgb}, 0.7), rgba(${stage.rgb}, 0.2))` }} />
 
-        <div className="p-4 space-y-2.5">
+        <div className="p-3 sm:p-4 space-y-2">
           {/* Platform + Due */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -168,7 +168,7 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
 
   return (
     <div
-      className="flex flex-col min-w-[280px] shrink-0 lg:min-w-0 lg:shrink rounded-2xl relative overflow-hidden"
+      className="flex flex-col min-w-[260px] sm:min-w-[280px] shrink-0 xl:min-w-0 xl:shrink rounded-2xl relative overflow-hidden"
       style={{
         background: over ? `rgba(${stage.rgb}, 0.04)` : 'var(--bg-card)',
         border: `1px solid ${over ? `rgba(${stage.rgb}, 0.3)` : 'var(--border)'}`,
@@ -335,7 +335,7 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg)' }}>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b shrink-0"
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 border-b shrink-0"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
         <CreatorFilter value={creator} onChange={setCreator} creators={creators} />
 
@@ -343,13 +343,13 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
           <PipelineBar columns={columns} total={filtered.length} />
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
-          <span className="text-[12px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+          <span className="text-[11px] sm:text-[12px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
             {filtered.length} projects
           </span>
           {onCreateProject && (
             <button onClick={onCreateProject}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-[12px] sm:text-[13px] font-bold text-white"
               style={{ background: 'var(--primary)', transition: 'transform 160ms cubic-bezier(0.23,1,0.32,1)' }}
               onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
               onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
@@ -360,8 +360,8 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-5">
-        <div className="flex lg:grid lg:grid-cols-6 gap-4 h-full">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 sm:p-4 md:p-5">
+        <div className="flex xl:grid xl:grid-cols-6 gap-3 sm:gap-4 h-full">
           {columns.map((col, i) => (
             <Column
               key={col.key} stage={col} idx={i} projects={col.projects} isDone={col.key === 'Done'} channels={channels}

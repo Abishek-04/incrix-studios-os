@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Instagram, Plus, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, Zap, MessageCircle, Send, Edit2, ToggleLeft, ToggleRight, Image, Film, ChevronDown, ArrowLeft, X } from 'lucide-react';
+import { Instagram, Plus, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, Zap, MessageCircle, Send, Edit2, ToggleLeft, ToggleRight, Image, Film, ChevronDown, ArrowLeft, X, LogOut } from 'lucide-react';
 import { fetchWithAuth } from '@/services/api';
 import { useConfirm } from '@/contexts/UIContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,8 +50,8 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
   const [triggerKeyword, setTriggerKeyword] = useState(existingAutomation?.triggerKeyword || '');
   const [matchType, setMatchType] = useState(existingAutomation?.matchType || 'contains');
   const [replyType, setReplyType] = useState(existingAutomation?.replyType || 'both');
-  const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage || existingAutomation?.replyMessage || '');
-  const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage || existingAutomation?.replyMessage || '');
+  const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage ?? existingAutomation?.replyMessage ?? '');
+  const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage ?? '');
   const [productLink, setProductLink] = useState(existingAutomation?.productLink || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -85,7 +85,7 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
         replyType,
         commentReplyMessage: commentReplyMessage.trim(),
         dmReplyMessage: dmReplyMessage.trim(),
-        replyMessage: commentReplyMessage.trim() || dmReplyMessage.trim(), // fallback
+        replyMessage: dmReplyMessage.trim() || commentReplyMessage.trim(), // legacy fallback (prefer DM)
         productLink: productLink.trim(),
         targetMediaId: media?.id || 'any',
         targetMediaCaption: media?.caption || '',
@@ -280,7 +280,7 @@ function AutomationCard({ automation, onToggle, onEdit, onDelete }) {
 
           {/* Reply Messages */}
           <div className="mb-3 space-y-2">
-            {(automation.commentReplyMessage || (!automation.dmReplyMessage && automation.replyMessage)) && (
+            {(automation.commentReplyMessage || automation.replyMessage) && (
               <div className="p-3 rounded-lg bg-[#151515] border border-[#252525]">
                 <div className="text-[10px] uppercase tracking-wider text-[#666] font-semibold mb-1">Comment Reply</div>
                 <p className="text-sm text-[#ccc] leading-relaxed">{automation.commentReplyMessage || automation.replyMessage}</p>
@@ -428,9 +428,20 @@ export default function InstagramPage() {
     setTimeout(() => setMessage(null), 5000);
   }
 
-  function handleConnect() {
+  async function handleConnect() {
     if (!currentUser) return;
-    window.location.href = `/api/instagram/auth?userId=${currentUser.id}`;
+    try {
+      const res = await fetchWithAuth('/api/instagram/auth');
+      // The API returns a redirect — follow the redirect URL
+      if (res.redirected) {
+        window.location.href = res.url;
+      } else {
+        const data = await res.json();
+        if (data.error) showMsg(data.error, 'error');
+      }
+    } catch {
+      showMsg('Failed to start Instagram connection', 'error');
+    }
   }
 
   async function handleDisconnect(accountId) {
@@ -649,9 +660,9 @@ export default function InstagramPage() {
           )}
           <h1 className="text-xl font-bold text-white">Instagram</h1>
         </div>
-        <button onClick={handleConnect}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2">
-          <Plus size={14} /> Add Account
+        <button onClick={() => handleDisconnect(selectedAccount._id || selectedAccount.id)}
+          className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-all flex items-center gap-2">
+          <LogOut size={14} /> Disconnect Account
         </button>
       </div>
 

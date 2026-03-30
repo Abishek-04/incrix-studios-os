@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server';
 import { buildInstagramLoginUrl } from '@/services/instagramAuthService';
+import { authenticate } from '@/lib/auth';
 
 /**
- * GET /api/instagram/auth?userId=xxx
- * Redirect user to Instagram OAuth login
+ * GET /api/instagram/auth
+ * Redirect authenticated user to Instagram OAuth login
  */
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const decoded = await authenticate(request);
+    const userId = decoded.userId;
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'userId parameter required' },
-        { status: 400 }
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
       );
     }
 
