@@ -30,6 +30,145 @@ const STAGE_DARK = {
   Done:       { bg: 'rgba(118,210,219,0.12)', text: '#96e0e8', dot: '#96e0e8', glow: '0 0 20px rgba(118,210,219,0.4), 0 0 8px rgba(118,210,219,0.25)' },
 };
 
+// ─── Mobile Week Strip ─────────────────────────────────────────────────────
+function MobileCalendar({ projects, projectsByDate, onSelectProject, STAGE_COLORS, isDark }) {
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1; // Monday start
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff);
+  });
+  const [selectedDay, setSelectedDay] = useState(new Date().toDateString());
+
+  const weekDays = useMemo(() => {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [weekStart]);
+
+  const prevWeek = () => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d); };
+  const nextWeek = () => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d); };
+  const goToday = () => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    setWeekStart(new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff));
+    setSelectedDay(d.toDateString());
+  };
+
+  const todayStr = new Date().toDateString();
+  const selectedProjects = projectsByDate[selectedDay] || [];
+  const monthLabel = weekDays[3].toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="min-h-full p-3" style={{ background: 'var(--bg)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-black" style={{ color: 'var(--text)' }}>Calendar</h1>
+        <button onClick={goToday} className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>Today</button>
+      </div>
+
+      {/* Month + Week Nav */}
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prevWeek} className="p-2 rounded-lg" style={{ color: 'var(--text-muted)' }}><ChevronLeft size={18} /></button>
+        <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{monthLabel}</span>
+        <button onClick={nextWeek} className="p-2 rounded-lg" style={{ color: 'var(--text-muted)' }}><ChevronRight size={18} /></button>
+      </div>
+
+      {/* Week Strip */}
+      <div className="grid grid-cols-7 gap-1.5 mb-4">
+        {weekDays.map(d => {
+          const key = d.toDateString();
+          const isToday = key === todayStr;
+          const isSelected = key === selectedDay;
+          const dayProjects = projectsByDate[key] || [];
+          const hasProjects = dayProjects.length > 0;
+
+          return (
+            <button key={key} onClick={() => setSelectedDay(key)}
+              className="flex flex-col items-center py-2.5 rounded-xl transition-all"
+              style={{
+                background: isSelected ? 'var(--primary)' : isToday ? 'var(--primary-light)' : 'var(--bg-card)',
+                border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+              }}>
+              <span className="text-[10px] font-bold uppercase" style={{ color: isSelected ? 'white' : 'var(--text-muted)' }}>
+                {DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1]?.slice(0, 1)}
+              </span>
+              <span className="text-[16px] font-black mt-0.5" style={{ color: isSelected ? 'white' : isToday ? 'var(--primary)' : 'var(--text)' }}>
+                {d.getDate()}
+              </span>
+              {hasProjects && (
+                <div className="flex gap-0.5 mt-1">
+                  {dayProjects.slice(0, 3).map((_, i) => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: isSelected ? 'white' : '#76D2DB' }} />
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected Day Events */}
+      <div className="rounded-2xl border p-4" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>
+              {new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </div>
+            <div className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              {selectedProjects.length} deliverable{selectedProjects.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+
+        {selectedProjects.length > 0 ? (
+          <div className="space-y-2">
+            {selectedProjects.map((p, i) => {
+              const sc = STAGE_COLORS[p.stage] || STAGE_COLORS.Backlog;
+              const overdue = new Date(p.dueDate) < new Date() && p.stage !== 'Done';
+              return (
+                <motion.div key={p.id}
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                  onClick={() => onSelectProject?.(p)}
+                  className="rounded-xl border p-3 cursor-pointer transition-all active:scale-[0.98]"
+                  style={{ borderColor: 'var(--border)', borderLeft: `3px solid ${overdue ? '#F9E400' : sc.dot}`, boxShadow: sc.glow }}>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h4 className="text-[13px] font-bold leading-snug" style={{ color: p.stage === 'Done' ? 'var(--success)' : 'var(--text)' }}>
+                      {p.title}
+                    </h4>
+                    {overdue && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 shrink-0">Late</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ background: sc.bg, color: sc.text }}>{p.stage}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{p.creator}</span>
+                    {p.platform && (
+                      <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>
+                        {p.platform === 'youtube' ? '▶ YT' : p.platform === 'instagram' ? '◉ IG' : p.platform}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 text-center">
+            <Calendar size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
+            <p className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>No deliverables</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CalendarView({ projects = [], onSelectProject }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -89,7 +228,14 @@ export default function CalendarView({ projects = [], onSelectProject }) {
   }, [projects, year, month]);
 
   return (
-    <div className="min-h-full p-4 md:p-6 lg:p-8" style={{ background: 'var(--bg)' }}>
+    <>
+    {/* Mobile: Week strip calendar */}
+    <div className="md:hidden">
+      <MobileCalendar projects={projects} projectsByDate={projectsByDate} onSelectProject={onSelectProject} STAGE_COLORS={STAGE_COLORS} isDark={isDark} />
+    </div>
+
+    {/* Desktop: Full month grid */}
+    <div className="hidden md:block min-h-full p-4 md:p-6 lg:p-8" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
         className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -278,5 +424,6 @@ export default function CalendarView({ projects = [], onSelectProject }) {
         </AnimatePresence>
       </div>
     </div>
+    </>
   );
 }
