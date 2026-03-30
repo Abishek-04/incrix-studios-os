@@ -631,6 +631,7 @@ export default function InstagramPage() {
   const [editingAutomation, setEditingAutomation] = useState(null);
   const [showBuilder, setShowBuilder] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [pendingAutomateId, setPendingAutomateId] = useState(null);
 
   const isManager = currentUser?.role === 'manager' || currentUser?.role === 'superadmin' ||
     (Array.isArray(currentUser?.roles) && (currentUser.roles.includes('manager') || currentUser.roles.includes('superadmin')));
@@ -639,13 +640,16 @@ export default function InstagramPage() {
   useEffect(() => {
     loadAccounts();
 
-    // Check for OAuth callback
+    // Check for OAuth callback or automation deep link
     const params = new URLSearchParams(window.location.search);
     if (params.get('success')) {
       showMsg(`Connected @${params.get('connected') || 'account'}!`, 'success');
       window.history.replaceState({}, '', '/instagram');
     } else if (params.get('error')) {
       showMsg(`Connection failed: ${params.get('error')}`, 'error');
+      window.history.replaceState({}, '', '/instagram');
+    } else if (params.get('automate')) {
+      setPendingAutomateId(params.get('automate'));
       window.history.replaceState({}, '', '/instagram');
     }
   }, []);
@@ -657,14 +661,27 @@ export default function InstagramPage() {
     }
   }, [selectedAccount]);
 
+  // Auto-open automation builder when arriving from project page deep link
+  useEffect(() => {
+    if (pendingAutomateId && media.length > 0 && !mediaLoading) {
+      const targetMedia = media.find(m => m.id === pendingAutomateId);
+      if (targetMedia) {
+        handleSetupAutomation(targetMedia);
+      }
+      setPendingAutomateId(null);
+    }
+  }, [pendingAutomateId, media, mediaLoading]);
+
   async function loadAccounts() {
     try {
       const res = await fetchWithAuth('/api/instagram/accounts');
       const data = await res.json();
       if (data.success) {
         setAccounts(data.accounts);
-        // Auto-select only for normal users with exactly 1 account
-        // Managers always see the accounts dashboard first
+        // Auto-select first account if coming from automation deep link
+        if (data.accounts.length > 0 && pendingAutomateId) {
+          setSelectedAccount(data.accounts[0]);
+        }
       }
     } catch (err) {
       console.error('Failed to load accounts:', err);

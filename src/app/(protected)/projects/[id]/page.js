@@ -9,7 +9,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import {
   ArrowLeft, Calendar, Clock, User, Users, Film, Edit3, Save, Trash2,
   ChevronRight, CheckCircle, AlertTriangle, Link as LinkIcon, ExternalLink,
-  FileText, MessageSquare, Heart, MessageCircle, Play, Eye, Search, X, ChevronDown
+  FileText, MessageSquare, Heart, MessageCircle, Play, Eye, Search, X, ChevronDown, Zap
 } from 'lucide-react';
 
 const ease = [0.23, 1, 0.32, 1];
@@ -48,7 +48,7 @@ function fmtNum(n) {
 }
 
 // ─── Published Output ────────────────────────────────────────────────────────
-function PublishedOutput({ mediaItem, accountId, onUnlink }) {
+function PublishedOutput({ mediaItem, accountId, onUnlink, onSetupAutomation }) {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [captionExpanded, setCaptionExpanded] = useState(false);
@@ -191,6 +191,19 @@ function PublishedOutput({ mediaItem, accountId, onUnlink }) {
           </div>
         </div>
       </div>
+
+      {/* Setup Automation button */}
+      {onSetupAutomation && (
+        <div className="px-5 py-3 border-t" style={{ borderColor: 'var(--border-light)' }}>
+          <button onClick={() => onSetupAutomation(mediaItem)}
+            className="w-full py-2 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-2 transition-all"
+            style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.2)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}>
+            <Zap size={13} /> Setup Automation
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -330,6 +343,11 @@ export default function ProjectDetailPage() {
       body: JSON.stringify({ project: { publishedMediaId: '', publishedLink: '' } }),
     });
     setProject(prev => ({ ...prev, publishedMediaId: '', publishedLink: '' }));
+  }
+
+  function handleGoToAutomation(mediaItem) {
+    // Navigate to Instagram page with query param to auto-open automation for this media
+    router.push(`/instagram?automate=${encodeURIComponent(mediaItem.id)}`);
   }
 
   const isInstaProject = project.platform === 'instagram' || project.contentFormat === 'InstaReel' || project.contentFormat === 'InstaPost';
@@ -520,7 +538,7 @@ export default function ProjectDetailPage() {
           {isInstaProject && isDone && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.25, ease }}>
               {publishedMedia ? (
-                <PublishedOutput mediaItem={publishedMedia} accountId={instaAccountId} onUnlink={handleUnlinkMedia} />
+                <PublishedOutput mediaItem={publishedMedia} accountId={instaAccountId} onUnlink={handleUnlinkMedia} onSetupAutomation={handleGoToAutomation} />
               ) : (
                 <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                   <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
