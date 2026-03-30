@@ -8,7 +8,11 @@ const INSTAGRAM_GRAPH_BASE = 'https://graph.instagram.com/v23.0';
 const TOKEN_REFRESH_LEAD_SECONDS = 86400; // 24 hours before expiry
 
 const MEDIA_FIELDS = 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count';
-const MEDIA_FIELDS_DETAIL = MEDIA_FIELDS + ',plays';
+const MEDIA_FIELDS_VIDEO = MEDIA_FIELDS + ',plays';
+
+function mediaFieldsFor(mediaType) {
+  return mediaType === 'VIDEO' ? MEDIA_FIELDS_VIDEO : MEDIA_FIELDS;
+}
 
 async function getMediaListViaInstagramGraph(accessToken) {
   const response = await axios.get(`${INSTAGRAM_GRAPH_BASE}/me/media`, {
@@ -20,14 +24,25 @@ async function getMediaListViaInstagramGraph(accessToken) {
   return response.data.data || [];
 }
 
-async function getMediaDetailsViaInstagramGraph(mediaId, accessToken) {
+async function getMediaDetailsViaInstagramGraph(mediaId, accessToken, mediaType) {
   const response = await axios.get(`${INSTAGRAM_GRAPH_BASE}/${mediaId}`, {
     params: {
       access_token: accessToken,
-      fields: MEDIA_FIELDS_DETAIL,
+      fields: mediaFieldsFor(mediaType),
     },
   });
   return response.data;
+}
+
+async function getMediaComments(mediaId, accessToken) {
+  const response = await axios.get(`${INSTAGRAM_GRAPH_BASE}/${mediaId}/comments`, {
+    params: {
+      access_token: accessToken,
+      fields: 'id,text,username,timestamp,like_count',
+      limit: 50,
+    },
+  });
+  return response.data.data || [];
 }
 
 function shouldRefreshToken(account) {
@@ -73,7 +88,7 @@ export const InstagramService = {
       const media = await getMediaListViaInstagramGraph(accessToken);
       const hydratedMedia = await Promise.all(
         media.map(async (item) => {
-          try { return await getMediaDetailsViaInstagramGraph(item.id, accessToken); }
+          try { return await getMediaDetailsViaInstagramGraph(item.id, accessToken, item.media_type); }
           catch (_error) { return item; }
         })
       );
@@ -89,6 +104,11 @@ export const InstagramService = {
       }
       throw instagramError;
     }
+  },
+
+  async getComments(mediaId, account) {
+    const { accessToken } = await getUsableAccessToken(account);
+    return getMediaComments(mediaId, accessToken);
   },
 
   async replyToComment(commentId, message, account) {

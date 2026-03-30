@@ -106,6 +106,169 @@ function MediaCard({ item, automated, onSelect }) {
   );
 }
 
+// ─── Media Detail Modal (Instagram-style) ───
+function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation }) {
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(true);
+  const image = item.media_url || item.thumbnail_url;
+  const isReel = item.media_type === 'VIDEO';
+  const mediaAutomations = automations.filter(a => a.targetMediaId === item.id);
+  const timeAgo = item.timestamp ? new Date(item.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  useEffect(() => {
+    async function loadComments() {
+      try {
+        const res = await fetchWithAuth(`/api/instagram/comments?accountId=${accountId}&mediaId=${item.id}`);
+        const data = await res.json();
+        if (data.success) setComments(data.comments);
+      } catch { /* ignore */ }
+      finally { setLoadingComments(false); }
+    }
+    loadComments();
+  }, [accountId, item.id]);
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#1a1a1a] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
+
+        {/* Left — Media */}
+        <div className="md:w-[55%] bg-black flex items-center justify-center shrink-0 relative">
+          {image ? (
+            isReel ? (
+              <video src={item.media_url} poster={item.thumbnail_url} controls className="w-full max-h-[85vh] object-contain" />
+            ) : (
+              <img src={image} alt="" className="w-full max-h-[85vh] object-contain" />
+            )
+          ) : (
+            <div className="w-full aspect-square flex items-center justify-center"><Image size={48} className="text-[#444]" /></div>
+          )}
+          <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors md:hidden">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Right — Details */}
+        <div className="md:w-[45%] flex flex-col min-h-0">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#333]">
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isReel ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                {isReel ? 'Reel' : 'Post'}
+              </span>
+              <span className="text-[11px] text-[#666]">{timeAgo}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {item.permalink && (
+                <a href={item.permalink} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-400 hover:underline">Open in Instagram</a>
+              )}
+              <button onClick={onClose} className="text-[#666] hover:text-white transition-colors hidden md:block">
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-6 px-4 py-3 border-b border-[#333]">
+            {item.like_count != null && (
+              <div className="flex items-center gap-1.5">
+                <Heart size={18} className="text-red-400" />
+                <div>
+                  <span className="text-white font-bold text-sm">{fmtNum(item.like_count)}</span>
+                  <span className="text-[#666] text-[10px] ml-1">likes</span>
+                </div>
+              </div>
+            )}
+            {item.comments_count != null && (
+              <div className="flex items-center gap-1.5">
+                <MessageCircle size={18} className="text-blue-400" />
+                <div>
+                  <span className="text-white font-bold text-sm">{fmtNum(item.comments_count)}</span>
+                  <span className="text-[#666] text-[10px] ml-1">comments</span>
+                </div>
+              </div>
+            )}
+            {isReel && item.plays != null && (
+              <div className="flex items-center gap-1.5">
+                <Play size={18} className="text-green-400" />
+                <div>
+                  <span className="text-white font-bold text-sm">{fmtNum(item.plays)}</span>
+                  <span className="text-[#666] text-[10px] ml-1">views</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Caption */}
+          {item.caption && (
+            <div className="px-4 py-3 border-b border-[#333]">
+              <p className="text-[13px] text-[#ddd] leading-relaxed whitespace-pre-line">{item.caption}</p>
+            </div>
+          )}
+
+          {/* Automation info */}
+          {mediaAutomations.length > 0 && (
+            <div className="px-4 py-2.5 border-b border-[#333]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Zap size={12} className="text-green-400" />
+                <span className="text-[11px] font-semibold text-green-400">{mediaAutomations.length} automation{mediaAutomations.length > 1 ? 's' : ''} active</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {mediaAutomations.map(a => a.triggerKeyword.split(',').map(k => k.trim()).filter(Boolean)).flat().map(kw => (
+                  <span key={kw} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">{kw}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="px-4 py-2.5">
+              <h4 className="text-[12px] font-bold text-[#999] uppercase tracking-wider mb-3">Comments</h4>
+              {loadingComments ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw size={16} className="animate-spin text-[#666]" />
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="text-[12px] text-[#666] text-center py-6">No comments yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map(c => (
+                    <div key={c.id} className="flex gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {c.username?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[12px] font-bold text-white">{c.username}</span>
+                          <span className="text-[10px] text-[#555]">{new Date(c.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                        <p className="text-[12px] text-[#ccc] leading-relaxed mt-0.5">{c.text}</p>
+                        {c.like_count > 0 && (
+                          <span className="text-[10px] text-[#666] flex items-center gap-1 mt-1"><Heart size={9} /> {c.like_count}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer — Setup Automation CTA */}
+          <div className="px-4 py-3 border-t border-[#333]">
+            <button
+              onClick={() => { onClose(); onSetupAutomation(item); }}
+              className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
+            >
+              <Zap size={14} /> {mediaAutomations.length > 0 ? 'Edit Automation' : 'Setup Automation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Automation Builder Modal ───
 function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClose }) {
   // Parse existing keywords from comma-separated string
@@ -458,7 +621,8 @@ export default function InstagramPage() {
   const [mediaFilter, setMediaFilter] = useState('all');
   const [message, setMessage] = useState(null);
 
-  // Automation builder
+  // Detail + Automation builder
+  const [detailMedia, setDetailMedia] = useState(null);
   const [builderMedia, setBuilderMedia] = useState(null);
   const [editingAutomation, setEditingAutomation] = useState(null);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -597,6 +761,10 @@ export default function InstagramPage() {
   }
 
   function handleMediaSelect(item) {
+    setDetailMedia(item);
+  }
+
+  function handleSetupAutomation(item) {
     const existing = automations.find(a => a.targetMediaId === item.id);
     if (existing) {
       setEditingAutomation(existing);
@@ -872,7 +1040,7 @@ export default function InstagramPage() {
       <div className="border-b border-[#333]">
         <nav className="flex gap-6">
           {[
-            { id: 'create', label: 'Create Rule' },
+            { id: 'create', label: 'Dashboard' },
             { id: 'automations', label: `Automations (${automations.length})` },
           ].map(tab => (
             <button
@@ -973,6 +1141,17 @@ export default function InstagramPage() {
             })
           )}
         </div>
+      )}
+
+      {/* Media Detail Modal */}
+      {detailMedia && (
+        <MediaDetail
+          item={detailMedia}
+          accountId={selectedAccount.id}
+          automations={automations}
+          onClose={() => setDetailMedia(null)}
+          onSetupAutomation={handleSetupAutomation}
+        />
       )}
 
       {/* Automation Builder Modal */}
