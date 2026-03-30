@@ -38,6 +38,7 @@ const ProjectSchema = new Schema(
     technicalNotes: { type: String, default: '' },
     reviewLink: { type: String },
     publishedLink: { type: String },
+    publishedMediaId: { type: String },
     comments: [
       {
         id: String,

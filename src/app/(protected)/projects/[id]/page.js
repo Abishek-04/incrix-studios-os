@@ -9,7 +9,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import {
   ArrowLeft, Calendar, Clock, User, Users, Film, Edit3, Save, Trash2,
   ChevronRight, CheckCircle, AlertTriangle, Link as LinkIcon, ExternalLink,
-  FileText, MessageSquare
+  FileText, MessageSquare, Heart, MessageCircle, Play, Eye, Search, X, ChevronDown
 } from 'lucide-react';
 
 const ease = [0.23, 1, 0.32, 1];
@@ -40,6 +40,225 @@ function fmtDue(ts) {
   return { text: `${days} days left`, urgent: false };
 }
 
+function fmtNum(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
+// ─── Published Output ────────────────────────────────────────────────────────
+function PublishedOutput({ mediaItem, accountId, onUnlink }) {
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(true);
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const isReel = mediaItem.media_type === 'VIDEO';
+  const image = mediaItem.media_url || mediaItem.thumbnail_url;
+  const captionLong = (mediaItem.caption || '').length > 150;
+
+  useEffect(() => {
+    if (!accountId || !mediaItem.id) return;
+    fetchWithAuth(`/api/instagram/comments?accountId=${accountId}&mediaId=${mediaItem.id}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setComments(d.comments); })
+      .catch(() => {})
+      .finally(() => setLoadingComments(false));
+  }, [accountId, mediaItem.id]);
+
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+        <h3 className="text-[14px] font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          {isReel ? <Play size={16} /> : <Film size={16} />} Published Output
+        </h3>
+        <div className="flex items-center gap-2">
+          {mediaItem.permalink && (
+            <a href={mediaItem.permalink} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] font-medium flex items-center gap-1 transition-colors"
+              style={{ color: 'var(--primary)' }}>
+              <ExternalLink size={12} /> Open in Instagram
+            </a>
+          )}
+          {onUnlink && (
+            <button onClick={onUnlink} className="text-[11px] font-medium px-2 py-0.5 rounded transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--danger)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+              Unlink
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row">
+        {/* Media preview */}
+        <div className="md:w-[45%] bg-black flex items-center justify-center shrink-0">
+          {image ? (
+            isReel ? (
+              <video src={mediaItem.media_url} poster={mediaItem.thumbnail_url} controls className="w-full max-h-[400px] object-contain" />
+            ) : (
+              <img src={image} alt="" className="w-full max-h-[400px] object-contain" />
+            )
+          ) : (
+            <div className="w-full aspect-video flex items-center justify-center" style={{ background: 'var(--bg-input)' }}>
+              <Film size={40} style={{ color: 'var(--text-muted)' }} />
+            </div>
+          )}
+        </div>
+
+        {/* Info panel */}
+        <div className="md:w-[55%] flex flex-col min-h-0">
+          {/* Stats */}
+          <div className="flex items-center gap-5 px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            {mediaItem.like_count != null && (
+              <div className="flex items-center gap-1.5">
+                <Heart size={16} className="text-red-400" fill="#f87171" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(mediaItem.like_count)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>likes</span>
+              </div>
+            )}
+            {mediaItem.comments_count != null && (
+              <div className="flex items-center gap-1.5">
+                <MessageCircle size={16} className="text-blue-400" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(mediaItem.comments_count)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>comments</span>
+              </div>
+            )}
+            {isReel && mediaItem.plays != null && (
+              <div className="flex items-center gap-1.5">
+                <Eye size={16} className="text-green-400" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(mediaItem.plays)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>views</span>
+              </div>
+            )}
+          </div>
+
+          {/* Caption */}
+          {mediaItem.caption && (
+            <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+              <p className={`text-[12px] leading-relaxed whitespace-pre-line ${!captionExpanded && captionLong ? 'line-clamp-3' : ''}`}
+                style={{ color: 'var(--text-secondary)' }}>
+                {mediaItem.caption}
+              </p>
+              {captionLong && (
+                <button onClick={() => setCaptionExpanded(!captionExpanded)}
+                  className="text-[11px] font-semibold mt-1 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                  {captionExpanded ? 'less' : 'more'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Comments */}
+          <div className="px-5 py-3 max-h-[250px] overflow-y-auto">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
+              Comments {!loadingComments && comments.length > 0 ? `(${comments.length})` : ''}
+            </h4>
+            {loadingComments ? (
+              <div className="flex items-center gap-2 py-4 justify-center">
+                <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }} />
+              </div>
+            ) : comments.length === 0 ? (
+              <p className="text-[12px] text-center py-3" style={{ color: 'var(--text-muted)' }}>No comments yet</p>
+            ) : (
+              <div className="space-y-3">
+                {comments.map(c => (
+                  <div key={c.id} className="flex gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                      {c.username?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="font-bold mr-1" style={{ color: 'var(--text)' }}>{c.username}</span>
+                        {c.text}
+                      </p>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                          {new Date(c.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </span>
+                        {c.like_count > 0 && (
+                          <span className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
+                            <Heart size={8} /> {c.like_count}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Media Picker (link a published post to this project) ────────────────────
+function MediaPicker({ accountId, onSelect, onClose }) {
+  const [mediaList, setMediaList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetchWithAuth(`/api/instagram/media?accountId=${accountId}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setMediaList(d.media); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accountId]);
+
+  const filtered = search.trim()
+    ? mediaList.filter(m => m.caption?.toLowerCase().includes(search.toLowerCase()))
+    : mediaList;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="rounded-2xl border max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <h3 className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>Link Published Post</h3>
+          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
+        </div>
+        <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+            <Search size={14} style={{ color: 'var(--text-muted)' }} />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption..."
+              className="flex-1 bg-transparent outline-none text-sm" style={{ color: 'var(--text)' }} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center py-8 text-[13px]" style={{ color: 'var(--text-muted)' }}>No media found</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {filtered.map(m => (
+                <button key={m.id} onClick={() => onSelect(m)}
+                  className="aspect-square rounded-lg overflow-hidden relative group hover:ring-2 hover:ring-indigo-500 transition-all">
+                  <img src={m.thumbnail_url || m.media_url} alt="" className="w-full h-full object-cover" />
+                  {m.media_type === 'VIDEO' && (
+                    <span className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold text-white bg-black/50">
+                      <Play size={8} fill="white" /> Reel
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                    <p className="text-[9px] text-white line-clamp-2 leading-tight">{m.caption || 'No caption'}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -48,6 +267,9 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
+  const [publishedMedia, setPublishedMedia] = useState(null);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [instaAccountId, setInstaAccountId] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -55,9 +277,28 @@ export default function ProjectDetailPage() {
       fetchWithAuth(`/api/projects/${id}`).then(r => r.json()),
       fetchWithAuth('/api/state').then(r => r.json()),
     ]).then(([projData, stateData]) => {
-      setProject(projData.project || projData);
+      const proj = projData.project || projData;
+      setProject(proj);
       setChannels(stateData.channels || []);
       setUsers(stateData.users || []);
+
+      // Find Instagram account for this project's channel
+      if (proj.platform === 'instagram' || proj.contentFormat === 'InstaReel' || proj.contentFormat === 'InstaPost') {
+        fetchWithAuth('/api/instagram/accounts').then(r => r.json()).then(d => {
+          if (d.success && d.accounts?.length > 0) {
+            setInstaAccountId(d.accounts[0].id);
+            // If project has a linked media, fetch it
+            if (proj.publishedMediaId) {
+              fetchWithAuth(`/api/instagram/media?accountId=${d.accounts[0].id}`).then(r => r.json()).then(md => {
+                if (md.success) {
+                  const found = md.media.find(m => m.id === proj.publishedMediaId);
+                  if (found) setPublishedMedia(found);
+                }
+              }).catch(() => {});
+            }
+          }
+        }).catch(() => {});
+      }
     }).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
@@ -70,6 +311,28 @@ export default function ProjectDetailPage() {
       </div>
     </div>
   );
+
+  async function handleLinkMedia(mediaItem) {
+    setPublishedMedia(mediaItem);
+    setShowMediaPicker(false);
+    // Save to project
+    await fetchWithAuth(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ project: { publishedMediaId: mediaItem.id, publishedLink: mediaItem.permalink || '' } }),
+    });
+    setProject(prev => ({ ...prev, publishedMediaId: mediaItem.id, publishedLink: mediaItem.permalink || '' }));
+  }
+
+  async function handleUnlinkMedia() {
+    setPublishedMedia(null);
+    await fetchWithAuth(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ project: { publishedMediaId: '', publishedLink: '' } }),
+    });
+    setProject(prev => ({ ...prev, publishedMediaId: '', publishedLink: '' }));
+  }
+
+  const isInstaProject = project.platform === 'instagram' || project.contentFormat === 'InstaReel' || project.contentFormat === 'InstaPost';
 
   const stage = STAGE_CONFIG[project.stage] || STAGE_CONFIG.Backlog;
   const due = fmtDue(project.dueDate);
@@ -242,7 +505,7 @@ export default function ProjectDetailPage() {
                     <ExternalLink size={14} /> Review Link
                   </a>
                 )}
-                {project.publishedLink && (
+                {project.publishedLink && !publishedMedia && (
                   <a href={project.publishedLink} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-2 text-[13px] font-medium transition-colors"
                     style={{ color: 'var(--primary)' }}>
@@ -250,6 +513,36 @@ export default function ProjectDetailPage() {
                   </a>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* Published Output — Instagram media linked to this project */}
+          {isInstaProject && isDone && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.25, ease }}>
+              {publishedMedia ? (
+                <PublishedOutput mediaItem={publishedMedia} accountId={instaAccountId} onUnlink={handleUnlinkMedia} />
+              ) : (
+                <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+                  <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                    <Film size={16} /> Published Output
+                  </h3>
+                  {instaAccountId ? (
+                    <button onClick={() => setShowMediaPicker(true)}
+                      className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
+                      <Search size={20} />
+                      <span className="text-[13px] font-medium">Link the published reel / post</span>
+                      <span className="text-[11px]">Select from your Instagram media</span>
+                    </button>
+                  ) : (
+                    <p className="text-[13px] text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                      Connect an Instagram account to link published media
+                    </p>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
         </div>
@@ -325,6 +618,11 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Media Picker Modal */}
+      {showMediaPicker && instaAccountId && (
+        <MediaPicker accountId={instaAccountId} onSelect={handleLinkMedia} onClose={() => setShowMediaPicker(false)} />
+      )}
     </div>
   );
 }
