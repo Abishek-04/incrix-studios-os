@@ -165,8 +165,8 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    // Find user
-    const user = await User.findOne(buildUserLookup(id)).select('+password');
+    // Find user (select +password for password changes, +__v to avoid stale version)
+    const user = await User.findOne(buildUserLookup(id)).select('+password +__v');
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -256,7 +256,23 @@ export async function PATCH(request, { params }) {
     });
 
     user.updatedAt = Date.now();
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveErr) {
+      // Retry once on VersionError (concurrent edit race condition)
+      if (saveErr.name === 'VersionError') {
+        const fresh = await User.findOne(buildUserLookup(id)).select('+password +__v');
+        if (!fresh) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+        const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
+        allowedUpdates.forEach(key => { if (user.isModified(key)) fresh[key] = user[key]; });
+        if (user.isModified('password')) fresh.password = updates.newPassword;
+        fresh.updatedAt = Date.now();
+        await fresh.save();
+        const result = serializeUser(fresh);
+        return NextResponse.json({ success: true, user: result });
+      }
+      throw saveErr;
+    }
 
     // Log activity (legacy)
     const actionType = updates.role ? 'role_changed' :
