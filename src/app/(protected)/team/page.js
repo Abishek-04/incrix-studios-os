@@ -61,14 +61,13 @@ export default function UserManagementPage() {
             (u.id || u._id) === userId ? data.user : u
           )
         );
-        if ((currentUser?.id || currentUser?._id) === userId) {
-          // User data will be refreshed via AuthContext
-        }
       } else {
         console.error('Update failed:', data.error);
+        showToast(data.error || 'Failed to update user');
       }
     } catch (error) {
       console.error('Update failed:', error);
+      showToast('Failed to update user');
     }
   };
 

@@ -78,6 +78,7 @@ function serializeUser(user) {
 function serializeUserForRecycle(user) {
   const plain = user?.toObject ? user.toObject() : { ...user };
   delete plain.refreshTokens;
+  delete plain.password;
   if (!plain.id && plain._id) {
     plain.id = String(plain._id);
   }
@@ -333,7 +334,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json(
         {
           success: false,
-          error: `User not found for id "${id}"${targetUser?.email ? ` or email "${targetUser.email}"` : ''}`
+          error: `User not found for id "${id}"`
         },
         { status: 404 }
       );

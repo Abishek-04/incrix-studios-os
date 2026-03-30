@@ -77,20 +77,24 @@ const UserManagement = ({ users = [], onUpdateUser, onDeleteUser, onCreate, onCh
   }));
 
   const handleChangeRole = (user, newRole) => {
-    const existingRoles = getUserRoles(user).filter((r) => r !== newRole);
-    onUpdateUser(user.id || user._id, { role: newRole, roles: [newRole, ...existingRoles] });
+    onUpdateUser(user.id || user._id, { role: newRole, roles: [newRole] });
   };
 
-  const handleBulkAction = (action) => {
-    selectedUsers.forEach(userId => {
+  const handleBulkAction = async (action) => {
+    if (action === 'delete') {
+      if (!confirm(`Delete ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}? This action moves them to the recycle bin.`)) return;
+    } else if (action === 'deactivate') {
+      if (!confirm(`Deactivate ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}?`)) return;
+    }
+    for (const userId of selectedUsers) {
       if (action === 'activate') {
-        onUpdateUser(userId, { isActive: true });
+        await onUpdateUser(userId, { isActive: true });
       } else if (action === 'deactivate') {
-        onUpdateUser(userId, { isActive: false });
+        await onUpdateUser(userId, { isActive: false });
       } else if (action === 'delete') {
-        onDeleteUser(userId);
+        await onDeleteUser(userId);
       }
-    });
+    }
     setSelectedUsers([]);
   };
 
@@ -424,7 +428,7 @@ const UserCard = ({ user, isSelected, onSelect, onEdit, onChangePassword, onChan
           </button>
 
           <button
-            onClick={onDelete}
+            onClick={() => { if (confirm(`Delete "${user.name}"? This moves them to the recycle bin.`)) onDelete(); }}
             className="p-2 bg-[var(--bg-input)] hover:bg-rose-500/20 text-[var(--text-muted)] hover:text-rose-400 rounded transition-colors"
           >
             <Trash2 size={16} />
