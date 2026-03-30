@@ -20,7 +20,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 function urlB64(s) { const p = '='.repeat((4 - (s.length % 4)) % 4); const b = (s + p).replace(/-/g, '+').replace(/_/g, '/'); const r = atob(b); const o = new Uint8Array(r.length); for (let i = 0; i < r.length; ++i) o[i] = r.charCodeAt(i); return o; }
-async function subPush(uid) { if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return; try { const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { if ((await Notification.requestPermission()) !== 'granted') return; sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) }); } await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: uid, subscription: sub.toJSON() }) }); } catch (_) {} }
+async function subPush(uid) { if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return; try { const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { if ((await Notification.requestPermission()) !== 'granted') return; sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) }); } await fetchWithAuth('/api/push/subscribe', { method: 'POST', body: JSON.stringify({ userId: uid, subscription: sub.toJSON() }) }); } catch (_) {} }
 
 const TEAMS = [
   { id: 'content', label: 'Content', emoji: '🎬', href: '/team-view/content', gradient: 'from-indigo-500 to-blue-500' },
@@ -333,11 +333,11 @@ function ProtectedLayoutInner({ children }) {
             </div>
 
             {/* Teams */}
-            {isMgr && visibleTeams.length > 0 && (
+            {isMgr && TEAMS.length > 0 && (
               <>
                 <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2 px-1" style={{ color: 'var(--text-muted)' }}>Teams</div>
                 <div className="grid grid-cols-4 gap-2 mb-4">
-                  {visibleTeams.map(t => (
+                  {TEAMS.map(t => (
                     <Link key={t.id} href={t.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}>
                       <span className="text-lg">{t.emoji}</span><span className="text-[10px] font-bold">{t.label}</span>
                     </Link>
