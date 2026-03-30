@@ -247,31 +247,23 @@ export async function PATCH(request, { params }) {
       updates.email = normalizedEmail;
     }
 
-    // Update fields
+    // Build $set for allowed fields (use findOneAndUpdate to avoid VersionError)
     const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
-    Object.keys(updates).forEach(key => {
-      if (allowedUpdates.includes(key)) {
-        user[key] = updates[key];
-      }
+    const $set = { updatedAt: Date.now() };
+    allowedUpdates.forEach(key => {
+      if (updates[key] !== undefined) $set[key] = updates[key];
     });
 
-    user.updatedAt = Date.now();
-    try {
+    if (requestedPasswordChange) {
+      // Password needs pre-save hook for hashing — use .save()
+      user.password = updates.newPassword;
+      Object.assign(user, $set);
       await user.save();
-    } catch (saveErr) {
-      // Retry once on VersionError (concurrent edit race condition)
-      if (saveErr.name === 'VersionError') {
-        const fresh = await User.findOne(buildUserLookup(id)).select('+password +__v');
-        if (!fresh) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
-        const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
-        allowedUpdates.forEach(key => { if (user.isModified(key)) fresh[key] = user[key]; });
-        if (user.isModified('password')) fresh.password = updates.newPassword;
-        fresh.updatedAt = Date.now();
-        await fresh.save();
-        const result = serializeUser(fresh);
-        return NextResponse.json({ success: true, user: result });
-      }
-      throw saveErr;
+    } else {
+      // Use atomic update to avoid VersionError entirely
+      await User.updateOne(buildUserLookup(id), { $set });
+      // Re-assign for serialization below
+      Object.assign(user, $set);
     }
 
     // Log activity (legacy)
