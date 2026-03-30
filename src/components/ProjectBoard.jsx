@@ -168,7 +168,7 @@ function Column({ stage, idx, projects, onSelect, onDragStart, onDrop, onMove, i
 
   return (
     <div
-      className="flex flex-col min-w-[220px] shrink-0 lg:min-w-0 lg:shrink lg:flex-1 rounded-2xl relative overflow-hidden"
+      className="flex flex-col w-[260px] min-w-[260px] shrink-0 rounded-2xl relative overflow-hidden"
       style={{
         background: over ? `rgba(${stage.rgb}, 0.04)` : 'var(--bg-card)',
         border: `1px solid ${over ? `rgba(${stage.rgb}, 0.3)` : 'var(--border)'}`,
@@ -361,7 +361,7 @@ export default function ProjectBoard({ projects = [], channels = [], onSelectPro
 
       {/* Board */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 sm:p-4 md:p-5">
-        <div className="flex lg:grid lg:grid-cols-6 gap-3 sm:gap-4 h-full">
+        <div className="flex gap-3 sm:gap-4 h-full">
           {columns.map((col, i) => (
             <Column
               key={col.key} stage={col} idx={i} projects={col.projects} isDone={col.key === 'Done'} channels={channels}
