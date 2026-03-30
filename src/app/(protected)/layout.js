@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FolderKanban, ListChecks, Calendar as CalendarIcon,
   CheckSquare, Users, Settings as SettingsIcon, Bell, LogOut,
   ChevronLeft, ChevronRight, TrendingUp, Palette, Code,
-  Instagram, BarChart3, Trash2, GraduationCap, MoreHorizontal, X,
+  Instagram, Trash2, GraduationCap, MoreHorizontal, X,
   MessageSquare, Briefcase, DollarSign, Radio, Menu, Sun, Moon,
   Mail as MailIcon, CalendarCheck
 } from 'lucide-react';
@@ -313,16 +313,68 @@ function ProtectedLayoutInner({ children }) {
       {/* MOBILE SHEET */}
       {mobileMenu && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => setMobileMenu(false)}>
-          <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl max-h-[80vh] overflow-auto p-5" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl max-h-[85vh] overflow-y-auto p-5 pb-8" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between mb-4"><span className="font-bold text-lg" style={{ color: 'var(--text)' }}>Menu</span><button onClick={() => setMobileMenu(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button></div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {[{ href: '/projects', icon: ListChecks, label: 'Projects' }, { href: '/calendar', icon: CalendarIcon, label: 'Calendar' }, { href: '/performance', icon: TrendingUp, label: 'Performance' },
-                ...(isMgr ? [{ href: '/clients', icon: Briefcase, label: 'Clients' }, { href: '/revenue', icon: DollarSign, label: 'Revenue' }, { href: '/marketing', icon: BarChart3, label: 'Marketing' }] : []),
+
+            {/* Main */}
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2 px-1" style={{ color: 'var(--text-muted)' }}>Main</div>
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {[
+                { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+                { href: '/projects', icon: ListChecks, label: 'Projects' },
+                { href: '/board', icon: FolderKanban, label: 'Board' },
+                { href: '/calendar', icon: CalendarIcon, label: 'Calendar' },
+                { href: '/daily', icon: CheckSquare, label: 'My Tasks' },
+                { href: '/chat', icon: MessageSquare, label: 'Messages' },
+                { href: '/mail', icon: MailIcon, label: 'Mail' },
                 { href: '/instagram', icon: Instagram, label: 'Instagram' },
-                ...(isMgr ? [{ href: '/team', icon: Users, label: 'Team' }, { href: '/settings/notifications', icon: SettingsIcon, label: 'Settings' }] : [])
-              ].map(i => { const Icon = i.icon; return <Link key={i.href} href={i.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1.5 p-3.5 rounded-2xl transition-all" style={{ background: isRoute(i.href) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(i.href) ? 'var(--primary)' : 'var(--text-secondary)' }}><Icon size={22} /><span className="text-[11px] font-bold">{i.label}</span></Link>; })}
+                { href: '/settings/notifications', icon: SettingsIcon, label: 'Settings' },
+              ].map(i => { const Icon = i.icon; return <Link key={i.href} href={i.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(i.href) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(i.href) ? 'var(--primary)' : 'var(--text-secondary)' }}><Icon size={20} /><span className="text-[10px] font-bold">{i.label}</span></Link>; })}
             </div>
-            <button onClick={logout} className="mt-4 w-full py-3 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-2" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}><LogOut size={16} />Sign Out</button>
+
+            {/* Teams */}
+            {isMgr && visibleTeams.length > 0 && (
+              <>
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2 px-1" style={{ color: 'var(--text-muted)' }}>Teams</div>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {visibleTeams.map(t => (
+                    <Link key={t.id} href={t.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(t.href.split('?')[0]) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(t.href.split('?')[0]) ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      <span className="text-lg">{t.emoji}</span><span className="text-[10px] font-bold">{t.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Business */}
+            {isMgr && (
+              <>
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2 px-1" style={{ color: 'var(--text-muted)' }}>Business</div>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {[
+                    { href: '/clients', icon: Briefcase, label: 'Clients' },
+                    { href: '/revenue', icon: DollarSign, label: 'Revenue' },
+                    { href: '/courses', icon: GraduationCap, label: 'Classory' },
+                    { href: '/performance', icon: TrendingUp, label: 'Overview' },
+                  ].map(i => { const Icon = i.icon; return <Link key={i.href} href={i.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(i.href) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(i.href) ? 'var(--primary)' : 'var(--text-secondary)' }}><Icon size={20} /><span className="text-[10px] font-bold">{i.label}</span></Link>; })}
+                </div>
+              </>
+            )}
+
+            {/* Admin */}
+            {isMgr && (
+              <>
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2 px-1" style={{ color: 'var(--text-muted)' }}>Admin</div>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {[
+                    { href: '/team', icon: Users, label: 'Team' },
+                    { href: '/recycle-bin', icon: Trash2, label: 'Recycle Bin' },
+                  ].map(i => { const Icon = i.icon; return <Link key={i.href} href={i.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(i.href) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(i.href) ? 'var(--primary)' : 'var(--text-secondary)' }}><Icon size={20} /><span className="text-[10px] font-bold">{i.label}</span></Link>; })}
+                </div>
+              </>
+            )}
+
+            <button onClick={logout} className="w-full py-3 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-2" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}><LogOut size={16} />Sign Out</button>
           </div>
         </div>
       )}
