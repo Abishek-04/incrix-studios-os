@@ -110,10 +110,12 @@ function MediaCard({ item, automated, onSelect }) {
 function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation }) {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
+  const [captionExpanded, setCaptionExpanded] = useState(false);
   const image = item.media_url || item.thumbnail_url;
   const isReel = item.media_type === 'VIDEO';
   const mediaAutomations = automations.filter(a => a.targetMediaId === item.id);
   const timeAgo = item.timestamp ? new Date(item.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const captionLong = (item.caption || '').length > 120;
 
   useEffect(() => {
     async function loadComments() {
@@ -128,16 +130,16 @@ function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation 
   }, [accountId, item.id]);
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#1a1a1a] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+      <div className="bg-[#1a1a1a] rounded-xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
 
         {/* Left — Media */}
-        <div className="md:w-[55%] bg-black flex items-center justify-center shrink-0 relative">
+        <div className="md:w-[55%] bg-black flex items-center justify-center shrink-0 relative max-h-[40vh] md:max-h-none">
           {image ? (
             isReel ? (
-              <video src={item.media_url} poster={item.thumbnail_url} controls className="w-full max-h-[85vh] object-contain" />
+              <video src={item.media_url} poster={item.thumbnail_url} controls className="w-full h-full object-contain" />
             ) : (
-              <img src={image} alt="" className="w-full max-h-[85vh] object-contain" />
+              <img src={image} alt="" className="w-full h-full object-contain" />
             )
           ) : (
             <div className="w-full aspect-square flex items-center justify-center"><Image size={48} className="text-[#444]" /></div>
@@ -148,18 +150,24 @@ function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation 
         </div>
 
         {/* Right — Details */}
-        <div className="md:w-[45%] flex flex-col min-h-0">
+        <div className="md:w-[45%] flex flex-col min-h-0 overflow-hidden">
+
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#333]">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#333] shrink-0">
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isReel ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                 {isReel ? 'Reel' : 'Post'}
               </span>
               <span className="text-[11px] text-[#666]">{timeAgo}</span>
+              {mediaAutomations.length > 0 && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-green-500/15 text-green-400">
+                  <Zap size={8} /> {mediaAutomations.length}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {item.permalink && (
-                <a href={item.permalink} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-400 hover:underline">Open in Instagram</a>
+                <a href={item.permalink} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-400 hover:underline">Open in IG</a>
               )}
               <button onClick={onClose} className="text-[#666] hover:text-white transition-colors hidden md:block">
                 <X size={18} />
@@ -167,85 +175,81 @@ function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation 
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-6 px-4 py-3 border-b border-[#333]">
+          {/* Stats bar */}
+          <div className="flex items-center gap-5 px-4 py-2 border-b border-[#333] shrink-0">
             {item.like_count != null && (
-              <div className="flex items-center gap-1.5">
-                <Heart size={18} className="text-red-400" />
-                <div>
-                  <span className="text-white font-bold text-sm">{fmtNum(item.like_count)}</span>
-                  <span className="text-[#666] text-[10px] ml-1">likes</span>
-                </div>
-              </div>
+              <span className="flex items-center gap-1.5 text-[13px]">
+                <Heart size={15} className="text-red-400" fill="#f87171" />
+                <span className="text-white font-bold">{fmtNum(item.like_count)}</span>
+              </span>
             )}
             {item.comments_count != null && (
-              <div className="flex items-center gap-1.5">
-                <MessageCircle size={18} className="text-blue-400" />
-                <div>
-                  <span className="text-white font-bold text-sm">{fmtNum(item.comments_count)}</span>
-                  <span className="text-[#666] text-[10px] ml-1">comments</span>
-                </div>
-              </div>
+              <span className="flex items-center gap-1.5 text-[13px]">
+                <MessageCircle size={15} className="text-blue-400" />
+                <span className="text-white font-bold">{fmtNum(item.comments_count)}</span>
+              </span>
             )}
             {isReel && item.plays != null && (
-              <div className="flex items-center gap-1.5">
-                <Play size={18} className="text-green-400" />
-                <div>
-                  <span className="text-white font-bold text-sm">{fmtNum(item.plays)}</span>
-                  <span className="text-[#666] text-[10px] ml-1">views</span>
-                </div>
-              </div>
+              <span className="flex items-center gap-1.5 text-[13px]">
+                <Play size={15} className="text-green-400" fill="#4ade80" />
+                <span className="text-white font-bold">{fmtNum(item.plays)}</span>
+              </span>
             )}
           </div>
 
-          {/* Caption */}
+          {/* Caption — collapsible */}
           {item.caption && (
-            <div className="px-4 py-3 border-b border-[#333]">
-              <p className="text-[13px] text-[#ddd] leading-relaxed whitespace-pre-line">{item.caption}</p>
+            <div className="px-4 py-2.5 border-b border-[#333] shrink-0">
+              <p className={`text-[12px] text-[#ccc] leading-relaxed whitespace-pre-line ${!captionExpanded && captionLong ? 'line-clamp-3' : ''}`}>
+                {item.caption}
+              </p>
+              {captionLong && (
+                <button
+                  onClick={() => setCaptionExpanded(!captionExpanded)}
+                  className="text-[11px] font-semibold text-[#999] hover:text-white mt-1 transition-colors"
+                >
+                  {captionExpanded ? 'less' : 'more'}
+                </button>
+              )}
             </div>
           )}
 
-          {/* Automation info */}
-          {mediaAutomations.length > 0 && (
-            <div className="px-4 py-2.5 border-b border-[#333]">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Zap size={12} className="text-green-400" />
-                <span className="text-[11px] font-semibold text-green-400">{mediaAutomations.length} automation{mediaAutomations.length > 1 ? 's' : ''} active</span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {mediaAutomations.map(a => a.triggerKeyword.split(',').map(k => k.trim()).filter(Boolean)).flat().map(kw => (
-                  <span key={kw} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">{kw}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Comments */}
+          {/* Comments — scrollable, takes remaining space */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="px-4 py-2.5">
-              <h4 className="text-[12px] font-bold text-[#999] uppercase tracking-wider mb-3">Comments</h4>
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-[11px] font-bold text-[#666] uppercase tracking-wider">
+                  Comments {!loadingComments && comments.length > 0 ? `(${comments.length})` : ''}
+                </h4>
+              </div>
               {loadingComments ? (
                 <div className="flex items-center justify-center py-8">
-                  <RefreshCw size={16} className="animate-spin text-[#666]" />
+                  <RefreshCw size={16} className="animate-spin text-[#555]" />
                 </div>
               ) : comments.length === 0 ? (
-                <p className="text-[12px] text-[#666] text-center py-6">No comments yet</p>
+                <p className="text-[12px] text-[#555] text-center py-6">No comments yet</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {comments.map(c => (
-                    <div key={c.id} className="flex gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    <div key={c.id} className="flex gap-2.5 group/comment">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">
                         {c.username?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[12px] font-bold text-white">{c.username}</span>
-                          <span className="text-[10px] text-[#555]">{new Date(c.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        <p className="text-[12px] text-[#ddd] leading-relaxed">
+                          <span className="font-bold text-white mr-1.5">{c.username}</span>
+                          {c.text}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-[#555]">
+                            {new Date(c.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          </span>
+                          {c.like_count > 0 && (
+                            <span className="text-[10px] text-[#555] flex items-center gap-0.5">
+                              <Heart size={9} /> {c.like_count} {c.like_count === 1 ? 'like' : 'likes'}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-[12px] text-[#ccc] leading-relaxed mt-0.5">{c.text}</p>
-                        {c.like_count > 0 && (
-                          <span className="text-[10px] text-[#666] flex items-center gap-1 mt-1"><Heart size={9} /> {c.like_count}</span>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -255,12 +259,12 @@ function MediaDetail({ item, accountId, automations, onClose, onSetupAutomation 
           </div>
 
           {/* Footer — Setup Automation CTA */}
-          <div className="px-4 py-3 border-t border-[#333]">
+          <div className="px-4 py-2.5 border-t border-[#333] shrink-0">
             <button
               onClick={() => { onClose(); onSetupAutomation(item); }}
-              className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
+              className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-[13px] font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
             >
-              <Zap size={14} /> {mediaAutomations.length > 0 ? 'Edit Automation' : 'Setup Automation'}
+              <Zap size={13} /> {mediaAutomations.length > 0 ? 'Edit Automation' : 'Setup Automation'}
             </button>
           </div>
         </div>
