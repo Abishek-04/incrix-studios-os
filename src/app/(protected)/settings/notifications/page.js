@@ -177,7 +177,7 @@ export default function SettingsPage() {
                       try {
                         const res = await fetchWithAuth(`/api/users/${user.id}`, {
                           method: 'PATCH',
-                          body: JSON.stringify({ profilePhoto: dataUrl })
+                          body: JSON.stringify({ updates: { profilePhoto: dataUrl } })
                         });
                         if (res.ok) { refreshUser?.(); setSaved(true); setTimeout(() => setSaved(false), 2000); }
                         else { const d = await res.json(); alert(d.error || 'Failed to upload'); }
