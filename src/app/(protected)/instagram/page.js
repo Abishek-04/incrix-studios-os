@@ -1,43 +1,104 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Instagram, Plus, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, Zap, MessageCircle, Send, Edit2, ToggleLeft, ToggleRight, Image, Film, ChevronDown, ArrowLeft, X, LogOut } from 'lucide-react';
+import { Instagram, Plus, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, Zap, MessageCircle, Send, Edit2, ToggleLeft, ToggleRight, Image, Film, ChevronDown, ArrowLeft, X, LogOut, Heart, Play, Eye } from 'lucide-react';
 import { fetchWithAuth } from '@/services/api';
 import { useConfirm } from '@/contexts/UIContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
+// ─── Compact number formatter ───
+function fmtNum(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
 // ─── Media Card ───
 function MediaCard({ item, automated, onSelect }) {
   const image = item.thumbnail_url || item.media_url;
   const isReel = item.media_type === 'VIDEO';
+  const likes = item.like_count;
+  const comments = item.comments_count;
+  const views = item.plays;
 
   return (
     <div
       onClick={() => onSelect(item)}
-      className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden cursor-pointer hover:border-[#555] hover:-translate-y-0.5 transition-all group relative"
+      className="rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all duration-200 group relative"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
-      {automated && (
-        <div className="absolute top-2 right-2 z-10">
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
-            <Zap size={10} /> Active
-          </span>
+      {/* Thumbnail with overlay stats on hover */}
+      <div className="aspect-square overflow-hidden relative">
+        {image ? (
+          <img src={image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-input)' }}>
+            <Image size={32} style={{ color: 'var(--text-muted)' }} />
+          </div>
+        )}
+
+        {/* Instagram-style stats overlay on hover */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-5">
+          {likes != null && (
+            <div className="flex items-center gap-1.5 text-white">
+              <Heart size={16} fill="white" />
+              <span className="text-sm font-bold">{fmtNum(likes)}</span>
+            </div>
+          )}
+          {comments != null && (
+            <div className="flex items-center gap-1.5 text-white">
+              <MessageCircle size={16} fill="white" />
+              <span className="text-sm font-bold">{fmtNum(comments)}</span>
+            </div>
+          )}
         </div>
-      )}
-      {image ? (
-        <div className="aspect-square overflow-hidden">
-          <img src={image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+
+        {/* Top badges */}
+        <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
+          {isReel ? (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-black/50 backdrop-blur-sm">
+              <Play size={10} fill="white" /> Reel
+            </span>
+          ) : <span />}
+          {automated && (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/80 text-white backdrop-blur-sm">
+              <Zap size={9} /> Auto
+            </span>
+          )}
         </div>
-      ) : (
-        <div className="aspect-square bg-[#151515] flex items-center justify-center">
-          <Image size={32} className="text-[#444]" />
+
+        {/* Views count for reels — always visible bottom-left */}
+        {isReel && views != null && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[11px] font-semibold drop-shadow-lg">
+            <Play size={11} fill="white" />
+            <span>{fmtNum(views)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom info */}
+      <div className="px-3 py-2.5">
+        {/* Stats row — always visible */}
+        <div className="flex items-center gap-3 text-[11px] font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+          {likes != null && (
+            <span className="flex items-center gap-1">
+              <Heart size={12} /> {fmtNum(likes)}
+            </span>
+          )}
+          {comments != null && (
+            <span className="flex items-center gap-1">
+              <MessageCircle size={12} /> {fmtNum(comments)}
+            </span>
+          )}
+          {isReel && views != null && (
+            <span className="flex items-center gap-1">
+              <Eye size={12} /> {fmtNum(views)}
+            </span>
+          )}
         </div>
-      )}
-      <div className="p-3">
-        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${isReel ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
-          {isReel ? 'Reel' : 'Post'}
-        </span>
-        <p className="mt-1.5 text-[#999] text-xs line-clamp-2 leading-relaxed">
+        <p className="text-[11px] line-clamp-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           {item.caption || 'No caption'}
         </p>
       </div>

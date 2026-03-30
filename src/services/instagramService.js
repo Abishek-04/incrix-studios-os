@@ -7,11 +7,14 @@ const INSTAGRAM_GRAPH_BASE = 'https://graph.instagram.com/v23.0';
 
 const TOKEN_REFRESH_LEAD_SECONDS = 86400; // 24 hours before expiry
 
+const MEDIA_FIELDS = 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count';
+const MEDIA_FIELDS_DETAIL = MEDIA_FIELDS + ',plays';
+
 async function getMediaListViaInstagramGraph(accessToken) {
   const response = await axios.get(`${INSTAGRAM_GRAPH_BASE}/me/media`, {
     params: {
       access_token: accessToken,
-      fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
+      fields: MEDIA_FIELDS,
     },
   });
   return response.data.data || [];
@@ -21,7 +24,7 @@ async function getMediaDetailsViaInstagramGraph(mediaId, accessToken) {
   const response = await axios.get(`${INSTAGRAM_GRAPH_BASE}/${mediaId}`, {
     params: {
       access_token: accessToken,
-      fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
+      fields: MEDIA_FIELDS_DETAIL,
     },
   });
   return response.data;
