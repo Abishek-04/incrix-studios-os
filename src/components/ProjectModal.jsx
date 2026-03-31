@@ -661,7 +661,7 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
             <button
               onClick={handleBroadcast}
               className="p-2 bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-[var(--text)] rounded-lg transition-all flex items-center space-x-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              title="Send Update to WhatsApp/Email"
+              title="Send Update Notification"
               aria-label="Broadcast update"
             >
               {isBroadcasting ? <Loader2 size={18} className="animate-spin" /> : <MessageCircle size={18} />}

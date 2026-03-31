@@ -10,8 +10,6 @@ import { logUserAction } from '@/utils/activityLogger';
 import {
   logUserUpdated,
   logProfileUpdated,
-  logNotificationSettingsUpdated,
-  logWhatsAppEnabled,
   logPasswordChange
 } from '@/lib/services/activityLogger';
 
@@ -153,7 +151,7 @@ export async function PATCH(request, { params }) {
     }
 
     // If editing self, restrict to only personal settings
-    const personalSettingsOnly = ['whatsappNumber', 'notificationPreferences', 'phoneNumber', 'name', 'avatarColor', 'profilePhoto', 'currentPassword', 'newPassword'];
+    const personalSettingsOnly = ['phoneNumber', 'name', 'avatarColor', 'profilePhoto', 'currentPassword', 'newPassword'];
     if (isEditingSelf && !hasEditPermission) {
       // Check if trying to update restricted fields
       const restrictedFields = Object.keys(updates).filter(key => !personalSettingsOnly.includes(key));
@@ -248,7 +246,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Build $set for allowed fields (use findOneAndUpdate to avoid VersionError)
-    const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive', 'notifyViaWhatsapp', 'whatsappNumber', 'notificationPreferences'];
+    const allowedUpdates = ['name', 'email', 'phoneNumber', 'role', 'roles', 'avatarColor', 'profilePhoto', 'isActive'];
     const $set = { updatedAt: Date.now() };
     allowedUpdates.forEach(key => {
       if (updates[key] !== undefined) $set[key] = updates[key];
@@ -275,12 +273,6 @@ export async function PATCH(request, { params }) {
     // Enhanced activity logging
     if (isEditingSelf) {
       // User updating their own profile
-      if (updates.notificationPreferences) {
-        await logNotificationSettingsUpdated(currentUser, updates.notificationPreferences);
-      }
-      if (updates.whatsappNumber && updates.notificationPreferences?.whatsapp?.enabled) {
-        await logWhatsAppEnabled(currentUser, updates.whatsappNumber);
-      }
       if (updates.name || updates.phoneNumber || updates.avatarColor || updates.profilePhoto !== undefined) {
         await logProfileUpdated(currentUser, safeUpdatesForLogs);
       }

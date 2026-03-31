@@ -370,13 +370,6 @@ export default function AnalyticsPage() {
           <div className="text-3xl font-bold text-white">{data.projects.blocked}</div>
         </div>
 
-        <div className="bg-[#1e1e1e] border border-green-500/20 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <MessageSquare className="w-5 h-5 text-green-400" />
-            <div className="text-sm text-green-400">WhatsApp Users</div>
-          </div>
-          <div className="text-3xl font-bold text-white">{data.users.withWhatsApp}</div>
-        </div>
       </div>
 
       {/* User Activity Table */}
@@ -395,7 +388,6 @@ export default function AnalyticsPage() {
                 <th className="text-right p-3 text-sm font-medium text-[#999]">Projects</th>
                 <th className="text-right p-3 text-sm font-medium text-[#999]">Tasks</th>
                 <th className="text-right p-3 text-sm font-medium text-[#999]">Completed</th>
-                <th className="text-center p-3 text-sm font-medium text-[#999]">WhatsApp</th>
               </tr>
             </thead>
             <tbody>
@@ -433,13 +425,6 @@ export default function AnalyticsPage() {
                   <td className="p-3 text-right text-white">{user.projectCount}</td>
                   <td className="p-3 text-right text-white">{user.taskCount}</td>
                   <td className="p-3 text-right text-green-400">{user.completedTasks}</td>
-                  <td className="p-3 text-center">
-                    {user.whatsappEnabled ? (
-                      <span className="text-green-400">✓</span>
-                    ) : (
-                      <span className="text-[#666]">-</span>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -487,7 +472,6 @@ export default function AnalyticsPage() {
                 password_changed: Shield,
                 settings_updated: SettingsIcon,
                 notification_settings_updated: SettingsIcon,
-                whatsapp_enabled: MessageSquare,
                 user_created: Users,
                 user_updated: Users,
                 profile_updated: Users,
@@ -504,7 +488,6 @@ export default function AnalyticsPage() {
                 password_changed: 'text-purple-400 bg-purple-500/10',
                 settings_updated: 'text-blue-400 bg-blue-500/10',
                 notification_settings_updated: 'text-blue-400 bg-blue-500/10',
-                whatsapp_enabled: 'text-green-400 bg-green-500/10',
                 user_created: 'text-indigo-400 bg-indigo-500/10',
                 user_updated: 'text-indigo-400 bg-indigo-500/10',
                 profile_updated: 'text-cyan-400 bg-cyan-500/10',

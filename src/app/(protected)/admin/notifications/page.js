@@ -20,11 +20,6 @@ export default function AdminNotificationsPage() {
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [pushSending, setPushSending] = useState(false);
 
-  // WhatsApp broadcast form
-  const [broadcastMessage, setBroadcastMessage] = useState('');
-  const [selectedRole, setSelectedRole] = useState('all');
-  const [broadcastSending, setBroadcastSending] = useState(false);
-
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
@@ -107,50 +102,6 @@ export default function AdminNotificationsPage() {
     }
   }
 
-  // WhatsApp broadcast
-  async function handleBroadcast() {
-    if (!broadcastMessage.trim()) {
-      showMsg('Please enter a message', 'error');
-      return;
-    }
-
-    setBroadcastSending(true);
-    try {
-      let targetUsers = users.filter(
-        (u) => u.notificationPreferences?.whatsapp?.enabled && u.whatsappNumber
-      );
-
-      if (selectedRole !== 'all') {
-        targetUsers = targetUsers.filter((u) => u.role === selectedRole);
-      }
-
-      if (targetUsers.length === 0) {
-        showMsg('No users match the selected criteria', 'error');
-        setBroadcastSending(false);
-        return;
-      }
-
-      const response = await fetchWithAuth('/api/whatsapp/broadcast', {
-        method: 'POST',
-        body: JSON.stringify({
-          userIds: targetUsers.map((u) => u.id),
-          message: broadcastMessage,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send broadcast');
-
-      const result = await response.json();
-      showMsg(`Broadcast queued for ${result.queuedCount || targetUsers.length} users!`, 'success');
-      setBroadcastMessage('');
-    } catch (error) {
-      console.error('Broadcast failed:', error);
-      showMsg('Failed to send broadcast', 'error');
-    } finally {
-      setBroadcastSending(false);
-    }
-  }
-
   function showMsg(text, type) {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 5000);
@@ -168,10 +119,6 @@ export default function AdminNotificationsPage() {
     return users.filter(u => u.role === pushTarget && u.isActive !== false).length;
   };
 
-  const whatsappEnabledUsers = users.filter(
-    (u) => u.notificationPreferences?.whatsapp?.enabled
-  );
-  const usersWithNumber = users.filter((u) => u.whatsappNumber);
 
   if (loading) {
     return <LoadingScreen />;
@@ -219,11 +166,6 @@ export default function AdminNotificationsPage() {
           <Users className="w-8 h-8 text-blue-400 mb-2" />
           <h3 className="text-2xl font-bold text-white">{users.filter(u => u.isActive !== false).length}</h3>
           <p className="text-[#999] text-sm">Active Users</p>
-        </div>
-        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg p-6">
-          <CheckCircle className="w-8 h-8 text-green-400 mb-2" />
-          <h3 className="text-2xl font-bold text-white">{whatsappEnabledUsers.length}</h3>
-          <p className="text-[#999] text-sm">WhatsApp Enabled</p>
         </div>
         <div className="bg-[#1e1e1e] border border-[#333] rounded-lg p-6">
           <Clock className="w-8 h-8 text-amber-400 mb-2" />
@@ -378,150 +320,37 @@ export default function AdminNotificationsPage() {
         </div>
       </div>
 
-      {/* WhatsApp Broadcast */}
+      {/* User List */}
       <div className="bg-[#1e1e1e] border border-[#333] rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Send className="w-5 h-5 text-emerald-400" />
-          WhatsApp Broadcast
-        </h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[#999] mb-2">Send to:</label>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full px-4 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white focus:outline-none focus:border-indigo-500"
-            >
-              <option value="all">All users (with WhatsApp enabled)</option>
-              <option value="superadmin">Super Admins</option>
-              <option value="manager">Managers</option>
-              <option value="creator">Creators</option>
-              <option value="editor">Editors</option>
-              <option value="designer">Designers</option>
-              <option value="developer">Developers</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#999] mb-2">Message:</label>
-            <textarea
-              value={broadcastMessage}
-              onChange={(e) => setBroadcastMessage(e.target.value)}
-              placeholder="Enter your broadcast message..."
-              rows={4}
-              className="w-full px-4 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white placeholder-[#666] focus:outline-none focus:border-indigo-500 resize-none"
-            />
-            <p className="text-[#666] text-xs mt-1">
-              Will be sent to{' '}
-              {users.filter(
-                (u) =>
-                  u.notificationPreferences?.whatsapp?.enabled &&
-                  u.whatsappNumber &&
-                  (selectedRole === 'all' || u.role === selectedRole)
-              ).length}{' '}
-              users
-            </p>
-          </div>
-
-          <button
-            onClick={handleBroadcast}
-            disabled={broadcastSending || !broadcastMessage.trim()}
-            className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Send size={16} />
-            {broadcastSending ? 'Sending...' : 'Send WhatsApp Broadcast'}
-          </button>
-        </div>
-      </div>
-
-      {/* User Status Table */}
-      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">User Status</h2>
-
-        <div className="mb-4">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white focus:outline-none focus:border-indigo-500"
-          >
-            <option value="all">All Users</option>
-            <option value="enabled">WhatsApp Enabled</option>
-            <option value="disabled">WhatsApp Disabled</option>
-          </select>
-        </div>
-
+        <h2 className="text-lg font-semibold text-white mb-4">Team Members</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#333]">
                 <th className="text-left text-[#999] font-medium py-3 px-4">Name</th>
                 <th className="text-left text-[#999] font-medium py-3 px-4">Role</th>
-                <th className="text-left text-[#999] font-medium py-3 px-4">Phone Number</th>
-                <th className="text-left text-[#999] font-medium py-3 px-4">WhatsApp</th>
-                <th className="text-left text-[#999] font-medium py-3 px-4">Preferences</th>
+                <th className="text-left text-[#999] font-medium py-3 px-4">Status</th>
               </tr>
             </thead>
             <tbody>
-              {users
-                .filter((u) => {
-                  if (filterStatus === 'enabled')
-                    return u.notificationPreferences?.whatsapp?.enabled;
-                  if (filterStatus === 'disabled')
-                    return !u.notificationPreferences?.whatsapp?.enabled;
-                  return true;
-                })
-                .map((user) => (
-                  <tr key={user.id} className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a]">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
-                            user.avatarColor || 'bg-indigo-600'
-                          }`}
-                        >
-                          {user.name?.charAt(0) || '?'}
-                        </div>
-                        <span className="text-white">{user.name}</span>
+              {users.map((user) => (
+                <tr key={user.id} className="border-b border-[#2a2a2a] hover:bg-[#1a1a1a]">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${user.avatarColor || 'bg-indigo-600'}`}>
+                        {user.name?.charAt(0) || '?'}
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-[#999] capitalize">{user.role}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-white font-mono text-sm">
-                        {user.whatsappNumber || user.phoneNumber || '-'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {user.notificationPreferences?.whatsapp?.enabled ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs">
-                          <CheckCircle size={12} />
-                          Enabled
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#2a2a2a] text-[#666] rounded text-xs">
-                          <XCircle size={12} />
-                          Disabled
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-xs text-[#999]">
-                        {user.notificationPreferences?.whatsapp?.enabled ? (
-                          <>
-                            {Object.entries(user.notificationPreferences.whatsapp)
-                              .filter(([key, value]) => key !== 'enabled' && value === true)
-                              .length}{' '}
-                            active
-                          </>
-                        ) : (
-                          '-'
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <span className="text-white">{user.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4"><span className="text-[#999] capitalize">{user.role}</span></td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${user.isActive !== false ? 'bg-green-500/10 text-green-400' : 'bg-[#2a2a2a] text-[#666]'}`}>
+                      {user.isActive !== false ? <><CheckCircle size={12} /> Active</> : <><XCircle size={12} /> Inactive</>}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -22,26 +22,6 @@ const UserSchema = new Schema(
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true, select: false },
     phoneNumber: { type: String },
-    whatsappNumber: {
-      type: String,
-      trim: true,
-      default: null
-    },
-    notifyViaWhatsapp: { type: Boolean, default: false },
-    notifyViaEmail: { type: Boolean, default: true },
-    notificationPreferences: {
-      whatsapp: {
-        enabled: { type: Boolean, default: false },
-        projectAssigned: { type: Boolean, default: true },
-        projectStageChanged: { type: Boolean, default: true },
-        taskAssigned: { type: Boolean, default: true },
-        taskOverdue: { type: Boolean, default: true },
-        deadlineApproaching: { type: Boolean, default: true },
-        projectAtRisk: { type: Boolean, default: true },
-        newComment: { type: Boolean, default: false },
-        quotaMilestone: { type: Boolean, default: false }
-      }
-    },
     avatarColor: { type: String, required: true },
     profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true, index: true },

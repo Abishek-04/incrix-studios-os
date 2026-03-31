@@ -52,10 +52,6 @@ export async function GET(request) {
       }
     ]);
 
-    const usersWithWhatsApp = await User.countDocuments({
-      'notificationPreferences.whatsapp.enabled': true
-    });
-
     // === PROJECT STATISTICS ===
     const totalProjects = await BaseProject.countDocuments({ archived: { $ne: true } });
     const projectsByType = await BaseProject.aggregate([
@@ -191,7 +187,6 @@ export async function GET(request) {
               }
             }
           },
-          whatsappEnabled: '$notificationPreferences.whatsapp.enabled',
           lastActive: '$updatedAt'
         }
       },
@@ -219,7 +214,7 @@ export async function GET(request) {
           active: activeUsers,
           inactive: inactiveUsers,
           byRole: usersByRole,
-          withWhatsApp: usersWithWhatsApp
+          withWhatsApp: 0
         },
 
         // Project metrics

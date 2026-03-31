@@ -315,19 +315,6 @@ export async function logNotificationSettingsUpdated(user, changes = {}) {
   });
 }
 
-export async function logWhatsAppEnabled(user, phoneNumber) {
-  return logActivity({
-    userId: user.id,
-    userName: user.name,
-    userEmail: user.email,
-    userRole: user.role,
-    action: 'whatsapp_enabled',
-    category: CATEGORIES.SETTINGS,
-    description: `${user.name} enabled WhatsApp notifications`,
-    metadata: { phoneNumber }
-  });
-}
-
 /**
  * Project Activity Loggers
  */
@@ -400,7 +387,6 @@ export default {
   logProfileUpdated,
   logSettingsUpdated,
   logNotificationSettingsUpdated,
-  logWhatsAppEnabled,
   logProjectCreated,
   logProjectUpdated,
   logInstagramConnected,
