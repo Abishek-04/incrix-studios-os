@@ -8,8 +8,8 @@ import {
   CheckSquare, Users, Settings as SettingsIcon, Bell, LogOut,
   ChevronLeft, ChevronRight, TrendingUp, Palette, Code,
   Instagram, Trash2, GraduationCap, MoreHorizontal, X,
-  MessageSquare, Briefcase, DollarSign, Radio, Menu, Sun, Moon,
-  Mail as MailIcon, CalendarCheck
+  MessageSquare, Briefcase, DollarSign, Menu, Sun, Moon,
+  Mail as MailIcon, BarChart3, Activity, Download
 } from 'lucide-react';
 import NotificationPanel from '@/components/NotificationPanel';
 import { UIProvider } from '@/contexts/UIContext';
@@ -109,6 +109,7 @@ function ProtectedLayoutInner({ children }) {
   const roles = Array.isArray(currentUser.roles) && currentUser.roles.length > 0 ? currentUser.roles : [currentUser.role].filter(Boolean);
   const hasRole = (r) => r.some(x => roles.includes(x));
   const isMgr = hasRole(['superadmin', 'manager']);
+  const isSA = hasRole(['superadmin']);
   const unread = notifications.filter(n => !n.read).length;
 
   const teamName = pathname.startsWith('/team-view/') ? pathname.split('/')[2] : null;
@@ -213,6 +214,12 @@ function ProtectedLayoutInner({ children }) {
                 <NavLink href="/team" icon={Users} label="Team" active={isActive('/team')} collapsed={collapsed} />
                 <NavLink href="/instagram" icon={Instagram} label="Instagram" active={isActive('/instagram')} collapsed={collapsed} />
                 <NavLink href="/recycle-bin" icon={Trash2} label="Recycle Bin" active={isActive('/recycle-bin')} collapsed={collapsed} />
+                {isSA && (
+                  <>
+                    <NavLink href="/analytics" icon={BarChart3} label="Analytics" active={isActive('/analytics')} collapsed={collapsed} />
+                    <NavLink href="/admin/notifications" icon={Activity} label="Activity Logs" active={isActive('/admin/notifications')} collapsed={collapsed} />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -369,6 +376,10 @@ function ProtectedLayoutInner({ children }) {
                   {[
                     { href: '/team', icon: Users, label: 'Team' },
                     { href: '/recycle-bin', icon: Trash2, label: 'Recycle Bin' },
+                    ...(isSA ? [
+                      { href: '/analytics', icon: BarChart3, label: 'Analytics' },
+                      { href: '/admin/notifications', icon: Activity, label: 'Logs' },
+                    ] : []),
                   ].map(i => { const Icon = i.icon; return <Link key={i.href} href={i.href} onClick={() => setMobileMenu(false)} className="flex flex-col items-center gap-1 p-3 rounded-xl transition-all" style={{ background: isRoute(i.href) ? 'var(--primary-light)' : 'var(--bg-input)', color: isRoute(i.href) ? 'var(--primary)' : 'var(--text-secondary)' }}><Icon size={20} /><span className="text-[10px] font-bold">{i.label}</span></Link>; })}
                 </div>
               </>

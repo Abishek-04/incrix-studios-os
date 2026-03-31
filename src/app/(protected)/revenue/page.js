@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/services/api';
-import { Plus, X, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, Download } from 'lucide-react';
+import { exportToCsv } from '@/utils/exportCsv';
 
 const STREAMS = {
   content_monetization: { label: 'Content', emoji: '🎬', bar: 'bg-indigo-500', text: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
@@ -18,6 +19,7 @@ const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 const stagger = { show: { transition: { staggerChildren: 0.05 } } };
 
 export default function RevenuePage() {
+  const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +43,17 @@ export default function RevenuePage() {
     <div className="min-h-full bg-[var(--bg)] p-4 md:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div><h1 className="text-2xl font-extrabold text-[var(--text)]">Revenue</h1><p className="text-sm text-[var(--text-muted)]">Track income across all streams</p></div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-xl text-sm font-semibold text-white"><Plus size={16} /> Add Entry</button>
+        <div className="flex items-center gap-2">
+          {user?.role === 'superadmin' && (
+            <button onClick={() => exportToCsv(entries.map(e => ({
+              month: e.month, stream: STREAMS[e.stream]?.label || e.stream, amount: e.amount, description: e.description || '',
+            })), 'revenue', [
+              { key: 'month', label: 'Month' }, { key: 'stream', label: 'Stream' },
+              { key: 'amount', label: 'Amount (₹)' }, { key: 'description', label: 'Description' },
+            ])} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}><Download size={13} /> Export</button>
+          )}
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-xl text-sm font-semibold text-white"><Plus size={16} /> Add Entry</button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-6">

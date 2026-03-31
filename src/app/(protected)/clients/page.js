@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/services/api';
-import { Plus, Search, X, Edit3, User, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, X, Edit3, User, MoreHorizontal, Download } from 'lucide-react';
+import { exportToCsv } from '@/utils/exportCsv';
 
 const STATUS = {
   lead: { label: 'Lead', cls: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-blue-400' },
@@ -52,7 +53,19 @@ export default function ClientsPage() {
             <button onClick={() => setView('pipeline')} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${view === 'pipeline' ? 'bg-[var(--primary)] text-white' : 'text-[var(--text-secondary)]'}`}>Pipeline</button>
             <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${view === 'list' ? 'bg-[var(--primary)] text-white' : 'text-[var(--text-secondary)]'}`}>List</button>
           </div>
-          <button onClick={() => { setEditing(null); setShowModal(true); }} className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-xl text-sm font-semibold text-white"><Plus size={16} /> Add</button>
+          <div className="flex items-center gap-2">
+            {user?.role === 'superadmin' && (
+              <button onClick={() => exportToCsv(clients.map(c => ({
+                company: c.companyName, contact: c.contactName, email: c.email, phone: c.phone,
+                status: c.status, service: c.service, value: c.dealValue || '',
+              })), 'clients', [
+                { key: 'company', label: 'Company' }, { key: 'contact', label: 'Contact' }, { key: 'email', label: 'Email' },
+                { key: 'phone', label: 'Phone' }, { key: 'status', label: 'Status' }, { key: 'service', label: 'Service' },
+                { key: 'value', label: 'Deal Value' },
+              ])} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}><Download size={13} /> Export</button>
+            )}
+            <button onClick={() => { setEditing(null); setShowModal(true); }} className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-xl text-sm font-semibold text-white"><Plus size={16} /> Add</button>
+          </div>
         </div>
       </div>
 

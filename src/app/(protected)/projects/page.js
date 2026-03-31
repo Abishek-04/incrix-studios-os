@@ -9,6 +9,8 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import { fetchState, createProject, updateProject, deleteProject, fetchWithAuth } from '@/services/api';
 import { useToast } from '@/contexts/UIContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { exportToCsv } from '@/utils/exportCsv';
+import { Download } from 'lucide-react';
 
 export default function ProjectsPage() {
   const { user: currentUser } = useAuth();
@@ -198,8 +200,8 @@ export default function ProjectsPage() {
 
   return (
     <>
-      {/* Type Filter */}
-      <div className="px-4 md:px-8 pt-4 flex gap-2">
+      {/* Type Filter + Export */}
+      <div className="px-4 md:px-8 pt-4 flex gap-2 flex-wrap items-center">
         <button
             onClick={() => setTypeFilter(typeFilter === 'mywork' ? 'all' : 'mywork')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -228,6 +230,24 @@ export default function ProjectsPage() {
             {opt.label}
           </button>
         ))}
+        {currentUser?.role === 'superadmin' && (
+          <button onClick={() => {
+            const all = [...projects, ...devDesignProjects];
+            exportToCsv(all.map(p => ({
+              title: p.title, stage: p.stage, platform: p.platform, creator: p.creator,
+              editor: p.editor || '', status: p.status, priority: p.priority,
+              dueDate: p.dueDate ? new Date(p.dueDate).toLocaleDateString() : '',
+              type: p.projectType || 'content',
+            })), 'projects', [
+              { key: 'title', label: 'Title' }, { key: 'stage', label: 'Stage' }, { key: 'platform', label: 'Platform' },
+              { key: 'creator', label: 'Creator' }, { key: 'editor', label: 'Editor' }, { key: 'status', label: 'Status' },
+              { key: 'priority', label: 'Priority' }, { key: 'dueDate', label: 'Due Date' }, { key: 'type', label: 'Type' },
+            ]);
+          }} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+            <Download size={13} /> Export CSV
+          </button>
+        )}
       </div>
 
       <ProjectList
