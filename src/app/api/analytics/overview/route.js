@@ -3,8 +3,8 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import BaseProject from '@/models/BaseProject';
 import DailyTask from '@/models/DailyTask';
-import AutomationRule from '@/models/AutomationRule';
-import AutomationLog from '@/models/AutomationLog';
+import InstaAutomation from '@/models/InstaAutomation';
+// AutomationLog removed — stats now aggregated from InstaAutomation documents
 import Channel from '@/models/Channel';
 import { hasPermission, PERMISSIONS } from '@/config/permissions';
 import { authenticate } from '@/lib/auth';
@@ -104,23 +104,15 @@ export async function GET(request) {
 
     // === INSTAGRAM AUTOMATION STATISTICS ===
     const totalChannels = await Channel.countDocuments({ platform: 'instagram' });
-    const activeAutomations = await AutomationRule.countDocuments({ status: 'active' });
-    const totalAutomations = await AutomationRule.countDocuments();
+    const activeAutomations = await InstaAutomation.countDocuments({ active: true });
+    const totalAutomations = await InstaAutomation.countDocuments();
 
-    const automationStats = await AutomationLog.aggregate([
-      { $match: { createdAt: { $gte: startDate } } },
-      {
-        $group: {
-          _id: '$dmStatus',
-          count: { $sum: 1 }
-        }
-      }
+    // Aggregate stats from InstaAutomation documents (engine tracks per-rule)
+    const automationAgg = await InstaAutomation.aggregate([
+      { $group: { _id: null, totalCommentReplies: { $sum: '$commentReplies' }, totalDMReplies: { $sum: '$dmReplies' } } }
     ]);
-
-    const totalDMsSent = await AutomationLog.countDocuments({
-      dmStatus: 'sent',
-      createdAt: { $gte: startDate }
-    });
+    const automationStats = automationAgg[0] || { totalCommentReplies: 0, totalDMReplies: 0 };
+    const totalDMsSent = automationStats.totalDMReplies || 0;
 
     // === ACTIVITY TIMELINE (Last 30 days) ===
     const activityTimeline = await BaseProject.aggregate([
@@ -257,10 +249,8 @@ export async function GET(request) {
           totalAutomations,
           activeAutomations,
           dmsSent: totalDMsSent,
-          dmStats: automationStats.reduce((acc, stat) => {
-            acc[stat._id] = stat.count;
-            return acc;
-          }, {})
+          commentReplies: automationStats.totalCommentReplies || 0,
+          dmReplies: automationStats.totalDMReplies || 0
         },
 
         // Activity timelines

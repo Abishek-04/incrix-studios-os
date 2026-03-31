@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongodb';
 import Project from '@/models/Project';
 import DeletedItem from '@/models/DeletedItem';
 import { getAuthUser } from '@/lib/auth';
+import { logProjectUpdated } from '@/lib/services/activityLogger';
 
 export const dynamic = 'force-dynamic';
 import {
@@ -177,6 +178,9 @@ export async function PATCH(request, { params }) {
       const latestProject = await Project.findOne({ id: projectId });
       return NextResponse.json({ success: true, stale: true, project: latestProject ? serializeProject(latestProject) : null });
     }
+
+    // Log activity
+    try { await logProjectUpdated(serializeProject(updatedProject), authUser, updates); } catch (_) {}
 
     return NextResponse.json({ success: true, project: serializeProject(updatedProject) });
   } catch (error) {

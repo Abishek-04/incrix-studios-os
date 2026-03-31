@@ -12,17 +12,11 @@ export async function GET(request) {
   try {
     await connectDB();
 
-    // Authenticate via JWT, fall back to query param role for backward compat
-    let currentUserRole;
-    try {
-      const decoded = await authenticate(request);
-      const User = (await import('@/models/User')).default;
-      const user = await User.findOne({ id: decoded.userId }).select('role').lean();
-      currentUserRole = user?.role;
-    } catch {
-      const { searchParams } = new URL(request.url);
-      currentUserRole = searchParams.get('role');
-    }
+    // Authenticate via JWT — no fallback
+    const decoded = await authenticate(request);
+    const User = (await import('@/models/User')).default;
+    const authUser = await User.findOne({ id: decoded.userId }).select('role').lean();
+    const currentUserRole = authUser?.role;
 
     // Permission check - Super Admin only
     if (!hasPermission(currentUserRole, PERMISSIONS.VIEW_ANALYTICS)) {
@@ -33,6 +27,7 @@ export async function GET(request) {
     }
 
     // Parse query parameters
+    const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const action = searchParams.get('action');
     const category = searchParams.get('category');

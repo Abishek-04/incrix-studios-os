@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Project from '@/models/Project';
 import { getAuthUser } from '@/lib/auth';
+import { logProjectCreated } from '@/lib/services/activityLogger';
 
 export const dynamic = 'force-dynamic';
 import {
@@ -180,6 +181,9 @@ export async function POST(request) {
       { $set: payload },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // Log activity
+    try { await logProjectCreated(serializeProject(project), authUser); } catch (_) {}
 
     return NextResponse.json({ success: true, project: serializeProject(project) });
   } catch (error) {
