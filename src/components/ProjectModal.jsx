@@ -68,7 +68,8 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     setToast({ visible: true, message, type });
   };
 
-  // Sync prop changes
+  // Sync prop changes only when project ID changes (not on every save)
+  const projectId = project?.id;
   useEffect(() => {
     const normalizedEditors = normalizeEditors(project);
     const normalizedProject = {
@@ -78,7 +79,8 @@ const ProjectModal = ({ project, currentUserRole, currentUser, channels, users, 
     };
     latestProjectRef.current = normalizedProject;
     setLocalProject(normalizedProject);
-  }, [project]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   useEffect(() => {
     latestProjectRef.current = localProject;
