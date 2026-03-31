@@ -40,6 +40,149 @@ function fmtDue(ts) {
   return { text: `${days} days left`, urgent: false };
 }
 
+// ─── YouTube URL parser ──────────────────────────────────────────────────────
+function extractYouTubeId(url) {
+  if (!url) return null;
+  // youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID, youtube.com/embed/ID
+  const patterns = [
+    /(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// ─── YouTube Published Output ────────────────────────────────────────────────
+function YouTubeOutput({ videoId, publishedLink, onUnlink }) {
+  const [video, setVideo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!videoId) return;
+    fetchWithAuth(`/api/youtube?videoId=${videoId}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setVideo(d.video); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [videoId]);
+
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border-light)' }}>
+        <h3 className="text-[14px] font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <Play size={16} className="text-red-500" /> Published Output
+        </h3>
+        <div className="flex items-center gap-2">
+          {publishedLink && (
+            <a href={publishedLink} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] font-medium flex items-center gap-1" style={{ color: 'var(--primary)' }}>
+              <ExternalLink size={12} /> Open in YouTube
+            </a>
+          )}
+          {onUnlink && (
+            <button onClick={onUnlink} className="text-[11px] font-medium px-2 py-0.5 rounded transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--danger)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+              Unlink
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Video embed */}
+      <div className="aspect-video bg-black">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}`}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="YouTube video"
+        />
+      </div>
+
+      {/* Stats + Info */}
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }} />
+        </div>
+      ) : video ? (
+        <div className="px-5 py-3">
+          {/* Stats */}
+          {video.hasFullStats && (
+            <div className="flex items-center gap-5 mb-3">
+              <div className="flex items-center gap-1.5">
+                <Eye size={15} className="text-blue-400" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(video.viewCount)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>views</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Heart size={15} className="text-red-400" fill="#f87171" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(video.likeCount)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>likes</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MessageCircle size={15} className="text-green-400" />
+                <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>{fmtNum(video.commentCount)}</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>comments</span>
+              </div>
+            </div>
+          )}
+          {/* Title + Channel */}
+          <h4 className="text-[13px] font-bold leading-snug mb-1" style={{ color: 'var(--text)' }}>{video.title}</h4>
+          {video.channelTitle && (
+            <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{video.channelTitle}</p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ─── YouTube Link Input ──────────────────────────────────────────────────────
+function YouTubeLinkInput({ onLink }) {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const videoId = extractYouTubeId(url);
+    if (!videoId) {
+      setError('Paste a valid YouTube URL');
+      return;
+    }
+    setError('');
+    onLink(videoId, url.trim());
+  }
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+      <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+        <Play size={16} className="text-red-500" /> Published Output
+      </h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <input
+            type="url"
+            value={url}
+            onChange={e => { setUrl(e.target.value); setError(''); }}
+            placeholder="Paste YouTube video or Shorts URL..."
+            className="w-full px-4 py-3 rounded-xl border text-[13px] outline-none transition-colors"
+            style={{ background: 'var(--bg-input)', borderColor: error ? 'var(--danger)' : 'var(--border)', color: 'var(--text)' }}
+          />
+          {error && <p className="text-[11px] mt-1" style={{ color: 'var(--danger)' }}>{error}</p>}
+        </div>
+        <button type="submit" className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 transition-all bg-red-600 hover:bg-red-500">
+          <Play size={14} /> Link YouTube Video
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function fmtNum(n) {
   if (n == null) return '—';
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -283,6 +426,8 @@ export default function ProjectDetailPage() {
   const [publishedMedia, setPublishedMedia] = useState(null);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [instaAccountId, setInstaAccountId] = useState(null);
+  const [ytVideoId, setYtVideoId] = useState(null);
+  const [ytPublishedLink, setYtPublishedLink] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -300,7 +445,6 @@ export default function ProjectDetailPage() {
         fetchWithAuth('/api/instagram/accounts').then(r => r.json()).then(d => {
           if (d.success && d.accounts?.length > 0) {
             setInstaAccountId(d.accounts[0].id);
-            // If project has a linked media, fetch it
             if (proj.publishedMediaId) {
               fetchWithAuth(`/api/instagram/media?accountId=${d.accounts[0].id}`).then(r => r.json()).then(md => {
                 if (md.success) {
@@ -311,6 +455,15 @@ export default function ProjectDetailPage() {
             }
           }
         }).catch(() => {});
+      }
+
+      // YouTube: check for linked video via publishedLink or publishedMediaId
+      if (proj.platform === 'youtube' || proj.contentFormat === 'YTShorts' || proj.contentFormat === 'YTLongVideo' || proj.contentFormat === 'ShortForm' || proj.contentFormat === 'LongForm') {
+        const vid = proj.publishedMediaId || extractYouTubeId(proj.publishedLink);
+        if (vid) {
+          setYtVideoId(vid);
+          setYtPublishedLink(proj.publishedLink || `https://www.youtube.com/watch?v=${vid}`);
+        }
       }
     }).catch(console.error).finally(() => setLoading(false));
   }, [id]);
@@ -350,7 +503,28 @@ export default function ProjectDetailPage() {
     router.push(`/instagram?automate=${encodeURIComponent(mediaItem.id)}`);
   }
 
+  async function handleLinkYouTube(videoId, url) {
+    setYtVideoId(videoId);
+    setYtPublishedLink(url);
+    await fetchWithAuth(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ project: { publishedMediaId: videoId, publishedLink: url } }),
+    });
+    setProject(prev => ({ ...prev, publishedMediaId: videoId, publishedLink: url }));
+  }
+
+  async function handleUnlinkYouTube() {
+    setYtVideoId(null);
+    setYtPublishedLink(null);
+    await fetchWithAuth(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ project: { publishedMediaId: '', publishedLink: '' } }),
+    });
+    setProject(prev => ({ ...prev, publishedMediaId: '', publishedLink: '' }));
+  }
+
   const isInstaProject = project.platform === 'instagram' || project.contentFormat === 'InstaReel' || project.contentFormat === 'InstaPost';
+  const isYTProject = project.platform === 'youtube' || project.contentFormat === 'YTShorts' || project.contentFormat === 'YTLongVideo' || project.contentFormat === 'ShortForm' || project.contentFormat === 'LongForm';
 
   const stage = STAGE_CONFIG[project.stage] || STAGE_CONFIG.Backlog;
   const due = fmtDue(project.dueDate);
@@ -560,6 +734,17 @@ export default function ProjectDetailPage() {
                     </p>
                   )}
                 </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Published Output — YouTube video linked to this project */}
+          {isYTProject && isDone && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.25, ease }}>
+              {ytVideoId ? (
+                <YouTubeOutput videoId={ytVideoId} publishedLink={ytPublishedLink} onUnlink={handleUnlinkYouTube} />
+              ) : (
+                <YouTubeLinkInput onLink={handleLinkYouTube} />
               )}
             </motion.div>
           )}
