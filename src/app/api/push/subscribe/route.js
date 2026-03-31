@@ -6,7 +6,12 @@ import { authenticate } from '@/lib/auth';
 // POST — Save push subscription for a user
 export async function POST(request) {
   try {
-    const decoded = await authenticate(request);
+    let decoded;
+    try {
+      decoded = await authenticate(request);
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { userId, subscription } = await request.json();
 
     // Users can only modify their own subscriptions
@@ -47,7 +52,12 @@ export async function POST(request) {
 // DELETE — Remove a push subscription
 export async function DELETE(request) {
   try {
-    const decoded = await authenticate(request);
+    let decoded;
+    try {
+      decoded = await authenticate(request);
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { userId, endpoint } = await request.json();
 
     // Users can only modify their own subscriptions
