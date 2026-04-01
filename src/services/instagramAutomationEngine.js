@@ -103,12 +103,15 @@ export const AutomationEngine = {
     }
 
     if (matched.replyType === 'dm' || matched.replyType === 'both') {
-      // Append product link to message text — Instagram auto-links URLs
-      // Works on both desktop and mobile, no template rendering issues
+      const dmOptions = {};
       if (matched.productLink) {
-        dmMessage = `${dmMessage}\n\n${matched.productLink}`;
+        dmOptions.productLink = matched.productLink;
+        if (matched.productImageUrl) {
+          dmOptions.imageUrl = matched.productImageUrl;
+        }
+        dmOptions.buttonText = matched.buttonText || 'Check Now';
       }
-      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account);
+      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account, dmOptions);
     }
 
     // Update stats
