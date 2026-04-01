@@ -99,10 +99,12 @@ export const InstaAutomationService = {
 
   async toggleAutomation(accountId, automationId) {
     await connectDB();
-    // Atomic toggle using MongoDB $not expression to avoid race condition
+    // Read current state then flip — simple and reliable
+    const current = await InstaAutomation.findOne({ _id: automationId, accountId }).select('active').lean();
+    if (!current) return null;
     const doc = await InstaAutomation.findOneAndUpdate(
       { _id: automationId, accountId },
-      [{ $set: { active: { $not: '$active' } } }],
+      { $set: { active: !current.active } },
       { new: true }
     ).lean();
     return doc ? { ...doc, id: doc._id.toString() } : null;
