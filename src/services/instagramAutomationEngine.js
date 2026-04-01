@@ -103,19 +103,12 @@ export const AutomationEngine = {
     }
 
     if (matched.replyType === 'dm' || matched.replyType === 'both') {
-      // Send rich card with image + button when product link exists, otherwise plain text
-      const dmOptions = {};
+      // Append product link to message text — Instagram auto-links URLs
+      // Works on both desktop and mobile, no template rendering issues
       if (matched.productLink) {
-        dmOptions.productLink = matched.productLink;
-        // Only use custom product image — no fallback to reel thumbnail (URLs expire)
-        if (matched.productImageUrl) {
-          dmOptions.imageUrl = matched.productImageUrl;
-        }
-        dmOptions.buttonText = matched.buttonText || 'Check Now';
-        // Don't append link to message — it goes in the button
-        dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : (matched.replyMessage || '');
+        dmMessage = `${dmMessage}\n\n${matched.productLink}`;
       }
-      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account, dmOptions);
+      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account);
     }
 
     // Update stats
