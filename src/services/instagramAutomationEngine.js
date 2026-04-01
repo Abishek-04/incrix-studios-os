@@ -91,7 +91,11 @@ export const AutomationEngine = {
     console.log(`[engine] Trigger matched "${matched.triggerKeyword}" for ${account.username}`);
     const fallbackMessage = matched.compiledReplyMessage || matched.replyMessage || '';
     const commentMessage = (matched.commentReplyMessage != null && matched.commentReplyMessage !== '') ? matched.commentReplyMessage : fallbackMessage;
-    const dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : fallbackMessage;
+    let dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : fallbackMessage;
+    // Append product link to DM if present
+    if (matched.productLink) {
+      dmMessage = `${dmMessage}\n\n${matched.productLink}`.trim();
+    }
 
     await markEventProcessed(recentEventKey);
 
