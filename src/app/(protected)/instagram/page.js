@@ -281,8 +281,10 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
   const [keywordInput, setKeywordInput] = useState('');
   const [matchType, setMatchType] = useState(existingAutomation?.matchType || 'contains');
   const [replyType, setReplyType] = useState(existingAutomation?.replyType || 'both');
-  const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage ?? existingAutomation?.replyMessage ?? '');
-  const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage ?? '');
+  const defaultComment = 'Check your DM! 📩';
+  const defaultDm = 'Hey there! 👋 Thanks for reaching out. Here\'s what you were looking for:';
+  const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage ?? existingAutomation?.replyMessage ?? defaultComment);
+  const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage || defaultDm);
   const [productLink, setProductLink] = useState(existingAutomation?.productLink || '');
   const [productImageUrl, setProductImageUrl] = useState(existingAutomation?.productImageUrl || '');
   const [buttonText, setButtonText] = useState(existingAutomation?.buttonText || 'Check Now');
