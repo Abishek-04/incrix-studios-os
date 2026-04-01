@@ -23,6 +23,8 @@ function toAutomationRecord(accountId, createdBy, payload) {
     commentReplyMessage,
     dmReplyMessage,
     productLink,
+    productImageUrl: payload.productImageUrl?.trim() || '',
+    buttonText: payload.buttonText?.trim() || 'Check Now',
     compiledReplyMessage: buildCompiledReplyMessage(replyMessage, productLink),
     targetMediaId: payload.targetMediaId || 'any',
     targetMediaCaption: payload.targetMediaCaption || '',

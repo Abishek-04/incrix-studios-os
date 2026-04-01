@@ -107,7 +107,9 @@ export const AutomationEngine = {
       const dmOptions = {};
       if (matched.productLink) {
         dmOptions.productLink = matched.productLink;
-        dmOptions.imageUrl = matched.targetMediaUrl || null;
+        // Use custom product image if provided, otherwise fall back to reel thumbnail
+        dmOptions.imageUrl = matched.productImageUrl || matched.targetMediaUrl || null;
+        dmOptions.buttonText = matched.buttonText || 'Check Now';
         // Don't append link to message — it goes in the button
         dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : (matched.replyMessage || '');
       }

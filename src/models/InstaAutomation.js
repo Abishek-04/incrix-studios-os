@@ -15,6 +15,8 @@ const instaAutomationSchema = new mongoose.Schema(
     dmReplyMessage: { type: String },
     compiledReplyMessage: { type: String },
     productLink: { type: String },
+    productImageUrl: { type: String },
+    buttonText: { type: String, default: 'Check Now' },
     targetMediaId: { type: String },
     targetMediaCaption: { type: String },
     targetMediaUrl: { type: String },

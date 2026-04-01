@@ -284,6 +284,8 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
   const [commentReplyMessage, setCommentReplyMessage] = useState(existingAutomation?.commentReplyMessage ?? existingAutomation?.replyMessage ?? '');
   const [dmReplyMessage, setDmReplyMessage] = useState(existingAutomation?.dmReplyMessage ?? '');
   const [productLink, setProductLink] = useState(existingAutomation?.productLink || '');
+  const [productImageUrl, setProductImageUrl] = useState(existingAutomation?.productImageUrl || '');
+  const [buttonText, setButtonText] = useState(existingAutomation?.buttonText || 'Check Now');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -339,6 +341,8 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
         dmReplyMessage: dmReplyMessage.trim(),
         replyMessage: dmReplyMessage.trim() || commentReplyMessage.trim(), // legacy fallback (prefer DM)
         productLink: productLink.trim(),
+        productImageUrl: productImageUrl.trim(),
+        buttonText: buttonText.trim() || 'Check Now',
         targetMediaId: media?.id || 'any',
         targetMediaCaption: media?.caption || '',
         targetMediaUrl: media?.media_url || media?.thumbnail_url || '',
@@ -482,10 +486,48 @@ function AutomationBuilder({ media, accountId, existingAutomation, onSave, onClo
                 type="url"
                 value={productLink}
                 onChange={e => setProductLink(e.target.value)}
-                placeholder="https://..."
+                placeholder="https://your-product-page.com"
                 className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none"
               />
             </div>
+
+            {productLink && (
+              <>
+                <div>
+                  <label className="block text-sm text-[#999] mb-1">Product Image URL (optional)</label>
+                  <input
+                    type="url"
+                    value={productImageUrl}
+                    onChange={e => setProductImageUrl(e.target.value)}
+                    placeholder="https://your-site.com/product-image.jpg"
+                    className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none"
+                  />
+                  <p className="text-[10px] text-[#555] mt-1">Shows as a card image in the DM. Leave empty to use the reel thumbnail.</p>
+                </div>
+                <div>
+                  <label className="block text-sm text-[#999] mb-1">Button Text</label>
+                  <input
+                    type="text"
+                    value={buttonText}
+                    onChange={e => setButtonText(e.target.value)}
+                    placeholder="Check Now"
+                    className="w-full px-3 py-2 bg-[#151515] border border-[#333] rounded-lg text-white placeholder-[#666] focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Card Preview */}
+                <div className="rounded-lg border border-[#333] overflow-hidden">
+                  <p className="text-[10px] text-[#555] px-3 py-1.5 border-b border-[#333]">DM Card Preview</p>
+                  {(productImageUrl || media?.thumbnail_url || media?.media_url) && (
+                    <img src={productImageUrl || media?.thumbnail_url || media?.media_url} alt="" className="w-full h-32 object-cover" />
+                  )}
+                  <div className="p-3">
+                    <p className="text-[13px] font-semibold text-white line-clamp-2">{dmReplyMessage || 'Your DM message...'}</p>
+                    <div className="mt-2 px-4 py-2 bg-indigo-600 rounded-lg text-center text-xs font-bold text-white">{buttonText || 'Check Now'}</div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <button
               type="submit"
