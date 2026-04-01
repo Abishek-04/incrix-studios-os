@@ -107,8 +107,10 @@ export const AutomationEngine = {
       const dmOptions = {};
       if (matched.productLink) {
         dmOptions.productLink = matched.productLink;
-        // Use custom product image if provided, otherwise fall back to reel thumbnail
-        dmOptions.imageUrl = matched.productImageUrl || matched.targetMediaUrl || null;
+        // Only use custom product image — no fallback to reel thumbnail (URLs expire)
+        if (matched.productImageUrl) {
+          dmOptions.imageUrl = matched.productImageUrl;
+        }
         dmOptions.buttonText = matched.buttonText || 'Check Now';
         // Don't append link to message — it goes in the button
         dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : (matched.replyMessage || '');
