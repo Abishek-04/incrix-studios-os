@@ -171,8 +171,8 @@ export const InstagramService = {
     try {
       let payload;
 
-      if (productLink) {
-        // Rich card with image + button (Generic Template)
+      if (productLink && imageUrl) {
+        // Rich card WITH image + button (Generic Template)
         payload = {
           recipient: { comment_id: commentId },
           message: {
@@ -181,12 +181,27 @@ export const InstagramService = {
               payload: {
                 template_type: 'generic',
                 elements: [{
-                  title: message.slice(0, 80), // Instagram limits title to 80 chars
+                  title: message.slice(0, 80),
                   subtitle: message.length > 80 ? message.slice(80, 160) : undefined,
-                  ...(imageUrl ? { image_url: imageUrl } : {}),
+                  image_url: imageUrl,
                   default_action: { type: 'web_url', url: productLink },
                   buttons: [{ type: 'web_url', url: productLink, title: buttonText || 'Check Now' }],
                 }],
+              },
+            },
+          },
+        };
+      } else if (productLink) {
+        // Text + button, NO image (Button Template)
+        payload = {
+          recipient: { comment_id: commentId },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'button',
+                text: message.slice(0, 640),
+                buttons: [{ type: 'web_url', url: productLink, title: buttonText || 'Check Now' }],
               },
             },
           },
