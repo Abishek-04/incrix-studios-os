@@ -92,10 +92,6 @@ export const AutomationEngine = {
     const fallbackMessage = matched.compiledReplyMessage || matched.replyMessage || '';
     const commentMessage = (matched.commentReplyMessage != null && matched.commentReplyMessage !== '') ? matched.commentReplyMessage : fallbackMessage;
     let dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : fallbackMessage;
-    // Append product link to DM if present
-    if (matched.productLink) {
-      dmMessage = `${dmMessage}\n\n${matched.productLink}`.trim();
-    }
 
     await markEventProcessed(recentEventKey);
 
@@ -107,7 +103,15 @@ export const AutomationEngine = {
     }
 
     if (matched.replyType === 'dm' || matched.replyType === 'both') {
-      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account);
+      // Send rich card with image + button when product link exists, otherwise plain text
+      const dmOptions = {};
+      if (matched.productLink) {
+        dmOptions.productLink = matched.productLink;
+        dmOptions.imageUrl = matched.targetMediaUrl || null;
+        // Don't append link to message — it goes in the button
+        dmMessage = (matched.dmReplyMessage != null && matched.dmReplyMessage !== '') ? matched.dmReplyMessage : (matched.replyMessage || '');
+      }
+      dmSent = await InstagramService.sendPrivateReply(commentId, dmMessage, account, dmOptions);
     }
 
     // Update stats

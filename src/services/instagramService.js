@@ -163,17 +163,59 @@ export const InstagramService = {
     }
   },
 
-  async sendPrivateReply(commentId, message, account) {
+  async sendPrivateReply(commentId, message, account, options = {}) {
     const { accessToken, account: refreshedAccount } = await getUsableAccessToken(account);
     const endpoint = `${INSTAGRAM_GRAPH_BASE}/${refreshedAccount.instagramUserId}/messages`;
+    const { productLink, imageUrl, buttonText } = options;
 
     try {
-      await axios.post(endpoint, { recipient: { comment_id: commentId }, message: { text: message } }, {
+      let payload;
+
+      if (productLink) {
+        // Rich card with image + button (Generic Template)
+        payload = {
+          recipient: { comment_id: commentId },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'generic',
+                elements: [{
+                  title: message.slice(0, 80), // Instagram limits title to 80 chars
+                  subtitle: message.length > 80 ? message.slice(80, 160) : undefined,
+                  ...(imageUrl ? { image_url: imageUrl } : {}),
+                  default_action: { type: 'web_url', url: productLink },
+                  buttons: [{ type: 'web_url', url: productLink, title: buttonText || 'Check Now' }],
+                }],
+              },
+            },
+          },
+        };
+      } else {
+        // Plain text DM
+        payload = { recipient: { comment_id: commentId }, message: { text: message } };
+      }
+
+      await axios.post(endpoint, payload, {
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       });
-      console.log(`[instagram] Private reply success for ${commentId}`);
+      console.log(`[instagram] Private reply success for ${commentId} (${productLink ? 'rich card' : 'text'})`);
       return true;
     } catch (error) {
+      // Fallback: if template fails, try plain text with link appended
+      if (productLink) {
+        console.warn('[instagram] Rich card failed, falling back to plain text:', error.response?.data?.error?.message || error.message);
+        try {
+          const fallbackText = `${message}\n\n${productLink}`;
+          await axios.post(endpoint, { recipient: { comment_id: commentId }, message: { text: fallbackText } }, {
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          });
+          console.log(`[instagram] Private reply fallback success for ${commentId}`);
+          return true;
+        } catch (fallbackErr) {
+          console.error('[instagram] Private reply fallback also failed:', fallbackErr.response?.data || fallbackErr.message);
+        }
+      }
       console.error('[instagram] Private reply failed:', error.response?.data || error.message);
       return false;
     }
