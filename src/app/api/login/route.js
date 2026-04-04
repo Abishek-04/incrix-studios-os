@@ -51,8 +51,8 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user.id);
+    // Generate tokens (embed role in access token for middleware guards)
+    const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
     // Store refresh token atomically

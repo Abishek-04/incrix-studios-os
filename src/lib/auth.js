@@ -9,8 +9,8 @@ if (!JWT_SECRET) {
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
-export function generateAccessToken(userId) {
-  return jwt.sign({ userId, type: 'access' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+export function generateAccessToken(userId, role) {
+  return jwt.sign({ userId, role, type: 'access' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function generateRefreshToken(userId) {

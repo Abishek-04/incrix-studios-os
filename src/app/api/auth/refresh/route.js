@@ -34,7 +34,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Refresh token not found' }, { status: 403 });
     }
 
-    const accessToken = generateAccessToken(user.id);
+    const accessToken = generateAccessToken(user.id, user.role);
 
     const response = NextResponse.json({ success: true, accessToken });
     setAuthCookies(response, accessToken, null);
