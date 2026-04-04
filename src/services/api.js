@@ -1,55 +1,26 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-// ── Token Management ──
+// ── Core Fetch (cookies sent automatically by browser) ──
 
-function getAccessToken() {
-  return typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-}
-
-function getRefreshToken() {
-  return typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-}
-
-function setTokens(accessToken, refreshToken) {
-  if (typeof window === 'undefined') return;
-  if (accessToken) localStorage.setItem('access_token', accessToken);
-  if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-}
-
-function clearTokens() {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-}
-
-// ── Core Fetch ──
-
-// Prevent concurrent refresh calls (race condition when multiple 401s fire at once)
 let refreshPromise = null;
 
 async function refreshAccessToken() {
-  // If a refresh is already in progress, wait for it
   if (refreshPromise) return refreshPromise;
-
-  const rt = getRefreshToken();
-  if (!rt) throw new Error('No refresh token');
 
   refreshPromise = (async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: rt }),
+        body: JSON.stringify({}),
       });
 
       if (!res.ok) {
-        clearTokens();
         throw new Error('Session expired');
       }
 
-      const data = await res.json();
-      if (data.accessToken) setTokens(data.accessToken, null);
-      return data.accessToken;
+      return true;
     } finally {
       refreshPromise = null;
     }
@@ -64,22 +35,20 @@ export async function fetchWithAuth(url, options = {}) {
     ...options.headers,
   };
 
-  const token = getAccessToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
   let res = await fetch(`${API_BASE_URL}${url}`, {
     cache: 'no-store',
+    credentials: 'include',
     ...options,
     headers,
   });
 
-  // If 401, try refresh once
+  // If 401, try refresh once then retry
   if (res.status === 401) {
     try {
-      const newToken = await refreshAccessToken();
-      headers['Authorization'] = `Bearer ${newToken}`;
+      await refreshAccessToken();
       res = await fetch(`${API_BASE_URL}${url}`, {
         cache: 'no-store',
+        credentials: 'include',
         ...options,
         headers,
       });
@@ -96,32 +65,27 @@ export async function fetchWithAuth(url, options = {}) {
 export async function login(email, password) {
   const res = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await res.json();
-
-  if (data.success) {
-    setTokens(data.accessToken, data.refreshToken);
-  }
-
-  return data;
+  return res.json();
 }
 
 export async function logout() {
   try {
-    await fetchWithAuth('/api/auth/logout', { method: 'POST' });
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch {
     // ignore
   }
-  clearTokens();
 }
 
 export async function getCurrentUser() {
-  const token = getAccessToken();
-  if (!token) return null;
-
   try {
     const res = await fetchWithAuth('/api/auth/me');
     if (!res.ok) return null;
@@ -130,10 +94,6 @@ export async function getCurrentUser() {
   } catch {
     return null;
   }
-}
-
-export function hasToken() {
-  return Boolean(getAccessToken());
 }
 
 // ── State ──

@@ -3,18 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
-import { hasToken } from '@/services/api';
+import { getCurrentUser } from '@/services/api';
 
 export default function HomePage() {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (hasToken()) {
-      router.replace('/dashboard');
-    } else {
-      setChecked(true);
-    }
+    getCurrentUser().then(user => {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        setChecked(true);
+      }
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = () => {

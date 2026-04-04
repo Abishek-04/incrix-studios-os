@@ -34,14 +34,56 @@ export async function comparePassword(password, hash) {
 }
 
 /**
- * Extract Bearer token from Authorization header.
+ * Cookie config for httpOnly tokens
+ */
+export const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+};
+
+export function setAuthCookies(response, accessToken, refreshToken) {
+  response.cookies.set('access_token', accessToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: 15 * 60, // 15 minutes
+  });
+  if (refreshToken) {
+    response.cookies.set('refresh_token', refreshToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+  }
+  return response;
+}
+
+export function clearAuthCookies(response) {
+  response.cookies.set('access_token', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+  response.cookies.set('refresh_token', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+  return response;
+}
+
+/**
+ * Extract token from cookie first, then Authorization header fallback.
  */
 function getTokenFromRequest(request) {
+  // Try cookie first (httpOnly)
+  const cookieToken = request.cookies?.get?.('access_token')?.value;
+  if (cookieToken) return cookieToken;
+
+  // Fallback to Authorization header (for API clients, Pusher, etc.)
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.split(' ')[1];
   }
   return null;
+}
+
+/**
+ * Get refresh token from cookie or request body.
+ */
+export function getRefreshTokenFromRequest(request) {
+  return request.cookies?.get?.('refresh_token')?.value || null;
 }
 
 /**

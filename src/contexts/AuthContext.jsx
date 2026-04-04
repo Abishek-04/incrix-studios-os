@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getCurrentUser, hasToken } from '@/services/api';
+import { getCurrentUser } from '@/services/api';
 
 const AuthContext = createContext(null);
 
@@ -10,12 +10,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
-    if (!hasToken()) {
-      setUser(null);
-      setLoading(false);
-      return null;
-    }
-
     try {
       const userData = await getCurrentUser();
       setUser(userData);
