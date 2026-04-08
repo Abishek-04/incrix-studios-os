@@ -770,20 +770,11 @@ export default function InstagramPage() {
     setTimeout(() => setMessage(null), 5000);
   }
 
-  async function handleConnect() {
+  function handleConnect() {
     if (!currentUser) return;
-    try {
-      const res = await fetchWithAuth('/api/instagram/auth');
-      // The API returns a redirect — follow the redirect URL
-      if (res.redirected) {
-        window.location.href = res.url;
-      } else {
-        const data = await res.json();
-        if (data.error) showMsg(data.error, 'error');
-      }
-    } catch {
-      showMsg('Failed to start Instagram connection', 'error');
-    }
+    // Navigate directly — cookies are sent automatically by the browser,
+    // and the server redirect to Instagram works natively (no CORS issues)
+    window.location.href = '/api/instagram/auth';
   }
 
   async function handleDisconnect(accountId) {
