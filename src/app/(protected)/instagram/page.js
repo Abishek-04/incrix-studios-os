@@ -685,18 +685,31 @@ export default function InstagramPage() {
     const params = new URLSearchParams(window.location.search);
     const automateId = params.get('automate');
 
-    if (params.get('success')) {
+    const hasSuccess = params.get('success');
+    const hasError = params.get('error');
+
+    if (hasSuccess) {
       showMsg(`Connected @${params.get('connected') || 'account'}!`, 'success');
-      window.history.replaceState({}, '', '/instagram');
-    } else if (params.get('error')) {
-      showMsg(`Connection failed: ${params.get('error')}`, 'error');
-      window.history.replaceState({}, '', '/instagram');
     } else if (automateId) {
       setPendingAutomateId(automateId);
+    }
+
+    // Clean URL params
+    if (hasSuccess || hasError || automateId) {
       window.history.replaceState({}, '', '/instagram');
     }
 
-    loadAccounts(automateId);
+    // Load accounts, then decide if error param was real or just a webhook glitch
+    loadAccounts(automateId).then((loadedAccounts) => {
+      if (hasError && !hasSuccess) {
+        if (loadedAccounts && loadedAccounts.length > 0) {
+          // Account exists despite error — connection worked, webhook just failed
+          showMsg(`Connected successfully!`, 'success');
+        } else {
+          showMsg(`Connection failed: ${hasError}`, 'error');
+        }
+      }
+    });
   }, []);
 
   // Load media + automations when account selected
@@ -737,9 +750,12 @@ export default function InstagramPage() {
             } catch { /* try next */ }
           }
         }
+        return data.accounts;
       }
+      return [];
     } catch (err) {
       console.error('Failed to load accounts:', err);
+      return [];
     } finally {
       setLoading(false);
     }
