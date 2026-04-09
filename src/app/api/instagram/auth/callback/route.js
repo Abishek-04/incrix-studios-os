@@ -151,8 +151,12 @@ export async function GET(request) {
       console.log('[instagram-callback] Created channel:', channelId);
     }
 
-    // Subscribe to webhook for comments
-    await InstagramService.subscribeToWebhook(finalTokenData.access_token);
+    // Subscribe to webhook for comments (non-blocking — don't fail the connection)
+    try {
+      await InstagramService.subscribeToWebhook(finalTokenData.access_token);
+    } catch (whErr) {
+      console.error('[instagram-callback] Webhook subscription failed (non-critical):', whErr.message);
+    }
 
     return NextResponse.redirect(`${BASE_URL}/instagram?success=true&connected=${account.username}`);
   } catch (err) {
