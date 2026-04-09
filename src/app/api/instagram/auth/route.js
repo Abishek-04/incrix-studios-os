@@ -1,31 +1,59 @@
 import { NextResponse } from 'next/server';
 import { buildInstagramLoginUrl } from '@/services/instagramAuthService';
-import { authenticate } from '@/lib/auth';
+import { authenticate, getRefreshTokenFromRequest, verifyToken, generateAccessToken, setAuthCookies } from '@/lib/auth';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 
 /**
  * GET /api/instagram/auth
- * Redirect authenticated user to Instagram OAuth login
+ * Redirect authenticated user to Instagram OAuth login.
+ * Since this is called via direct navigation (not fetch), we handle
+ * expired access tokens by falling back to the refresh token.
  */
 export async function GET(request) {
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005';
+
   try {
-    const decoded = await authenticate(request);
-    const userId = decoded.userId;
+    let userId;
+    let needsNewAccessToken = false;
+
+    // Try access token first
+    try {
+      const decoded = await authenticate(request);
+      userId = decoded.userId;
+    } catch {
+      // Access token missing/expired — try refresh token
+      const refreshToken = getRefreshTokenFromRequest(request);
+      if (!refreshToken) {
+        return NextResponse.redirect(`${BASE_URL}/instagram?error=auth_required`);
+      }
+      const decoded = verifyToken(refreshToken);
+      if (!decoded || decoded.type !== 'refresh') {
+        return NextResponse.redirect(`${BASE_URL}/instagram?error=session_expired`);
+      }
+      userId = decoded.userId;
+      needsNewAccessToken = true;
+    }
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+      return NextResponse.redirect(`${BASE_URL}/instagram?error=auth_required`);
     }
 
     const loginUrl = buildInstagramLoginUrl(userId);
     console.log('[instagram-auth] Redirecting to Instagram OAuth');
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+
+    // Issue a fresh access token cookie so subsequent requests don't fail
+    if (needsNewAccessToken) {
+      await connectDB();
+      const user = await User.findOne({ id: userId }).select('role').lean();
+      const newAccessToken = generateAccessToken(userId, user?.role || 'user');
+      setAuthCookies(response, newAccessToken, null);
+    }
+
+    return response;
   } catch (error) {
     console.error('[instagram-auth] Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to initiate OAuth' },
-      { status: 500 }
-    );
+    return NextResponse.redirect(`${BASE_URL}/instagram?error=connection_failed`);
   }
 }
