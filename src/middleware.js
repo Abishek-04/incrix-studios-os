@@ -27,7 +27,8 @@ const ROLE_GUARDS = {
 
   // Manager + Super Admin
   '/team': ['superadmin', 'manager'],
-  '/api/users': ['superadmin', 'manager'],
+  // Note: /api/users is NOT guarded here — chat, mail, attendance all need
+  // to read the user list. Write operations are protected in the route itself.
   '/clients': ['superadmin', 'manager'],
   '/api/clients': ['superadmin', 'manager'],
   '/revenue': ['superadmin', 'manager'],
