@@ -11,15 +11,15 @@ import {
   verifyOAuthState,
 } from '@/services/instagramAuthService';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005';
-
 /**
  * GET /api/instagram/auth/callback
  * Handle Instagram OAuth callback — exchange code for tokens, store account
  */
 export async function GET(request) {
   await connectDB();
-  const { searchParams } = new URL(request.url);
+  const reqUrl = new URL(request.url);
+  const BASE_URL = `${reqUrl.protocol}//${reqUrl.host}`;
+  const { searchParams } = reqUrl;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
   const state = searchParams.get('state'); // studio userId passed via state param

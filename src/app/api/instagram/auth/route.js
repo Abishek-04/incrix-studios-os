@@ -11,7 +11,8 @@ import User from '@/models/User';
  * expired access tokens by falling back to the refresh token.
  */
 export async function GET(request) {
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3005';
+  const reqUrl = new URL(request.url);
+  const BASE_URL = `${reqUrl.protocol}//${reqUrl.host}`;
 
   try {
     let userId;
