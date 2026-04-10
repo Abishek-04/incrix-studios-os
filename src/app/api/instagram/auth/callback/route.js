@@ -151,11 +151,17 @@ export async function GET(request) {
       console.log('[instagram-callback] Created channel:', channelId);
     }
 
-    // Subscribe to webhook for comments (non-blocking — don't fail the connection)
+    // Subscribe to webhook for comments — use the saved account's token (long-lived)
     try {
-      await InstagramService.subscribeToWebhook(finalTokenData.access_token);
+      await InstagramService.subscribeToWebhook(account.accessToken);
     } catch (whErr) {
-      console.error('[instagram-callback] Webhook subscription failed (non-critical):', whErr.message);
+      console.error('[instagram-callback] Webhook subscription failed, retrying with finalToken:', whErr.message);
+      // Retry with the token from OAuth flow in case saved token differs
+      try {
+        await InstagramService.subscribeToWebhook(finalTokenData.access_token);
+      } catch (retryErr) {
+        console.error('[instagram-callback] Webhook subscription retry also failed:', retryErr.message);
+      }
     }
 
     return NextResponse.redirect(`${BASE_URL}/instagram?success=true&connected=${account.username}`);
