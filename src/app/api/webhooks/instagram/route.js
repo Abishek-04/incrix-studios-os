@@ -80,14 +80,34 @@ export async function POST(request) {
               console.log('[Instagram Webhook] Comment event from', entry.id);
 
               try {
-                const { processCommentEvent } = await import('@/services/instagramAutomationProcessor');
-                // Timeout protection for Vercel serverless (8s limit to stay safe)
-                await Promise.race([
-                  processCommentEvent(entry.id, change.value),
-                  new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Processing timeout')), 8000)
-                  ),
-                ]);
+                const { AutomationEngine } = await import('@/services/instagramAutomationEngine');
+                const connectDB = (await import('@/lib/mongodb')).default;
+                const InstaAccount = (await import('@/models/InstaAccount')).default;
+
+                await connectDB();
+
+                // entry.id is the Instagram user ID that owns the media
+                const account = await InstaAccount.findOne({ instagramUserId: String(entry.id) });
+                if (!account) {
+                  console.log('[Instagram Webhook] No InstaAccount found for', entry.id);
+                } else {
+                  const commentData = change.value;
+                  const commentEvent = {
+                    commentId: commentData.id,
+                    text: commentData.text,
+                    mediaId: commentData.media?.id,
+                    fromId: commentData.from?.id,
+                    fromUsername: commentData.from?.username,
+                  };
+
+                  // Timeout protection for Vercel serverless
+                  await Promise.race([
+                    AutomationEngine.processCommentEvent(commentEvent, account),
+                    new Promise((_, reject) =>
+                      setTimeout(() => reject(new Error('Processing timeout')), 8000)
+                    ),
+                  ]);
+                }
               } catch (processingError) {
                 console.error('[Instagram Webhook] Comment processing error:', processingError.message);
                 // Don't throw — we still want to return 200 to Meta
