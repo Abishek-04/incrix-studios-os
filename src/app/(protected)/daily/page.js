@@ -4,13 +4,14 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/UIContext';
-import { fetchState, createDailyTask, updateDailyTask, deleteDailyTask, fetchWithAuth } from '@/services/api';
+import { fetchState, createDailyTask, updateDailyTask, deleteDailyTask, fetchWithAuth, updateProject } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import UndoToast from '@/components/ui/UndoToast';
+import ProjectModal from '@/components/ProjectModal';
 import {
   CheckCircle, Circle, ChevronRight, Clock, AlertTriangle, Calendar,
   Plus, Trash2, Sun, Moon as MoonIcon, ArrowRight, RotateCcw, Filter,
-  Briefcase, ListChecks, History, X
+  Briefcase, ListChecks, History, X, Pencil
 } from 'lucide-react';
 
 const ease = [0.23, 1, 0.32, 1];
@@ -87,7 +88,7 @@ function getWaitingMessage(user, project) {
 }
 
 // ─── Project Task Card ────────────────────────────────────────────────────────
-function ProjectTaskCard({ project, user, isManager, onMoveForward, onReverse, isCompleted }) {
+function ProjectTaskCard({ project, user, isManager, onMoveForward, onReverse, onEdit, isCompleted }) {
   const due = formatDue(project.dueDate);
   const next = nextStage(project.stage);
   const isDone = project.stage === 'Done';
@@ -132,6 +133,13 @@ function ProjectTaskCard({ project, user, isManager, onMoveForward, onReverse, i
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 justify-end">
+            {canComplete && onEdit && (
+              <button onClick={() => onEdit(project)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                <Pencil size={11} /> Edit
+              </button>
+            )}
             {!isCompleted && next && canComplete && (
               <button onClick={() => {
                 if (confirm(`Move "${project.title}" from ${project.stage} → ${next}? This will reflect across the entire app.`)) {
@@ -238,6 +246,7 @@ export default function MyTasksPage() {
   const [filter, setFilter] = useState('all'); // all | overdue | inprogress
   const [undoDelete, setUndoDelete] = useState(null);
   const [recentlyCompleted, setRecentlyCompleted] = useState([]); // last 5 moved forward
+  const [editingProject, setEditingProject] = useState(null);
 
   const today = toDateStr(new Date());
 
@@ -428,7 +437,7 @@ export default function MyTasksPage() {
             {/* Active projects */}
             <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
               {activeProjects.length > 0 ? activeProjects.map(p => (
-                <ProjectTaskCard key={p.id} project={p} user={user} isManager={isManager} onMoveForward={moveForward} />
+                <ProjectTaskCard key={p.id} project={p} user={user} isManager={isManager} onMoveForward={moveForward} onEdit={setEditingProject} />
               )) : (
                 <div className="py-12 text-center rounded-xl border border-dashed" style={{ borderColor: 'var(--border)' }}>
                   <CheckCircle size={32} className="mx-auto mb-2" style={{ color: 'var(--success)' }} />
@@ -528,6 +537,30 @@ export default function MyTasksPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <ProjectModal
+          project={editingProject}
+          currentUser={user}
+          currentUserRole={user.role}
+          channels={[]}
+          users={users}
+          onClose={() => setEditingProject(null)}
+          onUpdate={async (updatedProject) => {
+            try {
+              const res = await updateProject(editingProject.id, updatedProject);
+              if (res?.success) {
+                setProjects(prev => prev.map(p => p.id === editingProject.id ? (res.project || updatedProject) : p));
+              }
+              return res;
+            } catch (err) {
+              console.error('Update failed:', err);
+              return { success: false };
+            }
+          }}
+        />
+      )}
 
       <UndoToast isVisible={!!undoDelete} message={undoDelete?.message || ''} onUndo={async () => {
         if (!undoDelete?.deletedItemId) return;

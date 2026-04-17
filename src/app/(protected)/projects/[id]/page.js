@@ -6,10 +6,12 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import ProjectModal from '@/components/ProjectModal';
+import { updateProject } from '@/services/api';
 import {
   ArrowLeft, Calendar, Clock, User, Users, Film, Edit3, Save, Trash2,
   ChevronRight, CheckCircle, AlertTriangle, Link as LinkIcon, ExternalLink,
-  FileText, MessageSquare, Heart, MessageCircle, Play, Eye, Search, X, ChevronDown, Zap
+  FileText, MessageSquare, Heart, MessageCircle, Play, Eye, Search, X, ChevronDown, Zap, Pencil
 } from 'lucide-react';
 
 const ease = [0.23, 1, 0.32, 1];
@@ -428,6 +430,7 @@ export default function ProjectDetailPage() {
   const [instaAccountId, setInstaAccountId] = useState(null);
   const [ytVideoId, setYtVideoId] = useState(null);
   const [ytPublishedLink, setYtPublishedLink] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -585,6 +588,12 @@ export default function ProjectDetailPage() {
           )}
         </div>
         <div className="flex gap-2">
+          {canLinkContent && (
+            <button onClick={() => setShowEditModal(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: 'var(--primary)' }}>
+              <Pencil size={14} /> Edit Project
+            </button>
+          )}
           <button onClick={() => router.push('/board')} className="px-4 py-2 rounded-xl text-[13px] font-semibold border transition-all"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
             View on Board
@@ -847,6 +856,39 @@ export default function ProjectDetailPage() {
       {/* Media Picker Modal */}
       {showMediaPicker && instaAccountId && (
         <MediaPicker accountId={instaAccountId} onSelect={handleLinkMedia} onClose={() => setShowMediaPicker(false)} />
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditModal && (
+        <ProjectModal
+          project={project}
+          currentUser={user}
+          currentUserRole={user.role}
+          channels={channels}
+          users={users}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={async (updatedProject) => {
+            try {
+              const res = await updateProject(project.id, updatedProject);
+              if (res?.success) {
+                setProject(res.project || updatedProject);
+              }
+              return res;
+            } catch (err) {
+              console.error('Update failed:', err);
+              return { success: false };
+            }
+          }}
+          onDelete={async (projectId) => {
+            try {
+              const { deleteProject: delProject } = await import('@/services/api');
+              const res = await delProject(projectId);
+              if (res?.success) router.push('/projects');
+            } catch (err) {
+              console.error('Delete failed:', err);
+            }
+          }}
+        />
       )}
     </div>
   );
