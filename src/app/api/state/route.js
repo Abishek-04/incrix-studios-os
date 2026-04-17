@@ -68,6 +68,7 @@ export async function GET(request) {
     const DailyTask = (await import('@/models/DailyTask')).default;
     const Course = (await import('@/models/Course')).default;
     const BaseProject = (await import('@/models/BaseProject')).default;
+    const InstaAccount = (await import('@/models/InstaAccount')).default;
 
     // Fetch all data
     const users = await User.find({}).select('-password -refreshTokens');
@@ -77,13 +78,33 @@ export async function GET(request) {
     const courses = await Course.find({}).sort({ createdAt: -1 });
     const baseProjects = await BaseProject.find({});
 
+    // Merge InstaAccount records that don't already have a Channel entry
+    const instaAccounts = await InstaAccount.find({}).select('-accessToken');
+    const channelIds = new Set((channels || []).map(c => c.id));
+    const instaChannels = (instaAccounts || [])
+      .filter(acct => !channelIds.has(`IG-${acct.instagramUserId}`))
+      .map(acct => ({
+        id: `IG-${acct.instagramUserId}`,
+        platform: 'instagram',
+        name: acct.username || acct.name || '',
+        link: `https://instagram.com/${acct.username || ''}`,
+        avatarUrl: acct.profilePictureUrl || '',
+        email: '',
+        memberId: acct.connectedBy || '',
+        igUserId: acct.instagramUserId || '',
+        igUsername: acct.username || '',
+        igProfilePicUrl: acct.profilePictureUrl || '',
+        connectionStatus: 'connected',
+      }));
+    const allChannels = [...(channels || []), ...instaChannels];
+
     const filteredProjects = filterProjectsForUser(projects || [], context);
 
     return NextResponse.json({
       users: users || [],
       projects: filteredProjects,
       devDesignProjects: (baseProjects || []).map(p => sanitizeDoc(p)),
-      channels: channels || [],
+      channels: allChannels,
       dailyTasks: dailyTasks || [],
       courses: courses || [],
       lastUpdated: new Date()

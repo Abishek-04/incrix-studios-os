@@ -526,6 +526,13 @@ export default function ProjectDetailPage() {
   const isInstaProject = project.platform === 'instagram' || project.contentFormat === 'InstaReel' || project.contentFormat === 'InstaPost';
   const isYTProject = project.platform === 'youtube' || project.contentFormat === 'YTShorts' || project.contentFormat === 'YTLongVideo' || project.contentFormat === 'ShortForm' || project.contentFormat === 'LongForm';
 
+  // Permission: only creator, managers, and superadmins can link/unlink published content
+  const canLinkContent = user && (
+    project.creator === user.name ||
+    user.role === 'manager' ||
+    user.role === 'superadmin'
+  );
+
   const stage = STAGE_CONFIG[project.stage] || STAGE_CONFIG.Backlog;
   const due = fmtDue(project.dueDate);
   const stageIdx = STAGE_ORDER.indexOf(project.stage);
@@ -712,25 +719,31 @@ export default function ProjectDetailPage() {
           {isInstaProject && isDone && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.25, ease }}>
               {publishedMedia ? (
-                <PublishedOutput mediaItem={publishedMedia} accountId={instaAccountId} onUnlink={handleUnlinkMedia} onSetupAutomation={handleGoToAutomation} />
+                <PublishedOutput mediaItem={publishedMedia} accountId={instaAccountId} onUnlink={canLinkContent ? handleUnlinkMedia : undefined} onSetupAutomation={handleGoToAutomation} />
               ) : (
                 <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                   <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
                     <Film size={16} /> Published Output
                   </h3>
-                  {instaAccountId ? (
-                    <button onClick={() => setShowMediaPicker(true)}
-                      className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors"
-                      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
-                      <Search size={20} />
-                      <span className="text-[13px] font-medium">Link the published reel / post</span>
-                      <span className="text-[11px]">Select from your Instagram media</span>
-                    </button>
+                  {canLinkContent ? (
+                    instaAccountId ? (
+                      <button onClick={() => setShowMediaPicker(true)}
+                        className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
+                        <Search size={20} />
+                        <span className="text-[13px] font-medium">Link the published reel / post</span>
+                        <span className="text-[11px]">Select from your Instagram media</span>
+                      </button>
+                    ) : (
+                      <p className="text-[13px] text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                        Connect an Instagram account to link published media
+                      </p>
+                    )
                   ) : (
                     <p className="text-[13px] text-center py-4" style={{ color: 'var(--text-muted)' }}>
-                      Connect an Instagram account to link published media
+                      No published content linked yet
                     </p>
                   )}
                 </div>
@@ -742,9 +755,18 @@ export default function ProjectDetailPage() {
           {isYTProject && isDone && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.25, ease }}>
               {ytVideoId ? (
-                <YouTubeOutput videoId={ytVideoId} publishedLink={ytPublishedLink} onUnlink={handleUnlinkYouTube} />
-              ) : (
+                <YouTubeOutput videoId={ytVideoId} publishedLink={ytPublishedLink} onUnlink={canLinkContent ? handleUnlinkYouTube : undefined} />
+              ) : canLinkContent ? (
                 <YouTubeLinkInput onLink={handleLinkYouTube} />
+              ) : (
+                <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+                  <h3 className="text-[14px] font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                    <Play size={16} className="text-red-500" /> Published Output
+                  </h3>
+                  <p className="text-[13px] text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                    No published content linked yet
+                  </p>
+                </div>
               )}
             </motion.div>
           )}

@@ -39,12 +39,61 @@ function formatDue(ts) {
 
 function toDateStr(d) { const dt = new Date(d); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
 
+/**
+ * Determine if the current user can complete (move forward) a project at its current stage.
+ * - Creator handles: Backlog → Scripting → Shooting (Creating) → then hands off to editor
+ * - Editor handles: Editing stage only
+ * - Manager/Admin: can always move any stage
+ */
+function canUserCompleteStage(user, project, isManager) {
+  if (isManager) return true;
+  const userName = user?.name;
+  if (!userName) return false;
+
+  const isCreator = project.creator === userName;
+  const isEditor = (project.editors || []).includes(userName) || project.editor === userName;
+
+  switch (project.stage) {
+    case 'Backlog':
+    case 'Scripting':
+    case 'Shooting':
+      return isCreator;
+    case 'Editing':
+      return isEditor;
+    case 'Review':
+    case 'Publishing':
+      return isCreator || isEditor;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Get a waiting message when it's not the user's turn yet.
+ */
+function getWaitingMessage(user, project) {
+  const userName = user?.name;
+  const isEditor = (project.editors || []).includes(userName) || project.editor === userName;
+  const isCreator = project.creator === userName;
+
+  if (isEditor && ['Backlog', 'Scripting', 'Shooting'].includes(project.stage)) {
+    return `Waiting for ${project.creator || 'creator'} to finish ${project.stage}`;
+  }
+  if (isCreator && project.stage === 'Editing') {
+    const editorName = project.editor || (project.editors || [])[0] || 'editor';
+    return `Waiting for ${editorName} to finish Editing`;
+  }
+  return null;
+}
+
 // ─── Project Task Card ────────────────────────────────────────────────────────
-function ProjectTaskCard({ project, onMoveForward, onReverse, isCompleted }) {
+function ProjectTaskCard({ project, user, isManager, onMoveForward, onReverse, isCompleted }) {
   const due = formatDue(project.dueDate);
   const next = nextStage(project.stage);
   const isDone = project.stage === 'Done';
   const stageColor = STAGE_COLOR[project.stage] || 'var(--text-muted)';
+  const canComplete = canUserCompleteStage(user, project, isManager);
+  const waitMsg = !canComplete ? getWaitingMessage(user, project) : null;
 
   return (
     <motion.div variants={fade} className="rounded-xl border p-4 transition-all"
@@ -83,7 +132,7 @@ function ProjectTaskCard({ project, onMoveForward, onReverse, isCompleted }) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 justify-end">
-            {!isCompleted && next && (
+            {!isCompleted && next && canComplete && (
               <button onClick={() => {
                 if (confirm(`Move "${project.title}" from ${project.stage} → ${next}? This will reflect across the entire app.`)) {
                   onMoveForward(project);
@@ -93,6 +142,12 @@ function ProjectTaskCard({ project, onMoveForward, onReverse, isCompleted }) {
                 style={{ background: 'var(--primary)' }}>
                 Complete & Move to {next} <ArrowRight size={13} />
               </button>
+            )}
+            {!isCompleted && next && !canComplete && waitMsg && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                <Clock size={12} /> {waitMsg}
+              </span>
             )}
             {isCompleted && onReverse && (
               <button onClick={() => {
@@ -373,7 +428,7 @@ export default function MyTasksPage() {
             {/* Active projects */}
             <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
               {activeProjects.length > 0 ? activeProjects.map(p => (
-                <ProjectTaskCard key={p.id} project={p} onMoveForward={moveForward} />
+                <ProjectTaskCard key={p.id} project={p} user={user} isManager={isManager} onMoveForward={moveForward} />
               )) : (
                 <div className="py-12 text-center rounded-xl border border-dashed" style={{ borderColor: 'var(--border)' }}>
                   <CheckCircle size={32} className="mx-auto mb-2" style={{ color: 'var(--success)' }} />
@@ -461,7 +516,7 @@ export default function MyTasksPage() {
             </h3>
             <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
               {completedProjects.length > 0 ? completedProjects.map(p => (
-                <ProjectTaskCard key={p.id} project={p} isCompleted onReverse={reverseProject} />
+                <ProjectTaskCard key={p.id} project={p} user={user} isManager={isManager} isCompleted onReverse={reverseProject} />
               )) : recentlyCompleted.length === 0 ? (
                 <div className="py-12 text-center rounded-xl border border-dashed" style={{ borderColor: 'var(--border)' }}>
                   <History size={32} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
